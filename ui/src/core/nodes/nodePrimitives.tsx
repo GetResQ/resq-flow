@@ -12,46 +12,46 @@ const positionMap: Record<HandlePosition, Position> = {
 
 const colorMap: Record<string, { border: string; bg: string; text: string; glow: string }> = {
   gray: {
-    border: 'border-slate-500/70',
-    bg: 'bg-slate-900/70',
-    text: 'text-slate-100',
-    glow: 'shadow-[0_0_0_1px_rgba(148,163,184,0.2)]',
+    border: 'border-slate-600/50',
+    bg: 'bg-slate-800/60',
+    text: 'text-slate-300',
+    glow: '',
   },
   blue: {
-    border: 'border-sky-500/70',
-    bg: 'bg-sky-950/70',
-    text: 'text-sky-100',
-    glow: 'shadow-[0_0_24px_rgba(14,165,233,0.25)]',
+    border: 'border-sky-600/40',
+    bg: 'bg-sky-950/40',
+    text: 'text-sky-200',
+    glow: '',
   },
   green: {
-    border: 'border-emerald-500/70',
-    bg: 'bg-emerald-950/70',
-    text: 'text-emerald-100',
-    glow: 'shadow-[0_0_24px_rgba(16,185,129,0.25)]',
+    border: 'border-emerald-600/40',
+    bg: 'bg-emerald-950/40',
+    text: 'text-emerald-200',
+    glow: '',
   },
   yellow: {
-    border: 'border-amber-500/70',
-    bg: 'bg-amber-950/70',
-    text: 'text-amber-100',
-    glow: 'shadow-[0_0_24px_rgba(245,158,11,0.25)]',
+    border: 'border-amber-500/40',
+    bg: 'bg-amber-950/40',
+    text: 'text-amber-200',
+    glow: '',
   },
   orange: {
-    border: 'border-orange-500/70',
-    bg: 'bg-orange-950/70',
-    text: 'text-orange-100',
-    glow: 'shadow-[0_0_24px_rgba(249,115,22,0.25)]',
+    border: 'border-orange-500/40',
+    bg: 'bg-orange-950/40',
+    text: 'text-orange-200',
+    glow: '',
   },
   red: {
-    border: 'border-rose-600/80',
-    bg: 'bg-rose-950/70',
-    text: 'text-rose-100',
-    glow: 'shadow-[0_0_26px_rgba(244,63,94,0.35)]',
+    border: 'border-rose-500/40',
+    bg: 'bg-rose-950/40',
+    text: 'text-rose-200',
+    glow: '',
   },
   purple: {
-    border: 'border-violet-500/70',
-    bg: 'bg-violet-950/70',
-    text: 'text-violet-100',
-    glow: 'shadow-[0_0_24px_rgba(139,92,246,0.25)]',
+    border: 'border-violet-500/40',
+    bg: 'bg-violet-950/40',
+    text: 'text-violet-200',
+    glow: '',
   },
 }
 
@@ -84,13 +84,13 @@ export function resolveIcon(icon: string | undefined): string | null {
 
 export function statusGlowClass(status: NodeStatus | undefined): string {
   if (status === 'active') {
-    return 'ring-2 ring-sky-400/55 animate-flow-glow'
+    return 'ring-1 ring-sky-400/40'
   }
   if (status === 'success') {
-    return 'ring-2 ring-emerald-400/55'
+    return 'ring-1 ring-emerald-400/40'
   }
   if (status === 'error') {
-    return 'ring-2 ring-rose-500/65'
+    return 'ring-1 ring-rose-500/50'
   }
   return 'ring-1 ring-slate-700/40'
 }

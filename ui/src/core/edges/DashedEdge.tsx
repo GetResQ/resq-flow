@@ -1,4 +1,4 @@
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react'
 
 import type { FlowEdge } from '../nodes/types'
 
@@ -14,7 +14,7 @@ export function DashedEdge({
   markerEnd,
   data,
 }: EdgeProps<FlowEdge>) {
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -31,12 +31,11 @@ export function DashedEdge({
         id={id}
         path={edgePath}
         markerEnd={markerEnd}
-        className={isActive ? 'edge-marching' : undefined}
         style={{
-          stroke: isActive ? '#f59e0b' : '#94a3b8',
-          strokeWidth: 1.7,
-          strokeDasharray: '6 5',
-          transition: 'stroke 200ms ease',
+          stroke: isActive ? '#fbbf24' : '#475569',
+          strokeWidth: isActive ? 1.5 : 1,
+          strokeDasharray: '5 4',
+          transition: 'stroke 300ms ease, stroke-width 300ms ease',
         }}
       />
 

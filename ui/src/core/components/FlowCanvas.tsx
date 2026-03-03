@@ -1,17 +1,16 @@
 import {
   Background,
   BackgroundVariant,
-  Controls,
   MarkerType,
-  MiniMap,
   ReactFlow,
   useEdgesState,
   useNodesState,
   type NodeMouseHandler,
 } from '@xyflow/react'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { edgeTypes } from '../edges'
+import { computeElkLayout } from '../layout/elkLayout'
 import { nodeTypes } from '../nodes'
 import type { FlowEdge, FlowNode } from '../nodes/types'
 import type { FlowConfig, LogEntry, NodeRuntimeStatus, SpanEntry } from '../types'
@@ -21,6 +20,7 @@ function mapFlowNodes(
   nodeStatuses: Map<string, NodeRuntimeStatus>,
   nodeLogMap: Map<string, LogEntry[]>,
   selectedNodeId?: string,
+  elkPositions?: Map<string, { x: number; y: number }>,
 ): FlowNode[] {
   return flow.nodes.map((node) => {
     const status = nodeStatuses.get(node.id)
@@ -28,7 +28,7 @@ function mapFlowNodes(
     return {
       id: node.id,
       type: node.type,
-      position: node.position,
+      position: elkPositions?.get(node.id) ?? node.position,
       parentId: node.parentId,
       selectable: node.selectable ?? true,
       draggable: node.draggable ?? true,
@@ -64,7 +64,7 @@ function mapFlowEdges(flow: FlowConfig, activeEdges: Set<string>): FlowEdge[] {
     sourceHandle: edge.sourceHandle,
     targetHandle: edge.targetHandle,
     label: edge.label,
-    type: edge.type ?? 'animated',
+    type: edge.type ?? 'smoothstep',
     animated: edge.animated,
     markerEnd: {
       type: MarkerType.ArrowClosed,
@@ -97,9 +97,15 @@ export function FlowCanvas({
   selectedNodeId,
   onSelectNode,
 }: FlowCanvasProps) {
+  const [elkPositions, setElkPositions] = useState<Map<string, { x: number; y: number }> | null>(null)
+
+  useEffect(() => {
+    computeElkLayout(flow.nodes, flow.edges).then(setElkPositions).catch(console.error)
+  }, [flow])
+
   const initialNodes = useMemo(
-    () => mapFlowNodes(flow, nodeStatuses, nodeLogMap, selectedNodeId),
-    [flow, nodeStatuses, nodeLogMap, selectedNodeId],
+    () => mapFlowNodes(flow, nodeStatuses, nodeLogMap, selectedNodeId, elkPositions ?? undefined),
+    [flow, nodeStatuses, nodeLogMap, selectedNodeId, elkPositions],
   )
   const initialEdges = useMemo(() => mapFlowEdges(flow, activeEdges), [activeEdges, flow])
 
@@ -107,8 +113,8 @@ export function FlowCanvas({
   const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>(initialEdges)
 
   useEffect(() => {
-    setNodes(mapFlowNodes(flow, nodeStatuses, nodeLogMap, selectedNodeId))
-  }, [flow, nodeLogMap, nodeStatuses, selectedNodeId, setNodes])
+    setNodes(mapFlowNodes(flow, nodeStatuses, nodeLogMap, selectedNodeId, elkPositions ?? undefined))
+  }, [flow, nodeLogMap, nodeStatuses, selectedNodeId, setNodes, elkPositions])
 
   useEffect(() => {
     setEdges(mapFlowEdges(flow, activeEdges))
@@ -120,22 +126,34 @@ export function FlowCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <button
-        type="button"
-        className="absolute left-3 top-3 z-20 rounded border border-slate-700 bg-slate-900/95 px-2 py-1 text-[10px] text-slate-200"
-        onClick={() => {
-          const payload = nodes.reduce<Record<string, { x: number; y: number }>>((acc, node) => {
-            acc[node.id] = node.position
-            return acc
-          }, {})
+      <div className="absolute left-3 top-3 z-20 flex gap-2">
+        <button
+          type="button"
+          className="rounded border border-slate-700 bg-slate-900/95 px-2 py-1 text-[10px] text-slate-200"
+          onClick={() => {
+            const payload = nodes.reduce<Record<string, { x: number; y: number }>>((acc, node) => {
+              acc[node.id] = node.position
+              return acc
+            }, {})
 
-          // Manual layout iteration helper.
-          // eslint-disable-next-line no-console
-          console.log('save positions', payload)
-        }}
-      >
-        Save positions
-      </button>
+            // Manual layout iteration helper.
+            // eslint-disable-next-line no-console
+            console.log('save positions', payload)
+          }}
+        >
+          Save positions
+        </button>
+
+        <button
+          type="button"
+          className="rounded border border-slate-700 bg-slate-900/95 px-2 py-1 text-[10px] text-slate-200"
+          onClick={() => {
+            computeElkLayout(flow.nodes, flow.edges).then(setElkPositions).catch(console.error)
+          }}
+        >
+          Re-layout
+        </button>
+      </div>
 
       <ReactFlow
         fitView
@@ -155,11 +173,10 @@ export function FlowCanvas({
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         defaultEdgeOptions={{ zIndex: 5 }}
+        proOptions={{ hideAttribution: true }}
         className="bg-slate-950"
       >
-        <MiniMap className="!bg-slate-900/95" pannable zoomable />
-        <Controls className="!border !border-slate-700 !bg-slate-900/95" />
-        <Background variant={BackgroundVariant.Dots} gap={26} size={1.2} color="#334155" />
+        <Background variant={BackgroundVariant.Dots} gap={26} size={1.2} color="#1e293b" />
       </ReactFlow>
     </div>
   )

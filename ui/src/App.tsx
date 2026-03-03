@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { BottomLogPanel } from './core/components/BottomLogPanel'
 import { FlowCanvas } from './core/components/FlowCanvas'
 import { FlowSelector } from './core/components/FlowSelector'
-import { LogPanel } from './core/components/LogPanel'
 import { NodeDetailPanel } from './core/components/NodeDetailPanel'
 import { useFlowAnimations } from './core/hooks/useFlowAnimations'
 import { useLogStream } from './core/hooks/useLogStream'
@@ -55,34 +55,34 @@ function App() {
         onClearSession={clearAll}
       />
 
-      <main className="flex min-h-0 flex-1">
-        <div className="min-h-0 flex-1">
-          <FlowCanvas
-            flow={currentFlow}
-            nodeStatuses={animations.nodeStatuses}
-            activeEdges={animations.activeEdges}
-            nodeLogMap={logStream.nodeLogMap}
-            nodeSpans={traceTimeline.nodeSpans}
-            selectedNodeId={selectedNodeId}
-            onSelectNode={setSelectedNodeId}
-          />
-        </div>
-
-        <LogPanel
+      <div className="flex min-h-0 flex-1">
+        <FlowCanvas
           flow={currentFlow}
-          globalLogs={logStream.globalLogs}
+          nodeStatuses={animations.nodeStatuses}
+          activeEdges={animations.activeEdges}
+          nodeLogMap={logStream.nodeLogMap}
+          nodeSpans={traceTimeline.nodeSpans}
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
         />
 
-        <NodeDetailPanel
-          node={selectedNode}
-          status={selectedNodeId ? animations.nodeStatuses.get(selectedNodeId) : undefined}
-          logs={selectedNodeId ? logStream.nodeLogMap.get(selectedNodeId) ?? [] : []}
-          spans={selectedNodeId ? traceTimeline.nodeSpans.get(selectedNodeId) ?? [] : []}
-          onClose={() => setSelectedNodeId(undefined)}
-        />
-      </main>
+        {selectedNode && (
+          <NodeDetailPanel
+            node={selectedNode}
+            status={selectedNodeId ? animations.nodeStatuses.get(selectedNodeId) : undefined}
+            logs={selectedNodeId ? logStream.nodeLogMap.get(selectedNodeId) ?? [] : []}
+            spans={selectedNodeId ? traceTimeline.nodeSpans.get(selectedNodeId) ?? [] : []}
+            onClose={() => setSelectedNodeId(undefined)}
+          />
+        )}
+      </div>
+
+      <BottomLogPanel
+        flow={currentFlow}
+        globalLogs={logStream.globalLogs}
+        selectedNodeId={selectedNodeId}
+        onSelectNode={setSelectedNodeId}
+      />
     </div>
   )
 }

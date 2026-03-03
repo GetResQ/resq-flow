@@ -16,7 +16,7 @@ interface NodeDetailPanelProps {
   onClose: () => void
 }
 
-type TabKey = 'logs' | 'traces' | 'attributes'
+type TabKey = 'traces' | 'attributes'
 
 function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
   const depth = new Map<string, number>()
@@ -51,12 +51,7 @@ function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
 }
 
 export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDetailPanelProps) {
-  const [tab, setTab] = useState<TabKey>('logs')
-
-  const sortedLogs = useMemo(
-    () => [...logs].sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp)),
-    [logs],
-  )
+  const [tab, setTab] = useState<TabKey>('traces')
 
   const tracesByTraceId = useMemo(() => {
     const grouped = new Map<string, SpanEntry[]>()
@@ -76,21 +71,25 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
     return [...grouped.entries()].slice(-5).reverse()
   }, [spans])
 
-  const lastAttributes = sortedLogs[0]?.attributes
+  const lastAttributes = [...logs]
+    .sort((a, b) => Date.parse(b.timestamp) - Date.parse(a.timestamp))[0]?.attributes
 
   if (!node) {
     return null
   }
 
   return (
-    <aside className="flex w-[380px] flex-col border-l border-slate-700/60 bg-slate-950/90">
+    <aside
+      className="flex w-[340px] flex-col border-l border-slate-700/50 bg-slate-900"
+      style={{ transition: 'transform 200ms ease', transform: 'translateX(0)' }}
+    >
       <header className="border-b border-slate-700/50 px-4 py-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div>
             <h2 className="text-sm font-semibold text-slate-100">{node.label}</h2>
-            <p className="text-xs text-slate-400">{logs.length} events</p>
+            <p className="text-xs text-slate-500">{logs.length} events</p>
           </div>
-          <button type="button" onClick={onClose} className="text-xs text-slate-400 hover:text-slate-200">
+          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-200">
             close
           </button>
         </div>
@@ -106,7 +105,7 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
       </header>
 
       <div className="flex border-b border-slate-700/50 px-2 py-2">
-        {(['logs', 'traces', 'attributes'] as const).map((tabKey) => (
+        {(['traces', 'attributes'] as const).map((tabKey) => (
           <button
             key={tabKey}
             type="button"
@@ -121,63 +120,46 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
       </div>
 
       <div className="flex-1 overflow-y-auto px-3 py-3">
-        {tab === 'logs' ? (
-          <div className="space-y-2">
-            {sortedLogs.map((entry, index) => (
-              <div
-                key={`${entry.timestamp}-${index}`}
-                className={`rounded border p-2 text-[11px] ${
-                  entry.level === 'error'
-                    ? 'border-rose-800 bg-rose-950/35'
-                    : entry.status === 'ok'
-                      ? 'border-emerald-900 bg-emerald-950/25'
-                      : 'border-slate-700 bg-slate-900/50'
-                }`}
-              >
-                <div className="mb-1 flex items-center gap-2 text-[10px] text-slate-400">
-                  <span>{new Date(entry.timestamp).toLocaleTimeString()}</span>
-                  <DurationBadge durationMs={entry.durationMs} />
-                </div>
-                <p className="text-slate-100">{entry.message}</p>
-              </div>
-            ))}
-          </div>
-        ) : null}
-
         {tab === 'traces' ? (
           <div className="space-y-3">
-            {tracesByTraceId.map(([traceId, traceSpans]) => {
-              const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
-              const depthMap = computeDepthMap(traceSpans)
+            {tracesByTraceId.length === 0 ? (
+              <p className="text-xs text-slate-500">No traces yet.</p>
+            ) : (
+              tracesByTraceId.map(([traceId, traceSpans]) => {
+                const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
+                const depthMap = computeDepthMap(traceSpans)
 
-              return (
-                <details key={traceId} className="rounded border border-slate-700 bg-slate-900/50 p-2" open>
-                  <summary className="cursor-pointer text-xs text-slate-200">trace: {traceId.slice(0, 12)}...</summary>
+                return (
+                  <details key={traceId} className="rounded border border-slate-700 bg-slate-900/50 p-2" open>
+                    <summary className="cursor-pointer text-xs text-slate-200">
+                      trace: {traceId.slice(0, 12)}…
+                    </summary>
 
-                  <div className="mt-2 space-y-2">
-                    {traceSpans.map((span) => {
-                      const depth = depthMap.get(span.spanId) ?? 0
-                      const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
+                    <div className="mt-2 space-y-2">
+                      {traceSpans.map((span) => {
+                        const depth = depthMap.get(span.spanId) ?? 0
+                        const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
 
-                      return (
-                        <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
-                          <div className="mb-1 flex items-center gap-2 text-[10px] text-slate-300">
-                            <span>{span.spanName}</span>
-                            <DurationBadge durationMs={span.durationMs} />
+                        return (
+                          <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
+                            <div className="mb-1 flex items-center gap-2 text-[10px] text-slate-300">
+                              <span>{span.spanName}</span>
+                              <DurationBadge durationMs={span.durationMs} />
+                            </div>
+                            <div className="h-2 rounded bg-slate-800">
+                              <div
+                                className={`h-2 rounded ${span.status === 'error' ? 'bg-rose-500/70' : 'bg-sky-500/70'}`}
+                                style={{ width: `${widthPercent}%` }}
+                              />
+                            </div>
                           </div>
-                          <div className="h-2 rounded bg-slate-800">
-                            <div
-                              className={`h-2 rounded ${span.status === 'error' ? 'bg-rose-500/70' : 'bg-sky-500/70'}`}
-                              style={{ width: `${widthPercent}%` }}
-                            />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </details>
-              )
-            })}
+                        )
+                      })}
+                    </div>
+                  </details>
+                )
+              })
+            )}
           </div>
         ) : null}
 

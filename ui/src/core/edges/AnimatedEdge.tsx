@@ -1,4 +1,4 @@
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
+import { BaseEdge, EdgeLabelRenderer, getSmoothStepPath, type EdgeProps } from '@xyflow/react'
 
 import type { FlowEdge } from '../nodes/types'
 
@@ -14,7 +14,7 @@ export function AnimatedEdge({
   label,
   data,
 }: EdgeProps<FlowEdge>) {
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath, labelX, labelY] = getSmoothStepPath({
     sourceX,
     sourceY,
     sourcePosition,
@@ -32,17 +32,11 @@ export function AnimatedEdge({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          stroke: isActive ? '#38bdf8' : '#64748b',
-          strokeWidth: isActive ? 2.2 : 1.6,
-          transition: 'stroke 200ms ease, stroke-width 200ms ease',
+          stroke: isActive ? '#38bdf8' : '#475569',
+          strokeWidth: isActive ? 1.8 : 1.2,
+          transition: 'stroke 300ms ease, stroke-width 300ms ease',
         }}
       />
-
-      {isActive ? (
-        <circle r="3.5" fill="#38bdf8">
-          <animateMotion dur="0.6s" repeatCount="1" path={edgePath} />
-        </circle>
-      ) : null}
 
       {label ? (
         <EdgeLabelRenderer>

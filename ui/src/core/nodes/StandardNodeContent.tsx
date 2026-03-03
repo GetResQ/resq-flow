@@ -1,4 +1,3 @@
-import { useMemo, useState } from 'react'
 import clsx from 'clsx'
 
 import { NodeStatusBadge } from '../components/NodeStatusBadge'
@@ -8,30 +7,25 @@ import { resolveIcon } from './nodePrimitives'
 interface StandardNodeContentProps {
   data: FlowNodeData
   showBullets?: boolean
-  showTicker?: boolean
   compact?: boolean
 }
 
 export function StandardNodeContent({
   data,
   showBullets = true,
-  showTicker = true,
   compact = false,
 }: StandardNodeContentProps) {
-  const [tickerOpen, setTickerOpen] = useState(true)
-
-  const recentLogs = useMemo(() => {
-    if (!data.logs || data.logs.length === 0) {
-      return []
-    }
-    return data.logs.slice(-2).reverse()
-  }, [data.logs])
-
   const status = data.status?.status ?? 'idle'
   const icon = resolveIcon(data.style?.icon)
 
   return (
-    <div className={clsx('flex h-full flex-col gap-2 p-3', compact && 'gap-1.5 p-2')}>
+    <div className={clsx('relative flex h-full flex-col gap-2 p-3', compact && 'gap-1.5 p-2')}>
+      {data.logs && data.logs.length > 0 && (
+        <span className="absolute -top-2 -right-2 bg-sky-500 text-white text-[10px] font-medium rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 z-10">
+          {data.logs.length}
+        </span>
+      )}
+
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
@@ -65,25 +59,6 @@ export function StandardNodeContent({
       {typeof data.counter === 'number' ? (
         <div className="inline-flex w-fit items-center rounded bg-black/35 px-2 py-0.5 text-[10px] font-semibold text-white/75">
           count: {data.counter}
-        </div>
-      ) : null}
-
-      {showTicker && recentLogs.length > 0 ? (
-        <div className="mt-auto space-y-1 rounded bg-black/25 p-1.5">
-          <button
-            type="button"
-            className="w-full text-left text-[9px] uppercase tracking-wide text-white/55 hover:text-white/80"
-            onClick={() => setTickerOpen((open) => !open)}
-          >
-            {tickerOpen ? 'hide' : 'show'} ticker
-          </button>
-          {tickerOpen
-            ? recentLogs.map((log, index) => (
-                <div key={`${log.timestamp}-${index}`} className="truncate text-[9px] text-white/75">
-                  {log.message}
-                </div>
-              ))
-            : null}
         </div>
       ) : null}
     </div>
