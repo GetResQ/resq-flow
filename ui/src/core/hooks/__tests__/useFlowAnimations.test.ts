@@ -1,0 +1,167 @@
+import { act, renderHook, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+
+import { mailPipelineFlow } from '../../../flows/mail-pipeline'
+import type { FlowEvent } from '../../types'
+import { useFlowAnimations } from '../useFlowAnimations'
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+describe('useFlowAnimations', () => {
+  it('activates a node on span_start then marks success and clears to idle', async () => {
+    vi.useFakeTimers()
+
+    const start: FlowEvent = {
+      type: 'span_start',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      span_name: 'handle_mail_extract',
+      trace_id: 'trace-1',
+      span_id: 'span-1',
+      attributes: {
+        function_name: 'handle_mail_extract',
+      },
+    }
+
+    const end: FlowEvent = {
+      type: 'span_end',
+      timestamp: '2026-03-03T12:00:01.200Z',
+      span_name: 'handle_mail_extract',
+      trace_id: 'trace-1',
+      span_id: 'span-1',
+      duration_ms: 1_200,
+      attributes: {
+        function_name: 'handle_mail_extract',
+        status: 'ok',
+      },
+    }
+
+    const { result, rerender } = renderHook(
+      ({ events }) =>
+        useFlowAnimations({
+          events,
+          spanMapping: mailPipelineFlow.spanMapping,
+          edges: mailPipelineFlow.edges,
+        }),
+      {
+        initialProps: { events: [] as FlowEvent[] },
+      },
+    )
+
+    act(() => {
+      rerender({ events: [start] })
+    })
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
+    })
+
+    act(() => {
+      rerender({ events: [start, end] })
+    })
+
+    await waitFor(() => {
+      const status = result.current.nodeStatuses.get('extract-worker')
+      expect(status?.status).toBe('success')
+      expect(status?.durationMs).toBe(1_200)
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(3_100)
+    })
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('idle')
+    })
+  })
+
+  it('keeps node in error state after span_end error until next activity', async () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'span_start',
+        timestamp: '2026-03-03T12:00:00.000Z',
+        span_name: 'handle_mail_extract',
+        trace_id: 'trace-2',
+        span_id: 'span-2',
+        attributes: {
+          function_name: 'handle_mail_extract',
+        },
+      },
+      {
+        type: 'span_end',
+        timestamp: '2026-03-03T12:00:00.900Z',
+        span_name: 'handle_mail_extract',
+        trace_id: 'trace-2',
+        span_id: 'span-2',
+        attributes: {
+          function_name: 'handle_mail_extract',
+          status: 'error',
+          error_message: 'boom',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events,
+        spanMapping: mailPipelineFlow.spanMapping,
+        edges: mailPipelineFlow.edges,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('error')
+    })
+  })
+
+  it('increments queue counter on enqueue and decrements on worker pickup', async () => {
+    const enqueueEvent: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-3',
+      span_id: 'log-1',
+      attributes: {
+        action: 'enqueue',
+        queue_name: 'rrq:queue:mail-analyze',
+      },
+    }
+
+    const pickupEvent: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.200Z',
+      trace_id: 'trace-3',
+      span_id: 'log-2',
+      attributes: {
+        action: 'worker_pickup',
+        queue_name: 'rrq:queue:mail-analyze',
+        worker_name: 'mail_analyze',
+      },
+    }
+
+    const { result, rerender } = renderHook(
+      ({ events }) =>
+        useFlowAnimations({
+          events,
+          spanMapping: mailPipelineFlow.spanMapping,
+          edges: mailPipelineFlow.edges,
+        }),
+      {
+        initialProps: { events: [enqueueEvent] as FlowEvent[] },
+      },
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('analyze-queue')?.counter).toBe(1)
+    })
+
+    act(() => {
+      rerender({ events: [enqueueEvent, pickupEvent] })
+    })
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('analyze-queue')?.counter).toBe(0)
+      expect(result.current.nodeStatuses.get('analyze-worker')?.status).toBe('active')
+    })
+  })
+})

@@ -1,0 +1,418 @@
+[
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:00.000Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-001",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-backfill",
+      "status": "ok"
+    },
+    "message": "enqueue batchfill"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:00.120Z",
+    "span_name": "handle_mail_backfill_start",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-001",
+    "start_time": "2026-03-03T12:00:00.120Z",
+    "attributes": {
+      "function_name": "handle_mail_backfill_start",
+      "worker_name": "mail_batchfill"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:00.620Z",
+    "span_name": "handle_mail_backfill_start",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-001",
+    "start_time": "2026-03-03T12:00:00.120Z",
+    "end_time": "2026-03-03T12:00:00.620Z",
+    "duration_ms": 500,
+    "attributes": {
+      "function_name": "handle_mail_backfill_start",
+      "worker_name": "mail_batchfill",
+      "status": "ok",
+      "outcome": "success"
+    }
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:00.900Z",
+    "span_name": "handle_mail_cron_tick",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-002",
+    "start_time": "2026-03-03T12:00:00.900Z",
+    "attributes": {
+      "function_name": "handle_mail_cron_tick"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:01.060Z",
+    "span_name": "handle_mail_cron_tick",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-002",
+    "start_time": "2026-03-03T12:00:00.900Z",
+    "end_time": "2026-03-03T12:00:01.060Z",
+    "duration_ms": 160,
+    "attributes": {
+      "function_name": "handle_mail_cron_tick",
+      "status": "ok"
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:01.200Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-002",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-incoming",
+      "status": "ok"
+    },
+    "message": "incoming enqueue"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:01.320Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-003",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "worker_pickup",
+      "queue_name": "rrq:queue:mail-incoming",
+      "worker_name": "mail_incoming",
+      "status": "ok"
+    },
+    "message": "mail_incoming picked job"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:01.380Z",
+    "span_name": "handle_mail_incoming_check",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-003",
+    "parent_span_id": "span-002",
+    "start_time": "2026-03-03T12:00:01.380Z",
+    "attributes": {
+      "function_name": "handle_mail_incoming_check",
+      "worker_name": "mail_incoming"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:01.980Z",
+    "span_name": "handle_mail_incoming_check",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-003",
+    "parent_span_id": "span-002",
+    "start_time": "2026-03-03T12:00:01.380Z",
+    "end_time": "2026-03-03T12:00:01.980Z",
+    "duration_ms": 600,
+    "attributes": {
+      "function_name": "handle_mail_incoming_check",
+      "worker_name": "mail_incoming",
+      "status": "ok",
+      "outcome": "success"
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:02.050Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-004",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "threads_written",
+      "status": "ok"
+    },
+    "message": "wrote new threads to S3"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:02.170Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-005",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "metadata_written",
+      "status": "ok"
+    },
+    "message": "wrote metadata to postgres"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:02.280Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-006",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-analyze",
+      "status": "ok"
+    },
+    "message": "enqueue analyze"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:02.350Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-007",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-extract",
+      "status": "ok"
+    },
+    "message": "enqueue extract"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:02.450Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-008",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "worker_pickup",
+      "queue_name": "rrq:queue:mail-analyze",
+      "worker_name": "mail_analyze",
+      "status": "ok"
+    },
+    "message": "mail_analyze picked job"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:02.520Z",
+    "span_name": "handle_mail_analyze_reply",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-004",
+    "parent_span_id": "span-003",
+    "start_time": "2026-03-03T12:00:02.520Z",
+    "attributes": {
+      "function_name": "handle_mail_analyze_reply",
+      "worker_name": "mail_analyze"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:03.040Z",
+    "span_name": "handle_mail_analyze_reply",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-004",
+    "parent_span_id": "span-003",
+    "start_time": "2026-03-03T12:00:02.520Z",
+    "end_time": "2026-03-03T12:00:03.040Z",
+    "duration_ms": 520,
+    "attributes": {
+      "function_name": "handle_mail_analyze_reply",
+      "worker_name": "mail_analyze",
+      "action": "draft_reply",
+      "status": "ok",
+      "outcome": "success"
+    }
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:03.120Z",
+    "span_name": "insert_reply_draft",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-005",
+    "parent_span_id": "span-004",
+    "start_time": "2026-03-03T12:00:03.120Z",
+    "attributes": {
+      "status": "ok"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:03.320Z",
+    "span_name": "insert_reply_draft",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-005",
+    "parent_span_id": "span-004",
+    "start_time": "2026-03-03T12:00:03.120Z",
+    "end_time": "2026-03-03T12:00:03.320Z",
+    "duration_ms": 200,
+    "attributes": {
+      "status": "ok",
+      "outcome": "success"
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:03.450Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-009",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-send",
+      "status": "ok"
+    },
+    "message": "enqueue send"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:03.580Z",
+    "trace_id": "trace-happy-001",
+    "span_id": "log-010",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "worker_pickup",
+      "queue_name": "rrq:queue:mail-send",
+      "worker_name": "mail_send",
+      "status": "ok"
+    },
+    "message": "mail_send picked job"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:03.650Z",
+    "span_name": "handle_mail_send_reply",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-006",
+    "parent_span_id": "span-004",
+    "start_time": "2026-03-03T12:00:03.650Z",
+    "attributes": {
+      "function_name": "handle_mail_send_reply",
+      "worker_name": "mail_send"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:04.130Z",
+    "span_name": "handle_mail_send_reply",
+    "trace_id": "trace-happy-001",
+    "span_id": "span-006",
+    "parent_span_id": "span-004",
+    "start_time": "2026-03-03T12:00:03.650Z",
+    "end_time": "2026-03-03T12:00:04.130Z",
+    "duration_ms": 480,
+    "attributes": {
+      "function_name": "handle_mail_send_reply",
+      "worker_name": "mail_send",
+      "status": "ok",
+      "outcome": "sent"
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:04.300Z",
+    "trace_id": "trace-error-001",
+    "span_id": "log-011",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "enqueue",
+      "queue_name": "rrq:queue:mail-extract",
+      "status": "ok"
+    },
+    "message": "enqueue extract retry candidate"
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:04.420Z",
+    "trace_id": "trace-error-001",
+    "span_id": "log-012",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "worker_pickup",
+      "queue_name": "rrq:queue:mail-extract",
+      "worker_name": "mail_extract",
+      "status": "ok"
+    },
+    "message": "mail_extract picked failing job"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:04.500Z",
+    "span_name": "handle_mail_extract",
+    "trace_id": "trace-error-001",
+    "span_id": "span-007",
+    "start_time": "2026-03-03T12:00:04.500Z",
+    "attributes": {
+      "function_name": "handle_mail_extract",
+      "worker_name": "mail_extract"
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:05.100Z",
+    "span_name": "handle_mail_extract",
+    "trace_id": "trace-error-001",
+    "span_id": "span-007",
+    "start_time": "2026-03-03T12:00:04.500Z",
+    "end_time": "2026-03-03T12:00:05.100Z",
+    "duration_ms": 600,
+    "attributes": {
+      "function_name": "handle_mail_extract",
+      "worker_name": "mail_extract",
+      "status": "error",
+      "outcome": "error",
+      "error_type": "network_timeout",
+      "error_message": "gmail api timeout"
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:05.260Z",
+    "trace_id": "trace-error-001",
+    "span_id": "log-013",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "retry",
+      "queue_name": "rrq:queue:mail-extract",
+      "status": "ok"
+    },
+    "message": "retry scheduled"
+  },
+  {
+    "type": "span_start",
+    "timestamp": "2026-03-03T12:00:05.450Z",
+    "span_name": "handle_mail_extract",
+    "trace_id": "trace-error-001",
+    "span_id": "span-008",
+    "parent_span_id": "span-007",
+    "start_time": "2026-03-03T12:00:05.450Z",
+    "attributes": {
+      "function_name": "handle_mail_extract",
+      "worker_name": "mail_extract",
+      "attempt": 2
+    }
+  },
+  {
+    "type": "span_end",
+    "timestamp": "2026-03-03T12:00:05.980Z",
+    "span_name": "handle_mail_extract",
+    "trace_id": "trace-error-001",
+    "span_id": "span-008",
+    "parent_span_id": "span-007",
+    "start_time": "2026-03-03T12:00:05.450Z",
+    "end_time": "2026-03-03T12:00:05.980Z",
+    "duration_ms": 530,
+    "attributes": {
+      "function_name": "handle_mail_extract",
+      "worker_name": "mail_extract",
+      "status": "ok",
+      "outcome": "success",
+      "attempt": 2
+    }
+  },
+  {
+    "type": "log",
+    "timestamp": "2026-03-03T12:00:06.140Z",
+    "trace_id": "trace-error-001",
+    "span_id": "log-014",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "cursor_updated",
+      "status": "ok"
+    },
+    "message": "cursor moved after retry success"
+  }
+]
