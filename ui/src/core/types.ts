@@ -107,6 +107,13 @@ export type LogLevel = 'info' | 'error'
 
 export interface LogEntry {
   timestamp: string
+  seq?: number
+  traceId?: string
+  stageId?: string
+  stageName?: string
+  errorClass?: string
+  errorCode?: string
+  retryable?: boolean
   level: LogLevel
   nodeId?: string
   message: string
@@ -165,4 +172,54 @@ export interface TraceTimelineState {
   nodeSpans: Map<string, SpanEntry[]>
   traceTree: Map<string, SpanEntry[]>
   clearTraces: () => void
+}
+
+export type TraceStatus = 'running' | 'success' | 'error' | 'partial'
+
+export interface TraceIdentifiers {
+  mailboxOwner?: string
+  provider?: string
+  threadId?: string
+  replyDraftId?: string
+  jobId?: string
+  requestId?: string
+  contentHash?: string
+  journeyKey?: string
+}
+
+export interface TraceStage {
+  stageId: string
+  label: string
+  nodeId?: string
+  startSeq: number
+  endSeq: number
+  startTs: string
+  endTs?: string
+  durationMs?: number
+  status: TraceStatus
+  attempt?: number
+  errorSummary?: string
+  attrs?: Record<string, unknown>
+}
+
+export interface TraceJourney {
+  traceId: string
+  rootEntity?: string
+  startedAt: string
+  endedAt?: string
+  durationMs?: number
+  status: TraceStatus
+  stages: TraceStage[]
+  nodePath: string[]
+  errorSummary?: string
+  lastUpdatedAt: string
+  eventCount: number
+  identifiers: TraceIdentifiers
+  pinned?: boolean
+}
+
+export interface TraceJourneyState {
+  journeys: TraceJourney[]
+  journeyByTraceId: Map<string, TraceJourney>
+  clearJourneys: () => void
 }

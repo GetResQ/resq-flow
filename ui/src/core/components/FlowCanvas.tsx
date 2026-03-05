@@ -46,7 +46,28 @@ function resolveFocusState(
   activeEdges: Set<string>,
   focusActivePath: boolean,
   selectedNodeIds?: Set<string>,
+  traceFocusNodeIds?: Set<string>,
+  traceFocusEdgeIds?: Set<string>,
 ): FocusState {
+  if (traceFocusNodeIds && traceFocusNodeIds.size > 0) {
+    const nodeIds = new Set(traceFocusNodeIds)
+    const edgeIds = new Set<string>()
+    const allowedEdgeIds = traceFocusEdgeIds ?? null
+
+    for (const edge of flow.edges) {
+      if (allowedEdgeIds && !allowedEdgeIds.has(edge.id)) {
+        continue
+      }
+      if (nodeIds.has(edge.source) || nodeIds.has(edge.target)) {
+        edgeIds.add(edge.id)
+        nodeIds.add(edge.source)
+        nodeIds.add(edge.target)
+      }
+    }
+
+    return { nodeIds, edgeIds }
+  }
+
   if (!focusActivePath) {
     return { nodeIds: null, edgeIds: null }
   }
@@ -186,6 +207,8 @@ interface FlowCanvasProps {
   nodeStatuses: Map<string, NodeRuntimeStatus>
   activeEdges: Set<string>
   focusActivePath: boolean
+  traceFocusNodeIds?: Set<string>
+  traceFocusEdgeIds?: Set<string>
   theme: ThemeMode
   nodeLogMap: Map<string, LogEntry[]>
   nodeSpans: Map<string, SpanEntry[]>
@@ -198,6 +221,8 @@ export function FlowCanvas({
   nodeStatuses,
   activeEdges,
   focusActivePath,
+  traceFocusNodeIds,
+  traceFocusEdgeIds,
   theme,
   nodeLogMap,
   selectedNodeId,
@@ -267,8 +292,25 @@ export function FlowCanvas({
   }, [selectedNodeId])
 
   const focusState = useMemo(
-    () => resolveFocusState(flow, nodeStatuses, activeEdges, focusActivePath, selectedNodeIds),
-    [activeEdges, flow, focusActivePath, nodeStatuses, selectedNodeIds],
+    () =>
+      resolveFocusState(
+        flow,
+        nodeStatuses,
+        activeEdges,
+        focusActivePath,
+        selectedNodeIds,
+        traceFocusNodeIds,
+        traceFocusEdgeIds,
+      ),
+    [
+      activeEdges,
+      flow,
+      focusActivePath,
+      nodeStatuses,
+      selectedNodeIds,
+      traceFocusEdgeIds,
+      traceFocusNodeIds,
+    ],
   )
 
   const initialNodes = useMemo(

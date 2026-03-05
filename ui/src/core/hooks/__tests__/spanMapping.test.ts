@@ -53,6 +53,42 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('write-metadata')
   })
 
+  it('maps rrq.function attributes for queue hops', () => {
+    const event: FlowEvent = {
+      type: 'span_start',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        'rrq.function': 'handle_mail_send_reply',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('send-worker')
+  })
+
+  it('maps messaging destination attributes for queue spans', () => {
+    const event: FlowEvent = {
+      type: 'span_start',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        'messaging.destination.name': 'rrq:queue:mail-analyze',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('analyze-queue')
+  })
+
+  it('maps explicit stage_id to target node', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        stage_id: 'incoming.write_metadata',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('write-metadata')
+  })
+
   it('returns null for unmapped event', () => {
     const event: FlowEvent = {
       type: 'log',

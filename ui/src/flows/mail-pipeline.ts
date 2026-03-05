@@ -7,6 +7,17 @@ export const spanMapping: SpanMapping = {
   'rrq:queue:mail-extract': 'extract-queue',
   'rrq:queue:mail-send': 'send-queue',
 
+  'incoming.write_threads': 'write-threads',
+  'incoming.write_metadata': 'write-metadata',
+  'incoming.cursor_update': 'write-cursor',
+  'analyze.decision': 'analyze-decision',
+  'analyze.draft_insert': 'draft-reply',
+  'analyze.autosend_enqueue': 'send-queue',
+  'extract.upsert_contacts': 'upsert-contacts',
+  'send.precheck': 'send-validate',
+  'send.provider_call': 'send-process',
+  'send.finalize': 'send-process',
+
   handle_mail_backfill_start: 'batchfill-worker',
   handle_mail_backfill_chunk: 'batchfill-worker',
   handle_mail_incoming_check: 'incoming-worker',

@@ -32,10 +32,20 @@ function lookupPattern(mapping: SpanMapping, candidate: string | null | undefine
 
 export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping): string | null {
   const queueFirst = event.event_kind === 'queue_enqueued' || event.event_kind === 'queue_picked'
+  const rrqQueue = readAttr(event, 'rrq.queue')
+  const rrqFunction = readAttr(event, 'rrq.function')
+  const messagingDestination = readAttr(event, 'messaging.destination.name')
+  const messagingOperation = readAttr(event, 'messaging.operation')
+
   const candidates = queueFirst
     ? [
         event.node_key,
+        readAttr(event, 'stage_id'),
+        rrqQueue,
+        messagingDestination,
         readAttr(event, 'queue_name'),
+        rrqFunction,
+        messagingOperation,
         readAttr(event, 'function_name'),
         readAttr(event, 'worker_name'),
         event.span_name,
@@ -43,9 +53,14 @@ export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping):
       ]
     : [
         event.node_key,
+        readAttr(event, 'stage_id'),
+        rrqFunction,
+        messagingOperation,
         event.span_name,
         readAttr(event, 'function_name'),
         readAttr(event, 'worker_name'),
+        rrqQueue,
+        messagingDestination,
         readAttr(event, 'queue_name'),
         readAttr(event, 'action'),
       ]

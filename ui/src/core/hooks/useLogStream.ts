@@ -1,17 +1,34 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { inferErrorState, resolveMappedNodeId } from '../mapping'
+import { inferErrorState, readStringAttribute, resolveMappedNodeId } from '../mapping'
 import type { FlowEvent, LogEntry, LogStreamState, SpanMapping } from '../types'
 
 function compareTimestamp(left: string, right: string): number {
   return Date.parse(left) - Date.parse(right)
 }
 
+function compareLogs(left: LogEntry, right: LogEntry): number {
+  if (typeof left.seq === 'number' && typeof right.seq === 'number') {
+    return left.seq - right.seq
+  }
+  return compareTimestamp(left.timestamp, right.timestamp)
+}
+
 function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
   const isError = inferErrorState(event)
+  const stageId = readStringAttribute(event.attributes, 'stage_id')
+  const stageName = readStringAttribute(event.attributes, 'stage_name')
+  const retryable = readStringAttribute(event.attributes, 'retryable')
 
   return {
     timestamp: event.timestamp,
+    seq: event.seq,
+    traceId: event.trace_id,
+    stageId,
+    stageName,
+    errorClass: readStringAttribute(event.attributes, 'error_class'),
+    errorCode: readStringAttribute(event.attributes, 'error_code'),
+    retryable: retryable ? retryable.toLowerCase() === 'true' : undefined,
     nodeId,
     level: isError ? 'error' : 'info',
     status: isError ? 'error' : 'ok',
@@ -56,7 +73,7 @@ export function useLogStream(events: FlowEvent[], spanMapping: SpanMapping): Log
         const nodeId = resolveMappedNodeId(event, spanMapping) ?? undefined
         merged.push(toLogEntry(event, nodeId))
       }
-      merged.sort((left, right) => compareTimestamp(left.timestamp, right.timestamp))
+      merged.sort(compareLogs)
       return merged
     })
 
@@ -71,7 +88,7 @@ export function useLogStream(events: FlowEvent[], spanMapping: SpanMapping): Log
 
         const list = next.get(nodeId) ?? []
         list.push(toLogEntry(event, nodeId))
-        list.sort((left, right) => compareTimestamp(left.timestamp, right.timestamp))
+        list.sort(compareLogs)
         next.set(nodeId, list)
       }
 

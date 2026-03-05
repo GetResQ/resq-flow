@@ -1,0 +1,115 @@
+import { renderHook } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+
+import { mailPipelineFlow } from '../../../flows/mail-pipeline'
+import type { FlowEvent } from '../../types'
+import { useTraceJourney } from '../useTraceJourney'
+
+describe('useTraceJourney', () => {
+  it('derives ordered stages and identifiers from mixed events', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        seq: 3,
+        timestamp: '2026-03-05T12:00:00.300Z',
+        trace_id: 'trace-a',
+        attributes: {
+          event: 'mail_e2e_event',
+          action: 'worker_result',
+          stage_id: 'send.finalize',
+          function_name: 'handle_mail_send_reply',
+          outcome: 'success',
+          thread_id: 'thread-1',
+          job_id: 'job-1',
+          reply_draft_id: 'draft-1',
+        },
+      },
+      {
+        type: 'log',
+        seq: 1,
+        timestamp: '2026-03-05T12:00:00.100Z',
+        trace_id: 'trace-a',
+        attributes: {
+          event: 'mail_e2e_event',
+          action: 'enqueue',
+          stage_id: 'incoming.write_threads',
+          function_name: 'handle_mail_incoming_check',
+          thread_id: 'thread-1',
+          job_id: 'job-1',
+          reply_draft_id: 'draft-1',
+        },
+      },
+      {
+        type: 'log',
+        seq: 2,
+        timestamp: '2026-03-05T12:00:00.200Z',
+        trace_id: 'trace-a',
+        attributes: {
+          event: 'mail_e2e_event',
+          action: 'worker_pickup',
+          stage_id: 'analyze.decision',
+          function_name: 'handle_mail_analyze_reply',
+          thread_id: 'thread-1',
+          job_id: 'job-1',
+          reply_draft_id: 'draft-1',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    expect(result.current.journeys).toHaveLength(1)
+
+    const journey = result.current.journeys[0]
+    expect(journey.traceId).toBe('trace-a')
+    expect(journey.stages.map((stage) => stage.stageId)).toEqual([
+      'incoming.write_threads',
+      'analyze.decision',
+      'send.finalize',
+    ])
+    expect(journey.identifiers.threadId).toBe('thread-1')
+    expect(journey.identifiers.jobId).toBe('job-1')
+    expect(journey.identifiers.replyDraftId).toBe('draft-1')
+    expect(journey.status).toBe('success')
+  })
+
+  it('marks journey error when stage has error payload', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'span_start',
+        seq: 10,
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-b',
+        span_id: 'span-b',
+        span_name: 'handle_mail_extract',
+        attributes: {
+          function_name: 'handle_mail_extract',
+          stage_id: 'extract.upsert_contacts',
+          thread_id: 'thread-2',
+        },
+      },
+      {
+        type: 'span_end',
+        seq: 11,
+        timestamp: '2026-03-05T12:00:00.200Z',
+        trace_id: 'trace-b',
+        span_id: 'span-b',
+        span_name: 'handle_mail_extract',
+        attributes: {
+          function_name: 'handle_mail_extract',
+          stage_id: 'extract.upsert_contacts',
+          error_class: 'db',
+          error_code: 'unique_violation',
+          error_message: 'upsert failed',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    const journey = result.current.journeys[0]
+    expect(journey.status).toBe('error')
+    expect(journey.errorSummary).toBe('upsert failed')
+    expect(journey.stages[0].status).toBe('error')
+    expect(journey.stages[0].nodeId).toBe('upsert-contacts')
+  })
+})
+

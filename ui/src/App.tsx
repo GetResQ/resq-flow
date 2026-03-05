@@ -5,9 +5,11 @@ import { FlowCanvas } from './core/components/FlowCanvas'
 import { FlowSelector } from './core/components/FlowSelector'
 import { useEventPlayback } from './core/hooks/useEventPlayback'
 import { NodeDetailPanel } from './core/components/NodeDetailPanel'
+import { TraceDetailPanel } from './core/components/TraceDetailPanel'
 import { useFlowAnimations } from './core/hooks/useFlowAnimations'
 import { useLogStream } from './core/hooks/useLogStream'
 import { DEFAULT_RELAY_WS_URL, useRelayConnection } from './core/hooks/useRelayConnection'
+import { useTraceJourney } from './core/hooks/useTraceJourney'
 import { useTraceTimeline } from './core/hooks/useTraceTimeline'
 import type { ThemeMode } from './core/types'
 import { flows } from './flows'
@@ -31,6 +33,7 @@ function resolveInitialTheme(): ThemeMode {
 function App() {
   const [flowId, setFlowId] = useState(flows[0].id)
   const [selectedNodeId, setSelectedNodeId] = useState<string | undefined>()
+  const [selectedTraceId, setSelectedTraceId] = useState<string | undefined>()
   const [focusActivePath, setFocusActivePath] = useState(false)
   const [theme, setTheme] = useState<ThemeMode>(resolveInitialTheme)
   const relayWsUrl = DEFAULT_RELAY_WS_URL
@@ -50,6 +53,38 @@ function App() {
   })
   const logStream = useLogStream(playback.events, currentFlow.spanMapping)
   const traceTimeline = useTraceTimeline(playback.events, currentFlow.spanMapping)
+  const traceJourney = useTraceJourney(playback.events, currentFlow.spanMapping)
+
+  const selectedJourney = useMemo(
+    () => (selectedTraceId ? traceJourney.journeyByTraceId.get(selectedTraceId) : undefined),
+    [selectedTraceId, traceJourney.journeyByTraceId],
+  )
+
+  const traceFocus = useMemo(() => {
+    if (!selectedJourney || selectedJourney.nodePath.length === 0) {
+      return {
+        nodeIds: undefined as Set<string> | undefined,
+        edgeIds: undefined as Set<string> | undefined,
+      }
+    }
+
+    const nodeIds = new Set(selectedJourney.nodePath)
+    const edgeIds = new Set<string>()
+    const edgeLookup = new Map(currentFlow.edges.map((edge) => [`${edge.source}->${edge.target}`, edge.id]))
+    for (let index = 1; index < selectedJourney.nodePath.length; index += 1) {
+      const source = selectedJourney.nodePath[index - 1]
+      const target = selectedJourney.nodePath[index]
+      const edgeId = edgeLookup.get(`${source}->${target}`)
+      if (edgeId) {
+        edgeIds.add(edgeId)
+      }
+    }
+
+    return {
+      nodeIds,
+      edgeIds,
+    }
+  }, [currentFlow.edges, selectedJourney])
 
   const clearAll = useCallback(() => {
     relay.clearEvents()
@@ -57,12 +92,15 @@ function App() {
     animations.clearStatuses()
     logStream.clearSession()
     traceTimeline.clearTraces()
+    traceJourney.clearJourneys()
     setSelectedNodeId(undefined)
+    setSelectedTraceId(undefined)
   }, [
     animations.clearStatuses,
     logStream.clearSession,
     playback.clearPlayback,
     relay.clearEvents,
+    traceJourney.clearJourneys,
     traceTimeline.clearTraces,
   ])
 
@@ -75,6 +113,20 @@ function App() {
     document.body.dataset.theme = theme
     window.localStorage.setItem(THEME_STORAGE_KEY, theme)
   }, [theme])
+
+  const handleSelectNode = useCallback((nodeId?: string) => {
+    setSelectedNodeId(nodeId)
+    if (nodeId) {
+      setSelectedTraceId(undefined)
+    }
+  }, [])
+
+  const handleSelectTrace = useCallback((traceId?: string) => {
+    setSelectedTraceId(traceId)
+    if (traceId) {
+      setSelectedNodeId(undefined)
+    }
+  }, [])
 
   const selectedNode = currentFlow.nodes.find((node) => node.id === selectedNodeId) ?? null
 
@@ -111,14 +163,20 @@ function App() {
           nodeStatuses={animations.nodeStatuses}
           activeEdges={animations.activeEdges}
           focusActivePath={focusActivePath}
+          traceFocusNodeIds={traceFocus.nodeIds}
+          traceFocusEdgeIds={traceFocus.edgeIds}
           theme={theme}
           nodeLogMap={logStream.nodeLogMap}
           nodeSpans={traceTimeline.nodeSpans}
           selectedNodeId={selectedNodeId}
-          onSelectNode={setSelectedNodeId}
+          onSelectNode={handleSelectNode}
         />
 
-        {selectedNode && (
+        {selectedJourney ? (
+          <TraceDetailPanel journey={selectedJourney} onClose={() => setSelectedTraceId(undefined)} />
+        ) : null}
+
+        {!selectedJourney && selectedNode ? (
           <NodeDetailPanel
             node={selectedNode}
             status={selectedNodeId ? animations.nodeStatuses.get(selectedNodeId) : undefined}
@@ -126,14 +184,17 @@ function App() {
             spans={selectedNodeId ? traceTimeline.nodeSpans.get(selectedNodeId) ?? [] : []}
             onClose={() => setSelectedNodeId(undefined)}
           />
-        )}
+        ) : null}
       </div>
 
       <BottomLogPanel
         flow={currentFlow}
         globalLogs={logStream.globalLogs}
+        journeys={traceJourney.journeys}
         selectedNodeId={selectedNodeId}
-        onSelectNode={setSelectedNodeId}
+        selectedTraceId={selectedTraceId}
+        onSelectNode={(nodeId) => handleSelectNode(nodeId)}
+        onSelectTrace={handleSelectTrace}
       />
     </div>
   )
