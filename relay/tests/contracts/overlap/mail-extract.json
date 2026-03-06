@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "mail-extract",
+  "name": "Mail Extract",
+  "telemetry": {
+    "function_prefixes": ["handle_mail_"]
+  },
+  "keep_context": {
+    "parent_spans": false,
+    "root_spans": false,
+    "error_events": false,
+    "unmapped_events_for_kept_traces": false
+  }
+}

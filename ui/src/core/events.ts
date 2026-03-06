@@ -16,7 +16,11 @@ function readAttr(event: FlowEvent, key: string): string | undefined {
   return undefined
 }
 
-function inferEventKind(event: FlowEvent): NonNullable<FlowEvent['event_kind']> {
+export function resolveEventKind(event: FlowEvent): NonNullable<FlowEvent['event_kind']> {
+  if (event.event_kind) {
+    return event.event_kind
+  }
+
   if (event.type === 'span_start') {
     return 'node_started'
   }
@@ -50,7 +54,7 @@ function toFlowEvent(payload: unknown): FlowEvent | null {
 
 export function normalizeFlowEvent(event: FlowEvent, nextSeq: number): FlowEvent {
   const seq = typeof event.seq === 'number' ? event.seq : nextSeq
-  const eventKind = event.event_kind ?? inferEventKind(event)
+  const eventKind = resolveEventKind(event)
   const queueDelta =
     typeof event.queue_delta === 'number'
       ? event.queue_delta

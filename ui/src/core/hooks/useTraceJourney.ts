@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+import { resolveEventKind } from '../events'
 import { inferErrorState, readStringAttribute, resolveMappedNodeId } from '../mapping'
 import type {
   FlowEvent,
@@ -98,7 +99,7 @@ function resolveStageStatus(event: FlowEvent, current: TraceStatus): TraceStatus
   if (outcome === 'success' || outcome === 'ok') {
     return 'success'
   }
-  if (event.event_kind === 'node_finished' || event.type === 'span_end') {
+  if (resolveEventKind(event) === 'node_finished') {
     return 'success'
   }
   return current

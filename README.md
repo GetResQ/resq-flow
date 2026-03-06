@@ -17,13 +17,13 @@ producer(s) -> Vector -> VictoriaLogs / VictoriaTraces / VictoriaMetrics
                       -> resq-flow relay -> WebSocket -> UI
 ```
 
-The applied local Vector runtime config lives in:
+The applied local Vector runtime config lives in the `fullstack` repo at:
 
-- `/Users/jeremyrojas/worktrees/fullstack/gmail-oauth-unified-handoff-fullstack/observability/vector/vector.yaml`
+- `observability/vector/vector.yaml`
 
 This repo keeps a discoverable example snippet in:
 
-- `/Users/jeremyrojas/worktrees/resq-flow/examples/vector/resq-flow-fanout.yaml`
+- `examples/vector/resq-flow-fanout.yaml`
 
 ## Flow Model
 

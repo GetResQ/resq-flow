@@ -106,3 +106,134 @@ async fn drops_unrelated_trace_telemetry() {
 
     server.shutdown();
 }
+
+#[tokio::test]
+async fn keeps_error_context_without_keeping_all_unmapped_trace_events() {
+    let server = common::spawn_server_with_contract_dir("error-only").await;
+    let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
+
+    let payload = json!({
+      "resourceSpans": [
+        {
+          "resource": {
+            "attributes": [
+              { "key": "service.name", "value": { "stringValue": "resq-mail-worker" } }
+            ]
+          },
+          "scopeSpans": [
+            {
+              "spans": [
+                {
+                  "traceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "spanId": "1111111111111111",
+                  "name": "handle_mail_extract",
+                  "startTimeUnixNano": "1710000007000000000",
+                  "endTimeUnixNano": "1710000007200000000",
+                  "attributes": [
+                    { "key": "function_name", "value": { "stringValue": "handle_mail_extract" } }
+                  ]
+                },
+                {
+                  "traceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "spanId": "2222222222222222",
+                  "name": "smtp.send",
+                  "startTimeUnixNano": "1710000007210000000",
+                  "endTimeUnixNano": "1710000007250000000",
+                  "attributes": [
+                    { "key": "status", "value": { "stringValue": "error" } },
+                    { "key": "error_message", "value": { "stringValue": "downstream failure" } }
+                  ]
+                },
+                {
+                  "traceId": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+                  "spanId": "3333333333333333",
+                  "name": "smtp.cleanup",
+                  "startTimeUnixNano": "1710000007260000000",
+                  "endTimeUnixNano": "1710000007280000000"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/v1/traces", server.http_base))
+        .json(&payload)
+        .send()
+        .await
+        .expect("post traces");
+
+    assert!(response.status().is_success());
+
+    let batch = common::recv_flow_events(&mut socket).await;
+    assert_eq!(batch.len(), 4);
+    assert_eq!(batch[0].span_name.as_deref(), Some("handle_mail_extract"));
+    assert_eq!(batch[1].span_name.as_deref(), Some("handle_mail_extract"));
+    assert_eq!(batch[2].span_name.as_deref(), Some("smtp.send"));
+    assert_eq!(batch[3].span_name.as_deref(), Some("smtp.send"));
+    assert!(
+        batch
+            .iter()
+            .all(|event| event.matched_flow_ids == vec!["error-context"])
+    );
+
+    server.shutdown();
+}
+
+#[tokio::test]
+async fn tags_events_with_all_matching_flow_ids() {
+    let server = common::spawn_server_with_contract_dir("overlap").await;
+    let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
+
+    let payload = json!({
+      "resourceSpans": [
+        {
+          "resource": {
+            "attributes": [
+              { "key": "service.name", "value": { "stringValue": "resq-mail-worker" } }
+            ]
+          },
+          "scopeSpans": [
+            {
+              "spans": [
+                {
+                  "traceId": "cccccccccccccccccccccccccccccccc",
+                  "spanId": "4444444444444444",
+                  "name": "handle_mail_extract",
+                  "startTimeUnixNano": "1710000008000000000",
+                  "endTimeUnixNano": "1710000008200000000",
+                  "attributes": [
+                    { "key": "function_name", "value": { "stringValue": "handle_mail_extract" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/v1/traces", server.http_base))
+        .json(&payload)
+        .send()
+        .await
+        .expect("post traces");
+
+    assert!(response.status().is_success());
+
+    let batch = common::recv_flow_events(&mut socket).await;
+    assert_eq!(batch.len(), 2);
+    assert_eq!(
+        batch[0].matched_flow_ids,
+        vec!["mail-extract", "mail-overlap"]
+    );
+    assert_eq!(
+        batch[1].matched_flow_ids,
+        vec!["mail-extract", "mail-overlap"]
+    );
+
+    server.shutdown();
+}

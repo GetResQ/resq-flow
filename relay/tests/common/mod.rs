@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::time::Duration;
 
 use futures_util::StreamExt;
@@ -23,12 +24,21 @@ impl TestServer {
 pub type WsClient = WebSocketStream<MaybeTlsStream<tokio::net::TcpStream>>;
 
 pub async fn spawn_server() -> TestServer {
+    spawn_server_with_contract_dir("default").await
+}
+
+#[allow(dead_code)]
+pub async fn spawn_server_with_contract_dir(contract_dir_name: &str) -> TestServer {
     let listener = TcpListener::bind("127.0.0.1:0")
         .await
         .expect("bind listener");
     let addr = listener.local_addr().expect("listener addr");
 
-    let app = resq_flow_relay::build_app(addr.to_string()).expect("build app");
+    let contract_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/contracts")
+        .join(contract_dir_name);
+    let app = resq_flow_relay::build_app_with_contract_dir(addr.to_string(), contract_dir)
+        .expect("build app");
 
     let handle = tokio::spawn(async move {
         axum::serve(listener, app)

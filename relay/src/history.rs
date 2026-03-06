@@ -106,12 +106,7 @@ pub async fn get_history(
         .unwrap_or(DEFAULT_HISTORY_LIMIT)
         .clamp(1, MAX_HISTORY_LIMIT);
 
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(history_timeout_secs()))
-        .build()
-        .map_err(|error| {
-            RelayError::internal(format!("failed to build history client: {error}"))
-        })?;
+    let client = state.history_client.clone();
 
     let log_query = state
         .matcher
@@ -191,6 +186,13 @@ pub async fn get_history(
             warnings,
         }),
     ))
+}
+
+pub(crate) fn build_history_client() -> RelayResult<reqwest::Client> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(history_timeout_secs()))
+        .build()
+        .map_err(|error| RelayError::internal(format!("failed to build history client: {error}")))
 }
 
 fn resolve_history_range(query: &HistoryQuery) -> RelayResult<(DateTime<Utc>, DateTime<Utc>)> {
@@ -375,7 +377,7 @@ fn map_logsql_line_to_flow_event(value: &Value) -> Option<FlowEvent> {
     event.message = object_string(object, "_msg")
         .or_else(|| object_string(object, "message"))
         .or_else(|| event.span_name.clone());
-    event.attributes = object.clone();
+    event.attributes = filtered_logsql_attributes(object);
     Some(event)
 }
 
@@ -400,18 +402,40 @@ async fn fetch_history_spans(
     let mut successful_queries = 0usize;
     let mut failed_queries = 0usize;
 
+    let mut tasks = tokio::task::JoinSet::new();
     for service in services {
-        match fetch_traces_for_service(client, &base, &service, start, end, per_service_limit).await
-        {
-            Ok(traces) => {
+        let client = client.clone();
+        let base = base.clone();
+        let service_name = service.clone();
+        tasks.spawn(async move {
+            let result = fetch_traces_for_service(
+                &client,
+                &base,
+                &service_name,
+                start,
+                end,
+                per_service_limit,
+            )
+            .await;
+            (service_name, result)
+        });
+    }
+
+    while let Some(joined) = tasks.join_next().await {
+        match joined {
+            Ok((_service, Ok(traces))) => {
                 successful_queries += 1;
                 for trace in traces {
                     map_jaeger_trace_to_flow_events(&trace, search, &mut events);
                 }
             }
-            Err(error) => {
+            Ok((service, Err(error))) => {
                 failed_queries += 1;
                 tracing::debug!(%service, error = %error, "history trace query failed");
+            }
+            Err(error) => {
+                failed_queries += 1;
+                tracing::debug!(error = ?error, "history trace query task failed");
             }
         }
     }
@@ -483,6 +507,14 @@ async fn fetch_traces_for_service(
         .await
         .map(|payload| payload.data)
         .map_err(|error| format!("history traces parse failed for `{service}`: {error}"))
+}
+
+fn filtered_logsql_attributes(object: &Map<String, Value>) -> Map<String, Value> {
+    object
+        .iter()
+        .filter(|(key, _)| !matches!(key.as_str(), "_stream" | "_stream_id"))
+        .map(|(key, value)| (key.clone(), value.clone()))
+        .collect()
 }
 
 fn map_jaeger_trace_to_flow_events(

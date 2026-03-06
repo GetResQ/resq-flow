@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { resolveEventKind } from '../events'
 import { inferErrorState, readStringAttribute, resolveMappedNodeId } from '../mapping'
 import type {
   FlowAnimationState,
@@ -74,30 +75,6 @@ function matchCandidate(spanMapping: SpanMapping, candidate: string | undefined)
   return null
 }
 
-function resolveEventKind(event: FlowEvent): NonNullable<FlowEvent['event_kind']> {
-  if (event.event_kind) {
-    return event.event_kind
-  }
-
-  if (event.type === 'span_start') {
-    return 'node_started'
-  }
-
-  if (event.type === 'span_end') {
-    return 'node_finished'
-  }
-
-  const action = readStringAttribute(event.attributes, 'action')
-  if (action === 'enqueue') {
-    return 'queue_enqueued'
-  }
-  if (action === 'worker_pickup') {
-    return 'queue_picked'
-  }
-
-  return 'log_event'
-}
-
 interface UseFlowAnimationsInput {
   events: FlowEvent[]
   spanMapping: SpanMapping
@@ -115,12 +92,20 @@ export function useFlowAnimations({
   timings,
   sessionKey,
 }: UseFlowAnimationsInput): FlowAnimationState {
-  const resolvedTimings: FlowAnimationTimings = {
-    nodeSuccessResetMs: timings?.nodeSuccessResetMs ?? NODE_SUCCESS_RESET_MS,
-    nodePulseResetMs: timings?.nodePulseResetMs ?? NODE_PULSE_RESET_MS,
-    durationVisibleMs: timings?.durationVisibleMs ?? DURATION_VISIBLE_MS,
-    edgeActiveMs: timings?.edgeActiveMs ?? EDGE_ACTIVE_MS,
-  }
+  const resolvedTimings = useMemo<FlowAnimationTimings>(
+    () => ({
+      nodeSuccessResetMs: timings?.nodeSuccessResetMs ?? NODE_SUCCESS_RESET_MS,
+      nodePulseResetMs: timings?.nodePulseResetMs ?? NODE_PULSE_RESET_MS,
+      durationVisibleMs: timings?.durationVisibleMs ?? DURATION_VISIBLE_MS,
+      edgeActiveMs: timings?.edgeActiveMs ?? EDGE_ACTIVE_MS,
+    }),
+    [
+      timings?.durationVisibleMs,
+      timings?.edgeActiveMs,
+      timings?.nodePulseResetMs,
+      timings?.nodeSuccessResetMs,
+    ],
+  )
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeRuntimeStatus>>(new Map())
   const [activeEdges, setActiveEdges] = useState<Set<string>>(new Set())
 

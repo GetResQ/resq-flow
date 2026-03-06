@@ -398,9 +398,18 @@ pub fn nanos_to_iso(nanos: i128) -> String {
     let seconds = nanos / 1_000_000_000;
     let nanos_part = nanos.rem_euclid(1_000_000_000) as u32;
 
-    DateTime::<Utc>::from_timestamp(seconds as i64, nanos_part)
-        .unwrap_or_else(Utc::now)
-        .to_rfc3339_opts(SecondsFormat::Millis, true)
+    match DateTime::<Utc>::from_timestamp(seconds as i64, nanos_part) {
+        Some(timestamp) => timestamp.to_rfc3339_opts(SecondsFormat::Millis, true),
+        None => {
+            tracing::warn!(
+                nanos,
+                seconds,
+                nanos_part,
+                "invalid OTLP timestamp, falling back to current time"
+            );
+            Utc::now().to_rfc3339_opts(SecondsFormat::Millis, true)
+        }
+    }
 }
 
 pub fn now_iso() -> String {

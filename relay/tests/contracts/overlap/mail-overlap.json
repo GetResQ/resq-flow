@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "id": "mail-overlap",
+  "name": "Mail Overlap",
+  "telemetry": {
+    "span_names": ["handle_mail_extract"]
+  },
+  "keep_context": {
+    "parent_spans": false,
+    "root_spans": false,
+    "error_events": false,
+    "unmapped_events_for_kept_traces": false
+  }
+}

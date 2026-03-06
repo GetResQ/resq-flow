@@ -118,13 +118,13 @@ The client ingests those envelopes append-only, keeps a bounded buffer, and igno
 
 ## Vector Contract
 
-The applied runtime config lives in:
+The applied runtime config lives in the `fullstack` repo at:
 
-- `/Users/jeremyrojas/worktrees/fullstack/gmail-oauth-unified-handoff-fullstack/observability/vector/vector.yaml`
+- `observability/vector/vector.yaml`
 
 The example snippet lives in:
 
-- `/Users/jeremyrojas/worktrees/resq-flow/examples/vector/resq-flow-fanout.yaml`
+- `examples/vector/resq-flow-fanout.yaml`
 
 For v1, Vector filtering should stay coarse:
 

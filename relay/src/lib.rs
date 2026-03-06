@@ -1,4 +1,5 @@
 use std::net::SocketAddr;
+use std::path::Path;
 use std::sync::Arc;
 
 use axum::Router;
@@ -27,26 +28,48 @@ pub(crate) struct AppState {
     hub: LiveHub,
     matcher: FlowMatcher,
     ingest: IngestHealth,
+    history_client: reqwest::Client,
 }
 
 impl AppState {
-    fn new(bind: String, hub: LiveHub, matcher: FlowMatcher, ingest: IngestHealth) -> Self {
+    fn new(
+        bind: String,
+        hub: LiveHub,
+        matcher: FlowMatcher,
+        ingest: IngestHealth,
+        history_client: reqwest::Client,
+    ) -> Self {
         Self {
             bind: Arc::new(bind),
             hub,
             matcher,
             ingest,
+            history_client,
         }
     }
 }
 
 pub fn build_app(bind: impl Into<String>) -> Result<Router, RelayError> {
     let registry = FlowRegistry::load_default()?;
+    build_app_with_registry(bind.into(), registry)
+}
+
+pub fn build_app_with_contract_dir(
+    bind: impl Into<String>,
+    contract_dir: impl AsRef<Path>,
+) -> Result<Router, RelayError> {
+    let registry = FlowRegistry::load_from_dir(contract_dir.as_ref())?;
+    build_app_with_registry(bind.into(), registry)
+}
+
+fn build_app_with_registry(bind: String, registry: FlowRegistry) -> Result<Router, RelayError> {
+    let history_client = history::build_history_client()?;
     let state = AppState::new(
-        bind.into(),
+        bind,
         LiveHub::new(),
         FlowMatcher::new(registry),
         IngestHealth::default(),
+        history_client,
     );
     Ok(build_router(state))
 }
