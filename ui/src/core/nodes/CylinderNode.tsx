@@ -20,7 +20,7 @@ export function CylinderNode({ id, data }: NodeProps<FlowNode>) {
       {renderHandles(id, data.handles, [...defaultHandles])}
       <svg
         viewBox="0 0 96 112"
-        className={`h-full w-full drop-shadow-sm ${statusGlowClass(status)}`}
+        className={`h-full w-full drop-shadow-sm node-glow-svg ${statusGlowClass(status)}`}
         xmlns="http://www.w3.org/2000/svg"
       >
         <defs>

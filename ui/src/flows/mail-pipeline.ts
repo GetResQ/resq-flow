@@ -1,4 +1,7 @@
-import type { FlowConfig, SpanMapping } from '../core/types'
+import mailPipelineContractJson from '../flow-contracts/mail-pipeline.json'
+import type { FlowConfig, FlowContract, SpanMapping } from '../core/types'
+
+const mailPipelineContract = mailPipelineContractJson as FlowContract
 
 export const spanMapping: SpanMapping = {
   'rrq:queue:mail-backfill': 'batchfill-queue',
@@ -26,7 +29,7 @@ export const spanMapping: SpanMapping = {
   handle_mail_send_reply: 'send-worker',
   handle_mail_cron_tick: 'cron-scheduler',
 
-  mail_batchfill: 'batchfill-worker',
+  mail_backfill: 'batchfill-worker',
   mail_incoming: 'incoming-worker',
   mail_analyze: 'analyze-worker',
   mail_extract: 'extract-worker',
@@ -37,10 +40,16 @@ export const spanMapping: SpanMapping = {
   cursor_updated: 'check-process',
 }
 
+export const producerMapping: SpanMapping = {
+  handle_mail_backfill_start: 'trigger-oauth',
+}
+
 export const mailPipelineFlow: FlowConfig = {
-  id: 'mail-pipeline',
-  name: 'Mail Pipeline',
+  id: mailPipelineContract.id,
+  name: mailPipelineContract.name,
   description: 'Real-time view of enqueue, worker, and persistence steps for mail processing.',
+  contract: mailPipelineContract,
+  hasGraph: true,
   nodes: [
     // ── Row 1: Trigger + Batchfill queue ────────────────────────────────
 
@@ -55,7 +64,7 @@ export const mailPipelineFlow: FlowConfig = {
     {
       id: 'batchfill-queue',
       type: 'roundedRect',
-      label: 'rrq:queue:mail-batchfill',
+      label: 'rrq:queue:mail-backfill',
       sublabel: '(read batches of email)',
       style: { color: 'yellow', icon: 'queue' },
       position: { x: 102.17427794727337, y: -70.17862409484596 },
@@ -67,8 +76,9 @@ export const mailPipelineFlow: FlowConfig = {
     {
       id: 'batchfill-worker',
       type: 'rectangle',
-      label: 'mail_batchfill',
+      label: 'mail_backfill',
       sublabel: 'workers',
+      description: 'Backfills historical mail for newly connected accounts.',
       style: { color: 'blue', icon: 'worker' },
       position: { x: 171.254113903571, y: 55.16426056351003 },
       bullets: [
@@ -85,6 +95,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'roundedRect',
       label: 'rpq cron (scheduler)',
       sublabel: 'function: handle_mail_cron_tick',
+      description: 'Schedules recurring checks that enqueue incoming-mail work.',
       style: { color: 'gray', icon: 'cron' },
       position: { x: 171.3593578111408, y: 222.04832566249775 },
       size: { width: 240 },
@@ -125,6 +136,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'rectangle',
       label: 'mail_incoming',
       sublabel: 'workers',
+      description: 'Checks connected inboxes for new mail and hands off downstream work.',
       style: { color: 'blue', icon: 'worker' },
       position: { x: 192.73605481681756, y: 512.6229081923432 },
       bullets: [
@@ -322,6 +334,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'rectangle',
       label: 'mail_analyze',
       sublabel: 'workers',
+      description: 'Analyzes extracted mail and decides whether to draft or send a reply.',
       style: { color: 'blue', icon: 'worker' },
       position: { x: 963.1450525290588, y: 1115.760213834821 },
       bullets: [
@@ -399,6 +412,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'rectangle',
       label: 'mail_extract',
       sublabel: 'workers',
+      description: 'Extracts structured contact and thread details from stored mail.',
       style: { color: 'blue', icon: 'worker' },
       position: { x: 1557.4186496433008, y: 1021.8100973815312 },
       bullets: [
@@ -501,6 +515,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'rectangle',
       label: 'mail_send',
       sublabel: 'workers',
+      description: 'Validates and sends reply drafts through the provider.',
       style: { color: 'blue', icon: 'worker' },
       position: { x: 954.4426210590667, y: 2293.8150062832656 },
       bullets: [
@@ -793,6 +808,6 @@ export const mailPipelineFlow: FlowConfig = {
       label: 'status = needs_review',
     },
   ],
-
+  producerMapping,
   spanMapping,
 }

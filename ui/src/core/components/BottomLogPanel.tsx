@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
+import { formatEasternTime } from '../time'
 import type { FlowConfig, LogEntry, TraceJourney, TraceStatus } from '../types'
 import { DurationBadge } from './DurationBadge'
 
@@ -296,7 +297,7 @@ export function BottomLogPanel({
         <>
           <div
             className="grid shrink-0 border-b border-slate-700/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500"
-            style={{ gridTemplateColumns: '80px 140px 1fr 60px 70px' }}
+            style={{ gridTemplateColumns: '120px 140px 1fr 60px 70px' }}
           >
             <span>Time</span>
             <span>Node</span>
@@ -312,7 +313,7 @@ export function BottomLogPanel({
           >
             {filteredLogs.map((entry, index) => {
               const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) ?? entry.nodeId : '—'
-              const timestamp = new Date(entry.timestamp).toLocaleTimeString()
+              const timestamp = formatEasternTime(entry.timestamp)
               return (
                 <button
                   key={`${entry.timestamp}-${entry.message}-${index}`}
@@ -326,7 +327,7 @@ export function BottomLogPanel({
                     }
                   }}
                   className="grid w-full border-b border-slate-800/60 px-3 py-1.5 text-left text-[11px] hover:bg-slate-800/50"
-                  style={{ gridTemplateColumns: '80px 140px 1fr 60px 70px' }}
+                  style={{ gridTemplateColumns: '120px 140px 1fr 60px 70px' }}
                 >
                   <span className="text-slate-500">{timestamp}</span>
                   <span className="truncate text-slate-400">{nodeLabel}</span>
@@ -397,7 +398,7 @@ export function BottomLogPanel({
                     <DurationBadge durationMs={journey.durationMs} />
                   </span>
                   <span className="truncate text-slate-500">
-                    {new Date(journey.lastUpdatedAt).toLocaleTimeString()}
+                    {formatEasternTime(journey.lastUpdatedAt)}
                   </span>
                   <span className="truncate text-rose-300">{journey.errorSummary ?? '-'}</span>
                   <span>
