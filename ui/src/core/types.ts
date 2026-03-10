@@ -33,6 +33,7 @@ export interface FlowNodeConfig {
   type: NodeShape
   label: string
   sublabel?: string
+  description?: string
   bullets?: string[]
   style?: NodeStyle
   position: { x: number; y: number }

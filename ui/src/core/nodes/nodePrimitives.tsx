@@ -84,15 +84,15 @@ export function resolveIcon(icon: string | undefined): string | null {
 
 export function statusGlowClass(status: NodeStatus | undefined): string {
   if (status === 'active') {
-    return 'ring-1 ring-sky-400/40'
+    return 'node-glow-active node-ping-active'
   }
   if (status === 'success') {
-    return 'ring-1 ring-emerald-400/40'
+    return 'node-glow-success'
   }
   if (status === 'error') {
-    return 'ring-1 ring-rose-500/50'
+    return 'node-glow-error'
   }
-  return 'ring-1 ring-slate-700/40'
+  return 'node-glow-idle'
 }
 
 export function renderHandles(

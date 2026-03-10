@@ -34,7 +34,7 @@ export function DashedEdge({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          stroke: isActive ? '#fbbf24' : '#475569',
+          stroke: isActive ? 'var(--color-edge-dashed)' : 'var(--color-edge)',
           strokeWidth: isActive ? 1.5 : 1,
           strokeDasharray: '5 4',
           opacity: isDimmed ? 0.2 : 1,

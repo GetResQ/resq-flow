@@ -3,6 +3,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { resolveMappedNodeId } from '../core/mapping'
+import { formatEasternTime } from '../core/time'
 import type { FlowEvent } from '../core/types'
 import { flows } from '../flows'
 
@@ -52,7 +53,7 @@ export async function runDirectReplay(events: FlowEvent[], speed = 1) {
       hitCounter.set(mappedNodeId, (hitCounter.get(mappedNodeId) ?? 0) + 1)
     }
 
-    const stamp = new Date(event.timestamp).toLocaleTimeString()
+    const stamp = formatEasternTime(event.timestamp)
     const label = mappedNodeId ?? 'unmapped'
     // eslint-disable-next-line no-console
     console.log(`[direct replay] ${stamp} | ${event.type} -> ${label} | ${event.message ?? event.span_name ?? 'event'}`)

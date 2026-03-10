@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import { formatEasternTime } from '../time'
 import { DurationBadge } from './DurationBadge'
 import type { FlowConfig, LogEntry } from '../types'
 
@@ -146,7 +147,7 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
       >
         {filteredLogs.map((entry, index) => {
           const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) ?? entry.nodeId : 'unmapped'
-          const timestamp = new Date(entry.timestamp).toLocaleTimeString()
+          const timestamp = formatEasternTime(entry.timestamp)
 
           return (
             <button

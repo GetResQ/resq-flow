@@ -11,9 +11,9 @@ import type {
 } from '../types'
 
 const NODE_SUCCESS_RESET_MS = 3_000
-const NODE_PULSE_RESET_MS = 750
+const NODE_PULSE_RESET_MS = 1_500
 const DURATION_VISIBLE_MS = 5_000
-const EDGE_ACTIVE_MS = 900
+const EDGE_ACTIVE_MS = 1_200
 
 interface FlowAnimationTimings {
   nodeSuccessResetMs: number

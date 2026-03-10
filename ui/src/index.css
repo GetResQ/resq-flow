@@ -10,6 +10,20 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* ── Semantic color tokens ── */
+  --color-active: #38bdf8;
+  --color-edge: #475569;
+  --color-edge-dimmed: #334155;
+  --color-edge-dashed: #fbbf24;
+  --color-marker: #64748b;
+  --color-marker-dashed: #94a3b8;
+  --color-canvas-dot: #1e293b;
+  --glow-active: oklch(65% 0.18 230);
+  --glow-success: oklch(72% 0.19 160);
+  --glow-error: oklch(62% 0.22 18);
+  --glow-idle: oklch(55% 0.02 260 / 0.35);
+  --ping-border: oklch(65% 0.18 230 / 0.6);
 }
 
 :root[data-theme='light'] {
@@ -25,6 +39,19 @@
   --color-slate-300: oklch(37.2% 0.044 257.287);
   --color-slate-200: oklch(27.9% 0.041 260.031);
   --color-slate-100: oklch(20.8% 0.042 265.755);
+
+  --color-active: #0ea5e9;
+  --color-edge: #94a3b8;
+  --color-edge-dimmed: #cbd5e1;
+  --color-edge-dashed: #f59e0b;
+  --color-marker: #94a3b8;
+  --color-marker-dashed: #64748b;
+  --color-canvas-dot: #cbd5e1;
+  --glow-active: oklch(55% 0.2 230);
+  --glow-success: oklch(60% 0.2 160);
+  --glow-error: oklch(55% 0.24 18);
+  --glow-idle: oklch(70% 0.02 260 / 0.4);
+  --ping-border: oklch(55% 0.2 230 / 0.5);
 }
 
 * {
@@ -72,6 +99,86 @@ body[data-theme='light'] {
 
 .animate-flow-pulse {
   animation: flowPulse 2s ease-in-out infinite;
+}
+
+/* ── Node activation glow ── */
+
+@keyframes nodePing {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.45);
+    opacity: 0;
+  }
+}
+
+.node-glow-idle {
+  box-shadow: 0 0 0 1px var(--glow-idle);
+  transition: box-shadow 600ms ease-out;
+}
+
+.node-glow-active {
+  box-shadow:
+    0 0 0 1.5px var(--glow-active),
+    0 0 8px 1px color-mix(in oklch, var(--glow-active), transparent 55%),
+    0 0 20px 4px color-mix(in oklch, var(--glow-active), transparent 80%);
+  transition: box-shadow 200ms ease-in;
+}
+
+.node-glow-success {
+  box-shadow:
+    0 0 0 1.5px var(--glow-success),
+    0 0 8px 1px color-mix(in oklch, var(--glow-success), transparent 55%),
+    0 0 20px 4px color-mix(in oklch, var(--glow-success), transparent 80%);
+  transition: box-shadow 200ms ease-in;
+}
+
+.node-glow-error {
+  box-shadow:
+    0 0 0 1.5px var(--glow-error),
+    0 0 8px 1px color-mix(in oklch, var(--glow-error), transparent 55%),
+    0 0 20px 4px color-mix(in oklch, var(--glow-error), transparent 80%);
+  transition: box-shadow 200ms ease-in;
+}
+
+.node-ping-active {
+  position: relative;
+}
+
+.node-ping-active::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  border: 1.5px solid var(--ping-border);
+  animation: nodePing 600ms ease-out forwards;
+  pointer-events: none;
+}
+
+/* Suppress React Flow's default rectangular selection box-shadow on the wrapper */
+.react-flow__node.selected {
+  --xy-node-boxshadow-selected-default: none;
+}
+
+/* Apply selection glow to the inner shaped element instead */
+.react-flow__node.selected [class*='node-glow']:not(.node-glow-svg) {
+  box-shadow:
+    0 0 0 1.5px var(--color-active),
+    0 0 8px 1px color-mix(in oklch, var(--color-active), transparent 55%),
+    0 0 20px 4px color-mix(in oklch, var(--color-active), transparent 80%) !important;
+  transition: box-shadow 0ms !important;
+}
+
+/* SVG nodes: box-shadow is always rectangular, so suppress it and use drop-shadow */
+.node-glow-svg {
+  box-shadow: none !important;
+}
+
+.react-flow__node.selected .node-glow-svg {
+  filter: drop-shadow(0 0 3px var(--color-active)) drop-shadow(0 0 8px var(--color-active)) !important;
+  transition: filter 0ms !important;
 }
 
 .react-flow.pointer-mode .react-flow__pane,

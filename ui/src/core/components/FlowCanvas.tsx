@@ -157,8 +157,6 @@ function mapFlowNodes(
         opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : 1,
         filter: dimmed ? 'saturate(0.5)' : undefined,
         transition: 'opacity 220ms ease, filter 220ms ease, outline 220ms ease',
-        outline: selected ? '2px solid rgba(56, 189, 248, 0.8)' : undefined,
-        outlineOffset: selected ? '2px' : undefined,
       },
       extent: node.parentId ? 'parent' : undefined,
       selected,
@@ -170,7 +168,11 @@ function mapFlowEdges(flow: FlowConfig, activeEdges: Set<string>, focusEdgeIds: 
   return flow.edges.map((edge) => {
     const active = activeEdges.has(edge.id)
     const dimmed = Boolean(focusEdgeIds && !focusEdgeIds.has(edge.id))
-    const markerColor = dimmed ? '#334155' : edge.type === 'dashed' ? '#94a3b8' : '#64748b'
+    const markerColor = dimmed
+      ? 'var(--color-edge-dimmed)'
+      : edge.type === 'dashed'
+        ? 'var(--color-marker-dashed)'
+        : 'var(--color-marker)'
 
     return {
       id: edge.id,
@@ -188,7 +190,7 @@ function mapFlowEdges(flow: FlowConfig, activeEdges: Set<string>, focusEdgeIds: 
         height: 16,
       },
       style: {
-        stroke: active ? '#38bdf8' : dimmed ? '#334155' : '#64748b',
+        stroke: active ? 'var(--color-active)' : dimmed ? 'var(--color-edge-dimmed)' : 'var(--color-marker)',
         strokeOpacity: dimmed ? 0.2 : 1,
         strokeWidth: active ? 1.8 : 1.2,
         transition: 'stroke 220ms ease, stroke-opacity 220ms ease, stroke-width 220ms ease',
@@ -580,7 +582,7 @@ export function FlowCanvas({
           variant={BackgroundVariant.Dots}
           gap={26}
           size={1.2}
-          color={theme === 'light' ? '#cbd5e1' : '#1e293b'}
+          color={'var(--color-canvas-dot)'}
         />
       </ReactFlow>
     </div>

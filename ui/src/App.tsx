@@ -10,6 +10,7 @@ import { TraceDetailPanel } from './core/components/TraceDetailPanel'
 import { useFlowAnimations } from './core/hooks/useFlowAnimations'
 import { useLogStream } from './core/hooks/useLogStream'
 import { DEFAULT_RELAY_WS_URL, useRelayConnection } from './core/hooks/useRelayConnection'
+import { formatEasternTime } from './core/time'
 import { useTraceJourney } from './core/hooks/useTraceJourney'
 import { useTraceTimeline } from './core/hooks/useTraceTimeline'
 import type { FlowEvent, ThemeMode } from './core/types'
@@ -62,11 +63,7 @@ function toHttpBase(wsUrl: string): string {
 }
 
 function formatWindowSummary(fromIso: string, toIso: string): string {
-  const from = new Date(fromIso)
-  const to = new Date(toIso)
-  const fromLabel = Number.isNaN(from.getTime()) ? fromIso : from.toLocaleTimeString()
-  const toLabel = Number.isNaN(to.getTime()) ? toIso : to.toLocaleTimeString()
-  return `${fromLabel} → ${toLabel}`
+  return `${formatEasternTime(fromIso)} → ${formatEasternTime(toIso)}`
 }
 
 function resolveInitialTheme(): ThemeMode {
