@@ -7,7 +7,6 @@
 - `Flow`
 - `Run`
 - `Node`
-- `Step` / `Phase`
 - `Logs`
 - `Status`
 - `Timing`
@@ -18,9 +17,10 @@
 
 ### Flow
 
-A `flow` is the map of the system or process.
+A `flow` is the static map of the system or process.
 
 - A flow is composed of nodes and paths.
+- A flow contains many runs.
 - A flow is not composed of traces.
 
 Examples:
@@ -31,11 +31,12 @@ Examples:
 
 ### Run
 
-A `run` is one execution moving through a flow.
+A `run` is one observed execution through a flow.
 
 - Runs move through a flow.
 - A run may touch some or all nodes in the flow.
 - A run is the primary user-facing unit of work.
+- A run may be backed by one trace or multiple traces.
 
 User-facing meaning:
 
@@ -45,26 +46,12 @@ User-facing meaning:
 
 ### Node
 
-A `node` is a place in the flow where work happens.
+A `node` is one box in the flow where work happens.
 
 - A node participates in runs.
-- A node does not own a trace.
 - A node may be a worker, queue, store, decision point, or external system.
-
-User-facing meaning:
-
-- "Did this run reach this node?"
-- "Did this node succeed, fail, or get stuck?"
-- "How long did this node take?"
-
-### Step / Phase
-
-A `step` or `phase` is a meaningful segment of a run.
-
-- Steps are how we explain a run to a human.
-- Steps may line up with nodes, stage IDs, or other meaningful boundaries.
-- `Step` is usually better for precise UI language.
-- `Phase` is usually better for grouped or higher-level sections.
+- A node is not the same thing as a trace or a span.
+- A trace may touch one or many nodes during a run.
 
 ### Log
 
@@ -82,11 +69,12 @@ Logs answer:
 
 ### Trace
 
-A `trace` is telemetry that correlates related work.
+A `trace` is the telemetry record behind a run.
 
-- A trace is not the main user-facing concept.
-- A trace helps us follow related work across time and nodes.
+- A trace correlates related technical work.
+- A trace may touch one or many nodes.
 - A run may be backed by one trace or multiple traces.
+- A trace is not the main user-facing concept.
 
 UI rule:
 
@@ -115,16 +103,23 @@ An `event` is a raw telemetry item.
 - `Event` is useful internally.
 - `Event` should usually not be a primary UI term.
 
+## Relationships
+
+- A `flow` has many `runs`.
+- A `run` may have one or many `traces`.
+- A `trace` contains one or many `spans`.
+- A `trace` may touch one or many `nodes`.
+- `logs` and `spans` explain what happened during a `run`.
+
 ## Hierarchy
 
 The product hierarchy should read like this:
 
 1. `Flow` is the map.
-2. `Run` is one execution through the flow.
-3. `Node` is a place within the flow.
-4. `Step` or `Phase` is a human-readable part of a run.
-5. `Log` explains what happened.
-6. `Trace` and `span` are telemetry behind the scenes.
+2. `Run` is one observed execution through the flow.
+3. `Node` is one box within the flow.
+4. `Log` explains what happened.
+5. `Trace` and `span` are telemetry behind the run.
 
 ## Instrumentation Contract
 
@@ -179,7 +174,6 @@ Use these terms by default:
 - `Flow`
 - `Run`
 - `Node`
-- `Step`
 - `Logs`
 - `Status`
 - `Timing`
@@ -230,6 +224,8 @@ Avoid:
 - "The flow is composed of traces"
 - "`Traces`" as the primary label for the run browser
 - "Span tree" as the first thing a newcomer sees
+- "A run is a trace"
+- "A node is a span"
 
 If raw counts are shown, qualify them clearly:
 
@@ -279,7 +275,7 @@ The drawer should answer:
 The run view should explain the path and outcome of one run.
 
 - where it went
-- what steps happened
+- which nodes were reached
 - where time was spent
 - what failed
 
@@ -356,14 +352,14 @@ The run panel should include a clear path through the flow.
 
 This should show:
 
-- the nodes or steps reached by the run
+- the nodes reached by the run
 - their order
 - their outcome
 - their duration when helpful
 
 This is the human-facing explanation of the run.
 
-Use `step` or `node` language here, not raw span language.
+Use `node` language here, not raw span language.
 
 Examples:
 
@@ -410,7 +406,6 @@ The advanced view can expose:
 - "Flow"
 - "Run"
 - "Node"
-- "Step"
 - "Logs"
 - "This node took 6.7s to complete."
 - "This run failed in `mail_incoming`."
