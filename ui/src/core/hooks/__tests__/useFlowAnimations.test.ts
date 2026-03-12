@@ -170,6 +170,79 @@ describe('useFlowAnimations', () => {
     })
   })
 
+  it('animates the autosend path in order when replay events include autosend stages', async () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:00.000Z',
+        trace_id: 'trace-autosend-1',
+        span_id: 'log-a',
+        attributes: {
+          action: 'stage_event',
+          stage_id: 'analyze.draft_insert',
+          function_name: 'handle_mail_analyze_reply',
+          worker_name: 'mail_analyze',
+        },
+      },
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:00.010Z',
+        trace_id: 'trace-autosend-1',
+        span_id: 'log-b',
+        attributes: {
+          action: 'stage_event',
+          stage_id: 'analyze.autosend_decision',
+          function_name: 'handle_mail_analyze_reply',
+          worker_name: 'mail_analyze',
+        },
+      },
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:00.020Z',
+        trace_id: 'trace-autosend-1',
+        span_id: 'log-c',
+        attributes: {
+          action: 'stage_event',
+          stage_id: 'analyze.set_sending',
+          function_name: 'handle_mail_analyze_reply',
+          worker_name: 'mail_analyze',
+        },
+      },
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:00.030Z',
+        trace_id: 'trace-autosend-1',
+        span_id: 'log-d',
+        attributes: {
+          action: 'enqueue',
+          stage_id: 'analyze.autosend_enqueue',
+          queue_name: 'rrq:queue:mail-send',
+          function_name: 'handle_mail_send_reply',
+          worker_name: 'mail_analyze',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events,
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('draft-reply')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('set-sending')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('send-queue')?.status).toBe('active')
+      expect(result.current.activeEdges.has('e-draft-autosend')).toBe(true)
+      expect(result.current.activeEdges.has('e-autosend-send')).toBe(true)
+      expect(result.current.activeEdges.has('e-set-sending-queue')).toBe(true)
+    })
+  })
+
   it('pulses the oauth trigger and edge when the backfill queue is enqueued from connect flow', async () => {
     const enqueueEvent: FlowEvent = {
       type: 'log',

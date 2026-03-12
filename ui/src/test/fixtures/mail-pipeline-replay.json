@@ -1001,6 +1001,54 @@
     "message": "analyze draft insert completed"
   },
   {
+    "timestamp": "2026-03-09T16:00:00.166Z",
+    "type": "log",
+    "trace_id": "trace-incoming-001",
+    "span_id": "log-034a",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "stage_event",
+      "stage_id": "analyze.autosend_decision",
+      "stage_name": "Analyze: autosend decision",
+      "function_name": "handle_mail_analyze_reply",
+      "worker_name": "mail_analyze",
+      "status": "ok",
+      "action_result": "autosend",
+      "provider": "gmail",
+      "mailbox_owner": "ops@resq.ai",
+      "thread_id": "thread-301",
+      "reply_draft_id": 881,
+      "flow_id": "mail-pipeline",
+      "pipeline_id": "mail-pipeline",
+      "journey_id": "thread-301"
+    },
+    "message": "autosend decision resolved"
+  },
+  {
+    "timestamp": "2026-03-09T16:00:00.167Z",
+    "type": "log",
+    "trace_id": "trace-incoming-001",
+    "span_id": "log-034b",
+    "attributes": {
+      "event": "mail_e2e_event",
+      "action": "stage_event",
+      "stage_id": "analyze.set_sending",
+      "stage_name": "Analyze: set sending",
+      "function_name": "handle_mail_analyze_reply",
+      "worker_name": "mail_analyze",
+      "status": "ok",
+      "action_result": "reply_status_sending",
+      "provider": "gmail",
+      "mailbox_owner": "ops@resq.ai",
+      "thread_id": "thread-301",
+      "reply_draft_id": 881,
+      "flow_id": "mail-pipeline",
+      "pipeline_id": "mail-pipeline",
+      "journey_id": "thread-301"
+    },
+    "message": "reply marked sending"
+  },
+  {
     "timestamp": "2026-03-09T16:00:00.168Z",
     "type": "log",
     "trace_id": "trace-incoming-001",

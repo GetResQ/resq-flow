@@ -15,6 +15,8 @@ export const spanMapping: SpanMapping = {
   'incoming.cursor_update': 'write-cursor',
   'analyze.decision': 'analyze-decision',
   'analyze.draft_insert': 'draft-reply',
+  'analyze.autosend_decision': 'autosend-decision',
+  'analyze.set_sending': 'set-sending',
   'analyze.autosend_enqueue': 'send-queue',
   'extract.upsert_contacts': 'upsert-contacts',
   'send.precheck': 'send-validate',

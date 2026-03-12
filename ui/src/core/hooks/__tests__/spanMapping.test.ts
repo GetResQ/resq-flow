@@ -101,6 +101,30 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('write-metadata')
   })
 
+  it('maps autosend decision stage_id to decision node', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        stage_id: 'analyze.autosend_decision',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('autosend-decision')
+  })
+
+  it('maps set_sending stage_id to set-sending node', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        stage_id: 'analyze.set_sending',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('set-sending')
+  })
+
   it('returns null for unmapped event', () => {
     const event: FlowEvent = {
       type: 'log',
