@@ -219,6 +219,7 @@ Good:
 - "Latest run through this node: 342ms."
 - "1 recent run failed here."
 - "Recent logs."
+- "Runs."
 - "Run details."
 - "Advanced telemetry."
 
@@ -227,6 +228,7 @@ Avoid:
 - "194 events" in primary UI without qualification
 - "This node has 12 traces"
 - "The flow is composed of traces"
+- "`Traces`" as the primary label for the run browser
 - "Span tree" as the first thing a newcomer sees
 
 If raw counts are shown, qualify them clearly:
@@ -256,6 +258,22 @@ The node sidebar should start with an overview.
 
 Raw traces and spans should be secondary.
 
+### Bottom Drawer
+
+The bottom drawer is a browser, not the primary inspector.
+
+- `Logs` should stay `Logs`.
+- The run browser should be labeled `Runs` in primary UI.
+- The drawer should help users scan and select a run.
+- The drawer should not try to explain the full run inline.
+
+The drawer should answer:
+
+- Which runs are happening or recently happened?
+- Which runs failed?
+- Which runs were slow?
+- Which run do I want to inspect next?
+
 ### Run View
 
 The run view should explain the path and outcome of one run.
@@ -264,6 +282,117 @@ The run view should explain the path and outcome of one run.
 - what steps happened
 - where time was spent
 - what failed
+
+The run view should be the side-panel inspector opened from the `Runs` list.
+
+Primary rule:
+
+- Treat this as a `Run` inspector, not a `Trace` inspector.
+
+#### Run Panel Structure
+
+The run panel should use the same summary-first pattern as the node sidebar.
+
+Default tab:
+
+- `Overview`
+
+Secondary tab:
+
+- `Advanced telemetry`
+
+#### Run Panel Header
+
+The header should show:
+
+- `Run`
+- overall status
+- total duration
+- one or two key identifiers if available
+
+Examples of helpful identifiers:
+
+- mailbox owner
+- thread ID
+- reply draft ID
+- job ID
+
+Do not lead with raw trace ID in the header.
+
+#### Run Overview Fields
+
+The overview should answer the run-level questions first.
+
+Recommended fields:
+
+- `Status`
+- `Duration`
+- `Started` or `Last updated`
+- `Failed in` if applicable
+- `Slowest node` if applicable
+
+These should stay lightweight and scannable, similar to the node sidebar cards.
+
+#### Run Key Insights
+
+The run panel should show only the most important one to three insights.
+
+Good examples:
+
+- "This run failed in `mail_extract`."
+- "This run spent most of its time in `mail_incoming`."
+- "This run is still active."
+- "This run reached 4 nodes."
+
+Avoid generic or repetitive copy:
+
+- "Telemetry is arriving."
+- "This trace has spans."
+- "This run contains logs and traces."
+
+#### Run Path
+
+The run panel should include a clear path through the flow.
+
+This should show:
+
+- the nodes or steps reached by the run
+- their order
+- their outcome
+- their duration when helpful
+
+This is the human-facing explanation of the run.
+
+Use `step` or `node` language here, not raw span language.
+
+Examples:
+
+- `mail_incoming` -> success -> 6.7s
+- `mail_extract` -> failed -> 412ms
+
+#### Related Logs
+
+The run panel may include a lightweight way to pivot into logs for the selected run.
+
+Good options:
+
+- a small log preview
+- a button to filter the bottom drawer to this run
+
+The run panel should not duplicate the full log browser.
+
+#### Advanced Telemetry
+
+The advanced tab can expose:
+
+- raw trace ID(s)
+- raw spans
+- nested child spans
+- raw attributes
+
+This is where `trace` and `span` language belongs.
+
+It should not be the default tab.
 
 ### Advanced Debug View
 
@@ -294,6 +423,7 @@ The advanced view can expose:
 - "This node spanned 6.7s."
 - "Events" as a top-level noun for newcomers.
 - "Span" as the first explanation of node activity.
+- "`Traces`" as the primary name of the run browser.
 
 ## Decision
 

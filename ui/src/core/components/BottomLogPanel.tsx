@@ -16,6 +16,11 @@ interface BottomLogPanelProps {
 
 type PanelTab = 'logs' | 'traces'
 
+const TAB_LABELS: Record<PanelTab, string> = {
+  logs: 'Logs',
+  traces: 'Runs',
+}
+
 const MIN_HEIGHT = 48
 const DEFAULT_HEIGHT = 220
 const MAX_HEIGHT_VH = 0.5
@@ -38,6 +43,15 @@ function statusClass(status: TraceStatus): string {
     return 'text-amber-300'
   }
   return 'text-sky-300'
+}
+
+function currentStepLabel(journey: TraceJourney): string {
+  const currentStep = journey.stages.at(-1)
+  if (!currentStep) {
+    return '-'
+  }
+
+  return currentStep.label || currentStep.nodeId || currentStep.stageId
 }
 
 export function BottomLogPanel({
@@ -132,7 +146,7 @@ export function BottomLogPanel({
 
   const logsSummary = useMemo(() => {
     if (selectedTraceId) {
-      return `Showing ${filteredLogs.length} logs for trace ${selectedTraceId.slice(0, 12)}…`
+      return `Showing ${filteredLogs.length} logs for the selected run`
     }
 
     if (activeNodeFilters.size === 1) {
@@ -235,12 +249,12 @@ export function BottomLogPanel({
                 tab === tabKey ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-800'
               }`}
             >
-              {tabKey}
+              {TAB_LABELS[tabKey]}
             </button>
           ))}
         </div>
 
-        <span className="text-[10px] text-slate-500">{tab === 'logs' ? logsSummary : `${filteredJourneys.length} traces`}</span>
+        <span className="text-[10px] text-slate-500">{tab === 'logs' ? logsSummary : `${filteredJourneys.length} runs`}</span>
 
         {tab === 'logs' ? (
           <>
@@ -278,7 +292,7 @@ export function BottomLogPanel({
 
         <div className="ml-auto flex items-center gap-2">
           <input
-            placeholder={tab === 'logs' ? 'Search logs…' : 'Search traces…'}
+            placeholder={tab === 'logs' ? 'Search logs…' : 'Search runs…'}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             className="h-6 w-40 rounded border border-slate-700 bg-slate-800 px-2 text-[10px] text-slate-100 outline-none focus:border-sky-400"
@@ -364,23 +378,22 @@ export function BottomLogPanel({
         <>
           <div
             className="grid shrink-0 border-b border-slate-700/40 px-3 py-1 text-[9px] font-semibold uppercase tracking-wide text-slate-500"
-            style={{ gridTemplateColumns: '140px 140px 1fr 70px 70px 120px 1fr 46px' }}
+            style={{ gridTemplateColumns: '180px 1fr 70px 70px 120px 1fr 46px' }}
           >
-            <span>Trace</span>
-            <span>Entity</span>
-            <span>Current stage</span>
+            <span>Run</span>
+            <span>Current step</span>
             <span>Status</span>
             <span>Duration</span>
-            <span>Last update</span>
-            <span>Error</span>
+            <span>Updated</span>
+            <span>Issue</span>
             <span>Pin</span>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {filteredJourneys.map((journey) => {
-              const currentStage = journey.stages.at(-1)
               const selected = selectedTraceId === journey.traceId
               const pinned = pinnedTraceIds.has(journey.traceId)
+              const runLabel = journey.rootEntity ?? `Run ${journey.traceId.slice(0, 8)}...`
               return (
                 <div
                   key={journey.traceId}
@@ -388,11 +401,10 @@ export function BottomLogPanel({
                   className={`grid w-full cursor-pointer border-b border-slate-800/60 px-3 py-1.5 text-left text-[11px] hover:bg-slate-800/50 ${
                     selected ? 'bg-sky-900/20' : ''
                   }`}
-                  style={{ gridTemplateColumns: '140px 140px 1fr 70px 70px 120px 1fr 46px' }}
+                  style={{ gridTemplateColumns: '180px 1fr 70px 70px 120px 1fr 46px' }}
                 >
-                  <span className="truncate text-slate-200">{journey.traceId}</span>
-                  <span className="truncate text-slate-400">{journey.rootEntity ?? '-'}</span>
-                  <span className="truncate text-slate-300">{currentStage?.label ?? '-'}</span>
+                  <span className="truncate text-slate-200">{runLabel}</span>
+                  <span className="truncate text-slate-300">{currentStepLabel(journey)}</span>
                   <span className={statusClass(journey.status)}>{journey.status}</span>
                   <span className="text-slate-300">
                     <DurationBadge durationMs={journey.durationMs} />
