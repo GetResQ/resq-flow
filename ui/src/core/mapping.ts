@@ -31,6 +31,11 @@ function lookupPattern(mapping: SpanMapping, candidate: string | null | undefine
 }
 
 export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping): string | null {
+  const componentId = readAttr(event, 'component_id')
+  if (componentId) {
+    return spanMapping[componentId] ?? null
+  }
+
   const queueFirst = event.event_kind === 'queue_enqueued' || event.event_kind === 'queue_picked'
   const rrqQueue = readAttr(event, 'rrq.queue')
   const rrqFunction = readAttr(event, 'rrq.function')

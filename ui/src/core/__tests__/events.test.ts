@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { eventMatchesFlow, parseRelayEvents } from '../events'
+import { eventExecutionKey, eventMatchesFlow, parseRelayEvents } from '../events'
 
 describe('events helpers', () => {
   it('parses snapshot envelopes and normalizes missing fields', () => {
@@ -28,6 +28,27 @@ describe('events helpers', () => {
       queue_delta: 1,
       node_key: 'rrq:queue:mail-analyze',
     })
+  })
+
+  it('prefers explicit component_id for node_key normalization', () => {
+    const events = parseRelayEvents(
+      JSON.stringify({
+        type: 'snapshot',
+        events: [
+          {
+            type: 'log',
+            timestamp: '2026-03-05T12:00:00.000Z',
+            attributes: {
+              component_id: 'extract-worker',
+              function_name: 'handle_mail_extract',
+            },
+          },
+        ],
+      }),
+      0,
+    )
+
+    expect(events[0]?.node_key).toBe('extract-worker')
   })
 
   it('parses bare events and preserves explicit sequence numbers', () => {
@@ -96,5 +117,18 @@ describe('events helpers', () => {
         'any-flow',
       ),
     ).toBe(true)
+  })
+
+  it('uses run_id as the canonical execution key when present', () => {
+    expect(
+      eventExecutionKey({
+        type: 'log',
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-1',
+        attributes: {
+          run_id: 'run-1',
+        },
+      }),
+    ).toBe('run-1')
   })
 })

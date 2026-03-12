@@ -31,6 +31,8 @@ async fn posts_mail_e2e_logs_and_receives_log_event() {
                   "body": { "stringValue": "mail event" },
                   "attributes": [
                     { "key": "event", "value": { "stringValue": "mail_e2e_event" } },
+                    { "key": "flow_id", "value": { "stringValue": "mail-pipeline" } },
+                    { "key": "component_id", "value": { "stringValue": "analyze-queue" } },
                     { "key": "action", "value": { "stringValue": "enqueue" } },
                     { "key": "function_name", "value": { "stringValue": "handle_mail_extract" } },
                     { "key": "queue_name", "value": { "stringValue": "rrq:queue:mail-analyze" } },
@@ -60,7 +62,7 @@ async fn posts_mail_e2e_logs_and_receives_log_event() {
     assert!(event.seq.is_some());
     assert_eq!(event.event_kind.as_deref(), Some("queue_enqueued"));
     assert_eq!(event.queue_delta, Some(1));
-    assert_eq!(event.node_key.as_deref(), Some("rrq:queue:mail-analyze"));
+    assert_eq!(event.node_key.as_deref(), Some("analyze-queue"));
     assert_eq!(event.span_name.as_deref(), Some("handle_mail_extract"));
     assert_eq!(event.service_name.as_deref(), Some("resq-mail-worker"));
     assert_eq!(event.message.as_deref(), Some("mail event"));
@@ -144,6 +146,8 @@ async fn posts_protobuf_mail_e2e_logs_and_receives_log_event() {
                     body: Some(string_any_value("mail event")),
                     attributes: vec![
                         string_attribute("event", "mail_e2e_event"),
+                        string_attribute("flow_id", "mail-pipeline"),
+                        string_attribute("component_id", "analyze-queue"),
                         string_attribute("action", "enqueue"),
                         string_attribute("function_name", "handle_mail_extract"),
                         string_attribute("queue_name", "rrq:queue:mail-analyze"),
@@ -173,7 +177,7 @@ async fn posts_protobuf_mail_e2e_logs_and_receives_log_event() {
     assert_eq!(event.event_type, "log");
     assert_eq!(event.event_kind.as_deref(), Some("queue_enqueued"));
     assert_eq!(event.queue_delta, Some(1));
-    assert_eq!(event.node_key.as_deref(), Some("rrq:queue:mail-analyze"));
+    assert_eq!(event.node_key.as_deref(), Some("analyze-queue"));
     assert_eq!(event.span_name.as_deref(), Some("handle_mail_extract"));
     assert_eq!(event.service_name.as_deref(), Some("resq-mail-worker"));
     assert_eq!(event.message.as_deref(), Some("mail event"));

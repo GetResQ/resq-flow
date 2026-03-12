@@ -15,6 +15,7 @@ describe('useTraceJourney', () => {
         trace_id: 'trace-a',
         attributes: {
           event: 'mail_e2e_event',
+          run_id: 'run-1',
           action: 'worker_result',
           stage_id: 'send.finalize',
           function_name: 'handle_mail_send_reply',
@@ -31,6 +32,7 @@ describe('useTraceJourney', () => {
         trace_id: 'trace-a',
         attributes: {
           event: 'mail_e2e_event',
+          run_id: 'run-1',
           action: 'enqueue',
           stage_id: 'incoming.write_threads',
           function_name: 'handle_mail_incoming_check',
@@ -46,6 +48,7 @@ describe('useTraceJourney', () => {
         trace_id: 'trace-a',
         attributes: {
           event: 'mail_e2e_event',
+          run_id: 'run-1',
           action: 'worker_pickup',
           stage_id: 'analyze.decision',
           function_name: 'handle_mail_analyze_reply',
@@ -60,7 +63,8 @@ describe('useTraceJourney', () => {
     expect(result.current.journeys).toHaveLength(1)
 
     const journey = result.current.journeys[0]
-    expect(journey.traceId).toBe('trace-a')
+    expect(journey.traceId).toBe('run-1')
+    expect(journey.identifiers.runId).toBe('run-1')
     expect(journey.stages.map((stage) => stage.stageId)).toEqual([
       'incoming.write_threads',
       'analyze.decision',
@@ -82,6 +86,7 @@ describe('useTraceJourney', () => {
         span_id: 'span-b',
         span_name: 'handle_mail_extract',
         attributes: {
+          run_id: 'run-2',
           function_name: 'handle_mail_extract',
           stage_id: 'extract.upsert_contacts',
           thread_id: 'thread-2',
@@ -95,6 +100,7 @@ describe('useTraceJourney', () => {
         span_id: 'span-b',
         span_name: 'handle_mail_extract',
         attributes: {
+          run_id: 'run-2',
           function_name: 'handle_mail_extract',
           stage_id: 'extract.upsert_contacts',
           error_class: 'db',
@@ -106,10 +112,10 @@ describe('useTraceJourney', () => {
 
     const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
     const journey = result.current.journeys[0]
+    expect(journey.traceId).toBe('run-2')
     expect(journey.status).toBe('error')
     expect(journey.errorSummary).toBe('upsert failed')
     expect(journey.stages[0].status).toBe('error')
     expect(journey.stages[0].nodeId).toBe('upsert-contacts')
   })
 })
-

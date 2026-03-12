@@ -32,6 +32,8 @@ async fn posts_otlp_traces_and_receives_span_events_over_websocket() {
                   "startTimeUnixNano": "1710000000000000000",
                   "endTimeUnixNano": "1710000000122000000",
                   "attributes": [
+                    { "key": "flow_id", "value": { "stringValue": "mail-pipeline" } },
+                    { "key": "component_id", "value": { "stringValue": "extract-worker" } },
                     { "key": "function_name", "value": { "stringValue": "handle_mail_extract" } },
                     { "key": "queue_name", "value": { "stringValue": "rrq:queue:mail-analyze" } },
                     { "key": "status", "value": { "stringValue": "ok" } }
@@ -62,7 +64,7 @@ async fn posts_otlp_traces_and_receives_span_events_over_websocket() {
     assert_eq!(start_event.event_type, "span_start");
     assert!(start_event.seq.is_some());
     assert_eq!(start_event.event_kind.as_deref(), Some("node_started"));
-    assert_eq!(start_event.node_key.as_deref(), Some("handle_mail_extract"));
+    assert_eq!(start_event.node_key.as_deref(), Some("extract-worker"));
     assert_eq!(start_event.span_name.as_deref(), Some("rrq.enqueue"));
     assert_eq!(
         start_event.trace_id.as_deref(),
@@ -115,6 +117,8 @@ async fn posts_protobuf_otlp_traces_and_receives_span_events_over_websocket() {
                     start_time_unix_nano: 1_710_000_000_000_000_000,
                     end_time_unix_nano: 1_710_000_000_122_000_000,
                     attributes: vec![
+                        string_attribute("flow_id", "mail-pipeline"),
+                        string_attribute("component_id", "extract-worker"),
                         string_attribute("function_name", "handle_mail_extract"),
                         string_attribute("queue_name", "rrq:queue:mail-analyze"),
                         string_attribute("status", "ok"),
@@ -143,7 +147,7 @@ async fn posts_protobuf_otlp_traces_and_receives_span_events_over_websocket() {
     let end_event = &batch[1];
 
     assert_eq!(start_event.event_type, "span_start");
-    assert_eq!(start_event.node_key.as_deref(), Some("handle_mail_extract"));
+    assert_eq!(start_event.node_key.as_deref(), Some("extract-worker"));
     assert_eq!(
         start_event.trace_id.as_deref(),
         Some("0123456789abcdef0123456789abcdef")

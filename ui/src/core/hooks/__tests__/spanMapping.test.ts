@@ -5,6 +5,19 @@ import type { FlowEvent } from '../../types'
 import { spanMapping } from '../../../flows/mail-pipeline'
 
 describe('span mapping resolution', () => {
+  it('maps explicit component_id directly to the canonical node', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        component_id: 'extract-worker',
+        function_name: 'handle_mail_extract',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
+  })
+
   it('maps function_name to extract-worker', () => {
     const event: FlowEvent = {
       type: 'span_start',
@@ -131,6 +144,19 @@ describe('span mapping resolution', () => {
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         action: 'does_not_exist',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBeNull()
+  })
+
+  it('does not fallback when explicit component_id is unknown', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        component_id: 'unknown-component',
+        function_name: 'handle_mail_extract',
       },
     }
 

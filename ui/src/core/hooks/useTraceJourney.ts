@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-import { resolveEventKind } from '../events'
+import { eventExecutionKey, resolveEventKind } from '../events'
 import { inferErrorState, readStringAttribute, resolveMappedNodeId } from '../mapping'
 import type {
   FlowEvent,
@@ -179,6 +179,7 @@ function materializeJourneys(journeyMap: Map<string, MutableJourney>): TraceJour
       const rootEntity =
         journey.identifiers.threadId ??
         journey.identifiers.replyDraftId ??
+        journey.identifiers.runId ??
         journey.identifiers.jobId ??
         journey.identifiers.requestId ??
         journey.identifiers.mailboxOwner
@@ -255,11 +256,12 @@ export function useTraceJourney(
 
     for (let index = 0; index < pending.length; index += 1) {
       const event = pending[index]
-      if (!event.trace_id) {
+      const executionKey = eventExecutionKey(event)
+      if (!executionKey) {
         continue
       }
 
-      const traceId = event.trace_id
+      const traceId = executionKey
       const seq = typeof event.seq === 'number' ? event.seq : processedIndexRef.current - pending.length + index + 1
       const nodeId = resolveMappedNodeId(event, spanMapping)
       const journey = journeyMap.get(traceId) ?? {
@@ -286,6 +288,9 @@ export function useTraceJourney(
 
       setIdentifierIfEmpty(journey.identifiers, 'mailboxOwner', readStringAttribute(event.attributes, 'mailbox_owner'))
       setIdentifierIfEmpty(journey.identifiers, 'provider', readStringAttribute(event.attributes, 'provider'))
+      setIdentifierIfEmpty(journey.identifiers, 'flowId', readStringAttribute(event.attributes, 'flow_id'))
+      setIdentifierIfEmpty(journey.identifiers, 'runId', readStringAttribute(event.attributes, 'run_id'))
+      setIdentifierIfEmpty(journey.identifiers, 'componentId', readStringAttribute(event.attributes, 'component_id'))
       setIdentifierIfEmpty(journey.identifiers, 'threadId', readStringAttribute(event.attributes, 'thread_id'))
       setIdentifierIfEmpty(
         journey.identifiers,
