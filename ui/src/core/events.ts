@@ -109,10 +109,16 @@ export function parseRelayEvents(data: string, currentMaxSeq: number): FlowEvent
 }
 
 export function eventMatchesFlow(event: FlowEvent, flowId: string): boolean {
-  if (!Array.isArray(event.matched_flow_ids) || event.matched_flow_ids.length === 0) {
-    return true
+  const explicitFlowId = readAttr(event, 'flow_id')
+  if (explicitFlowId) {
+    return explicitFlowId === flowId
   }
-  return event.matched_flow_ids.includes(flowId)
+
+  if (Array.isArray(event.matched_flow_ids) && event.matched_flow_ids.length > 0) {
+    return event.matched_flow_ids.includes(flowId)
+  }
+
+  return true
 }
 
 function unwrapRelayPayload(payload: unknown): unknown[] {

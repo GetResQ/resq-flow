@@ -85,7 +85,36 @@ describe('events helpers', () => {
     expect(events[0].message).toBe('kept')
   })
 
-  it('matches flows by matched_flow_ids when present', () => {
+  it('prefers explicit flow_id over matched_flow_ids fallback', () => {
+    expect(
+      eventMatchesFlow(
+        {
+          type: 'log',
+          timestamp: '2026-03-05T12:00:00.000Z',
+          matched_flow_ids: ['mail-pipeline'],
+          attributes: {
+            flow_id: 'other-flow',
+          },
+        },
+        'mail-pipeline',
+      ),
+    ).toBe(false)
+
+    expect(
+      eventMatchesFlow(
+        {
+          type: 'log',
+          timestamp: '2026-03-05T12:00:00.000Z',
+          attributes: {
+            flow_id: 'mail-pipeline',
+          },
+        },
+        'mail-pipeline',
+      ),
+    ).toBe(true)
+  })
+
+  it('matches flows by matched_flow_ids when explicit flow_id is absent', () => {
     expect(
       eventMatchesFlow(
         {
