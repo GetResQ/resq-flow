@@ -125,6 +125,55 @@ async fn filters_non_mail_e2e_logs() {
 }
 
 #[tokio::test]
+async fn drops_logs_with_unknown_explicit_flow_id() {
+    let server = common::spawn_server().await;
+    let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
+
+    let payload = json!({
+      "resourceLogs": [
+        {
+          "resource": {
+            "attributes": [
+              { "key": "service.name", "value": { "stringValue": "resq-mail-worker" } }
+            ]
+          },
+          "scopeLogs": [
+            {
+              "logRecords": [
+                {
+                  "timeUnixNano": "1710000001000000000",
+                  "traceId": "cccccccccccccccccccccccccccccccc",
+                  "spanId": "dddddddddddddddd",
+                  "body": { "stringValue": "mail event" },
+                  "attributes": [
+                    { "key": "event", "value": { "stringValue": "mail_e2e_event" } },
+                    { "key": "flow_id", "value": { "stringValue": "unknown-flow" } },
+                    { "key": "component_id", "value": { "stringValue": "analyze-queue" } },
+                    { "key": "action", "value": { "stringValue": "enqueue" } },
+                    { "key": "status", "value": { "stringValue": "ok" } }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/v1/logs", server.http_base))
+        .json(&payload)
+        .send()
+        .await
+        .expect("post logs");
+
+    assert!(response.status().is_success());
+    common::expect_no_message(&mut socket).await;
+
+    server.shutdown();
+}
+
+#[tokio::test]
 async fn posts_protobuf_mail_e2e_logs_and_receives_log_event() {
     let server = common::spawn_server().await;
     let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;

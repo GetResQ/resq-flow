@@ -118,4 +118,27 @@ describe('useTraceJourney', () => {
     expect(journey.stages[0].status).toBe('error')
     expect(journey.stages[0].nodeId).toBe('upsert-contacts')
   })
+
+  it('prefers explicit component_id when deriving journey nodes', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        seq: 1,
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-c',
+        attributes: {
+          run_id: 'run-3',
+          component_id: 'send-process',
+          function_name: 'handle_mail_extract',
+          stage_id: 'send.final_result',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    const journey = result.current.journeys[0]
+
+    expect(journey.traceId).toBe('run-3')
+    expect(journey.stages[0].nodeId).toBe('send-process')
+  })
 })
