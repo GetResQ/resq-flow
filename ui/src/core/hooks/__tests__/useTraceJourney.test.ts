@@ -141,4 +141,57 @@ describe('useTraceJourney', () => {
     expect(journey.traceId).toBe('run-3')
     expect(journey.stages[0].nodeId).toBe('send-process')
   })
+
+  it('keeps repeated generic stage ids separate across distinct components', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        seq: 1,
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-d',
+        attributes: {
+          event: 'mail_e2e_event',
+          run_id: 'thread-301',
+          component_id: 'analyze-queue',
+          action: 'enqueue',
+          stage_id: 'queue.enqueue',
+        },
+      },
+      {
+        type: 'log',
+        seq: 2,
+        timestamp: '2026-03-05T12:00:00.100Z',
+        trace_id: 'trace-d',
+        attributes: {
+          event: 'mail_e2e_event',
+          run_id: 'thread-301',
+          component_id: 'send-queue',
+          action: 'enqueue',
+          stage_id: 'queue.enqueue',
+        },
+      },
+      {
+        type: 'log',
+        seq: 3,
+        timestamp: '2026-03-05T12:00:00.200Z',
+        trace_id: 'trace-d',
+        attributes: {
+          event: 'mail_e2e_event',
+          run_id: 'thread-301',
+          component_id: 'send-worker',
+          action: 'worker_pickup',
+          stage_id: 'worker.pickup',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    const journey = result.current.journeys[0]
+
+    expect(journey.stages.map((stage) => `${stage.nodeId}:${stage.stageId}`)).toEqual([
+      'analyze-queue:queue.enqueue',
+      'send-queue:queue.enqueue',
+      'send-worker:worker.pickup',
+    ])
+  })
 })

@@ -83,6 +83,18 @@ function resolveStageId(event: FlowEvent, nodeId: string | null): string {
   return event.type
 }
 
+function resolveStageKey(event: FlowEvent, stageId: string, nodeId: string | null): string {
+  const componentKey =
+    readStringAttribute(event.attributes, 'component_id') ??
+    nodeId ??
+    event.node_key ??
+    readStringAttribute(event.attributes, 'function_name') ??
+    event.span_name ??
+    event.type
+
+  return `${componentKey}::${stageId}`
+}
+
 function resolveStageLabel(event: FlowEvent, stageId: string): string {
   return readStringAttribute(event.attributes, 'stage_name') ?? stageId
 }
@@ -303,18 +315,19 @@ export function useTraceJourney(
       setIdentifierIfEmpty(journey.identifiers, 'journeyKey', readStringAttribute(event.attributes, 'journey_key'))
 
       const stageId = resolveStageId(event, nodeId)
-      const previousStageId = journey.stageOrder[journey.stageOrder.length - 1]
-      if (previousStageId && previousStageId !== stageId) {
-        const previousStage = journey.stagesById.get(previousStageId)
+      const stageKey = resolveStageKey(event, stageId, nodeId)
+      const previousStageKey = journey.stageOrder[journey.stageOrder.length - 1]
+      if (previousStageKey && previousStageKey !== stageKey) {
+        const previousStage = journey.stagesById.get(previousStageKey)
         if (previousStage && previousStage.status === 'running') {
           previousStage.status = 'success'
           previousStage.endSeq = Math.max(previousStage.endSeq, seq)
           previousStage.endTs = event.timestamp
-          journey.stagesById.set(previousStageId, previousStage)
+          journey.stagesById.set(previousStageKey, previousStage)
         }
       }
 
-      const stage = journey.stagesById.get(stageId) ?? {
+      const stage = journey.stagesById.get(stageKey) ?? {
         stageId,
         label: resolveStageLabel(event, stageId),
         nodeId: nodeId ?? undefined,
@@ -325,8 +338,8 @@ export function useTraceJourney(
         status: 'running',
       }
 
-      if (!journey.stagesById.has(stageId)) {
-        journey.stageOrder.push(stageId)
+      if (!journey.stagesById.has(stageKey)) {
+        journey.stageOrder.push(stageKey)
       }
 
       stage.label = resolveStageLabel(event, stageId)
@@ -345,7 +358,7 @@ export function useTraceJourney(
         stage.errorSummary = stage.errorSummary ?? resolveErrorSummary(event)
       }
 
-      journey.stagesById.set(stageId, stage)
+      journey.stagesById.set(stageKey, stage)
       journeyMap.set(traceId, journey)
     }
 

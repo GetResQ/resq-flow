@@ -170,7 +170,7 @@ describe('useFlowAnimations', () => {
     })
   })
 
-  it('animates the autosend path in order when replay events include autosend stages', async () => {
+  it('animates the autosend handoff when replay events use exact stage and component ids', async () => {
     const events: FlowEvent[] = [
       {
         type: 'log',
@@ -178,10 +178,9 @@ describe('useFlowAnimations', () => {
         trace_id: 'trace-autosend-1',
         span_id: 'log-a',
         attributes: {
-          action: 'stage_event',
+          action: 'stage',
           stage_id: 'analyze.draft_insert',
-          function_name: 'handle_mail_analyze_reply',
-          worker_name: 'mail_analyze',
+          component_id: 'draft-reply',
         },
       },
       {
@@ -190,10 +189,9 @@ describe('useFlowAnimations', () => {
         trace_id: 'trace-autosend-1',
         span_id: 'log-b',
         attributes: {
-          action: 'stage_event',
-          stage_id: 'analyze.autosend_decision',
-          function_name: 'handle_mail_analyze_reply',
-          worker_name: 'mail_analyze',
+          action: 'stage',
+          stage_id: 'analyze.action_batch_auto_approve',
+          component_id: 'autosend-decision',
         },
       },
       {
@@ -202,10 +200,9 @@ describe('useFlowAnimations', () => {
         trace_id: 'trace-autosend-1',
         span_id: 'log-c',
         attributes: {
-          action: 'stage_event',
-          stage_id: 'analyze.set_sending',
-          function_name: 'handle_mail_analyze_reply',
-          worker_name: 'mail_analyze',
+          action: 'stage',
+          stage_id: 'analyze.execute_enqueue',
+          component_id: 'analyze-worker',
         },
       },
       {
@@ -215,10 +212,9 @@ describe('useFlowAnimations', () => {
         span_id: 'log-d',
         attributes: {
           action: 'enqueue',
-          stage_id: 'analyze.autosend_enqueue',
           queue_name: 'rrq:queue:mail-send',
           function_name: 'handle_mail_send_reply',
-          worker_name: 'mail_analyze',
+          component_id: 'send-queue',
         },
       },
     ]
@@ -235,11 +231,9 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('draft-reply')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
-      expect(result.current.nodeStatuses.get('set-sending')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('analyze-worker')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBe('active')
       expect(result.current.activeEdges.has('e-draft-autosend')).toBe(true)
-      expect(result.current.activeEdges.has('e-autosend-send')).toBe(true)
-      expect(result.current.activeEdges.has('e-set-sending-queue')).toBe(true)
     })
   })
 
