@@ -11,6 +11,7 @@ export type NodeShape =
   | 'annotation'
 
 export type ThemeMode = 'dark' | 'light'
+export type FlowViewMode = 'canvas' | 'metrics' | 'logs'
 
 export type NodeStatus = 'idle' | 'active' | 'success' | 'error'
 

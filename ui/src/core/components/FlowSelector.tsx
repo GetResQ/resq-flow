@@ -1,6 +1,31 @@
-import { useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
+import { AnimatePresence, motion } from 'motion/react'
+import { MoonStar, Settings2, SunMedium } from 'lucide-react'
 
-import type { FlowConfig, ThemeMode } from '../types'
+import {
+  Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  Toggle,
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui'
+
+import type { FlowConfig, FlowViewMode, ThemeMode } from '../types'
 
 interface FlowSelectorProps {
   flows: FlowConfig[]
@@ -13,6 +38,9 @@ interface FlowSelectorProps {
   queuedEventCount: number
   playbackPaused: boolean
   playbackSpeed: number
+  viewMode: FlowViewMode
+  availableViewModes: FlowViewMode[]
+  focusMode: boolean
   focusActivePath: boolean
   theme: ThemeMode
   historyMode: boolean
@@ -25,6 +53,8 @@ interface FlowSelectorProps {
   onPlaybackPauseToggle: () => void
   onPlaybackStep: () => void
   onPlaybackSpeedChange: (speed: number) => void
+  onViewModeChange: (viewMode: FlowViewMode) => void
+  onToggleFocusMode: () => void
   onToggleFocusActivePath: () => void
   onToggleTheme: () => void
   onHistoryWindowChange: (window: string) => void
@@ -43,6 +73,10 @@ const historyWindowOptions = [
   { value: '24h', label: 'Last 24h' },
 ]
 
+function modeBadgeVariant(historyMode: boolean) {
+  return historyMode ? 'warning' : 'success'
+}
+
 export function FlowSelector({
   flows,
   currentFlowId,
@@ -54,6 +88,9 @@ export function FlowSelector({
   queuedEventCount,
   playbackPaused,
   playbackSpeed,
+  viewMode,
+  availableViewModes,
+  focusMode,
   focusActivePath,
   theme,
   historyMode,
@@ -66,6 +103,8 @@ export function FlowSelector({
   onPlaybackPauseToggle,
   onPlaybackStep,
   onPlaybackSpeedChange,
+  onViewModeChange,
+  onToggleFocusMode,
   onToggleFocusActivePath,
   onToggleTheme,
   onHistoryWindowChange,
@@ -75,218 +114,260 @@ export function FlowSelector({
   onClearSession,
 }: FlowSelectorProps) {
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const settingsRef = useRef<HTMLDivElement | null>(null)
+
+  const connectionLabel = connected
+    ? 'Connected'
+    : reconnecting
+      ? 'Reconnecting…'
+      : 'Disconnected'
   const connectionTooltip = connected
     ? `Connected to relay server at ${relayWsUrl}`
     : reconnecting
       ? `Reconnecting to relay server at ${relayWsUrl}`
       : `Disconnected from relay server at ${relayWsUrl}`
-
-  useEffect(() => {
-    if (!settingsOpen) {
-      return
-    }
-
-    const onPointerDown = (event: MouseEvent) => {
-      if (!settingsRef.current) {
-        return
-      }
-
-      if (!(event.target instanceof Node)) {
-        return
-      }
-
-      if (settingsRef.current.contains(event.target)) {
-        return
-      }
-
-      setSettingsOpen(false)
-    }
-
-    window.addEventListener('pointerdown', onPointerDown)
-    return () => window.removeEventListener('pointerdown', onPointerDown)
-  }, [settingsOpen])
+  const showCanvasControls = viewMode === 'canvas' && availableViewModes.includes('canvas')
 
   return (
-    <header className="relative z-50 flex flex-wrap items-center gap-3 border-b border-slate-700/50 bg-slate-900/95 px-4 py-2 backdrop-blur-sm">
-      <div className="flex min-w-48 items-center gap-2">
-        <label className="text-xs font-semibold uppercase tracking-wide text-slate-400" htmlFor="flow-select">
-          Flow
-        </label>
-        <select
-          id="flow-select"
-          value={currentFlowId}
-          onChange={(event) => onSelectFlow(event.target.value)}
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-xs text-slate-100 outline-none focus:border-sky-400"
-        >
-          {flows.map((flow) => (
-            <option key={flow.id} value={flow.id}>
-              {flow.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="group relative flex items-center gap-1.5">
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${
-            connected ? 'bg-emerald-400' : reconnecting ? 'bg-amber-400 animate-flow-pulse' : 'bg-rose-500'
-          }`}
-        />
-        <span className="text-xs text-slate-400">
-          {connected ? 'Connected' : reconnecting ? 'Reconnecting…' : 'Disconnected'}
-        </span>
-        <div className="pointer-events-none absolute left-0 top-full z-[80] mt-1 hidden max-w-[380px] whitespace-nowrap rounded border border-slate-700 bg-slate-900 px-2 py-1 text-[10px] text-slate-200 shadow-lg group-hover:block">
-          {connectionTooltip}
-        </div>
-      </div>
-
-      <div className="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-300">
-        {displayedEventCount}/{totalEventCount} events
-        {queuedEventCount > 0 ? ` (${queuedEventCount} queued)` : ''}
-      </div>
-
-      {historyMode ? (
-        <div className="rounded-full border border-amber-500/50 bg-amber-900/30 px-2 py-0.5 text-xs text-amber-200">
-          History mode
-        </div>
-      ) : (
-        <div className="rounded-full border border-emerald-500/40 bg-emerald-900/20 px-2 py-0.5 text-xs text-emerald-200">
-          Live mode
-        </div>
-      )}
-
-      <div className="flex items-center gap-2 rounded border border-slate-700/70 bg-slate-900/75 px-2 py-1">
-        <label htmlFor="playback-speed" className="text-[10px] uppercase tracking-wide text-slate-500">
-          Speed
-        </label>
-        <select
-          id="playback-speed"
-          value={playbackSpeed}
-          onChange={(event) => onPlaybackSpeedChange(Number.parseFloat(event.target.value))}
-          disabled={!historyMode}
-          className="rounded border border-slate-600 bg-slate-800 px-1.5 py-0.5 text-[11px] text-slate-100 outline-none focus:border-sky-400"
-        >
-          {playbackSpeedOptions.map((option) => (
-            <option key={option} value={option}>
-              {option}x
-            </option>
-          ))}
-        </select>
-
-        <button
-          type="button"
-          onClick={onPlaybackPauseToggle}
-          disabled={!historyMode}
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-100 hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {playbackPaused ? 'Resume' : 'Pause'}
-        </button>
-
-        <button
-          type="button"
-          onClick={onPlaybackStep}
-          disabled={!historyMode || queuedEventCount === 0}
-          className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-[11px] text-slate-100 hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Step
-        </button>
-      </div>
-
-      <button
-        type="button"
-        onClick={onToggleFocusActivePath}
-        className={`rounded border px-2 py-0.5 text-xs ${
-          focusActivePath
-            ? 'border-sky-500/70 bg-sky-900/35 text-sky-200'
-            : 'border-slate-600 bg-slate-800 text-slate-300'
-        }`}
-      >
-        Focus active path {focusActivePath ? 'on' : 'off'}
-      </button>
-
-      <div className="ml-auto flex items-center gap-2">
-        <button type="button" onClick={onClearSession} className="text-sm text-slate-400 hover:text-slate-200">
-          Clear session
-        </button>
-
-        <div className="relative" ref={settingsRef}>
-          <button
-            type="button"
-            onClick={() => setSettingsOpen((previous) => !previous)}
-            aria-label="Open settings"
-            title="Settings"
-            className="inline-flex h-6 w-6 items-center justify-center rounded border border-slate-700/70 bg-slate-800/90 text-slate-300 transition-colors hover:border-slate-500 hover:text-slate-100"
-          >
-            <svg viewBox="0 0 20 20" fill="none" className="h-3.5 w-3.5" aria-hidden="true">
-              <path d="M4 5.5h12M4 10h12M4 14.5h12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-              <circle cx="7" cy="5.5" r="1.5" fill="currentColor" />
-              <circle cx="13" cy="10" r="1.5" fill="currentColor" />
-              <circle cx="9" cy="14.5" r="1.5" fill="currentColor" />
-            </svg>
-          </button>
-
-          {settingsOpen ? (
-            <div className="absolute right-0 top-full z-[80] mt-2 min-w-44 rounded border border-slate-700 bg-slate-900 p-2 shadow-lg">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">Appearance</p>
-              <button
-                type="button"
-                onClick={() => {
-                  onToggleTheme()
-                  setSettingsOpen(false)
-                }}
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-left text-xs text-slate-200 hover:border-slate-500 hover:bg-slate-700"
-              >
-                Theme: {theme === 'dark' ? 'Dark' : 'Light'} (switch)
-              </button>
-
-              <div className="my-2 h-px bg-slate-800" />
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">History</p>
-              <select
-                value={historyWindow}
-                onChange={(event) => onHistoryWindowChange(event.target.value)}
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 outline-none focus:border-sky-400"
-              >
-                {historyWindowOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
+    <TooltipProvider>
+      <header className="relative z-50 grid h-12 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 border-b border-[var(--border-default)] bg-[var(--surface-raised)]/95 px-4 backdrop-blur-sm">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <label
+              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
+              htmlFor="flow-select"
+            >
+              Flow
+            </label>
+            <Select value={currentFlowId} onValueChange={onSelectFlow}>
+              <SelectTrigger id="flow-select" className="h-9 w-[220px] min-w-0">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {flows.map((flow) => (
+                  <SelectItem key={flow.id} value={flow.id}>
+                    {flow.name}
+                  </SelectItem>
                 ))}
-              </select>
-              <input
-                value={historyQuery}
-                onChange={(event) => onHistoryQueryChange(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' && !historyLoading) {
-                    onLoadHistory()
-                  }
-                }}
-                placeholder="trace/job/thread id (optional)"
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 outline-none focus:border-sky-400"
-              />
-              <button
-                type="button"
-                disabled={historyLoading}
-                onClick={onLoadHistory}
-                className="mt-1 w-full rounded border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 hover:border-slate-500 hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {historyLoading ? 'Loading…' : 'Load history window'}
-              </button>
-              {historyMode ? (
-                <button
-                  type="button"
-                  onClick={onExitHistory}
-                  className="mt-1 w-full rounded border border-amber-600/70 bg-amber-900/30 px-2 py-1 text-xs text-amber-200 hover:border-amber-500 hover:bg-amber-900/45"
-                >
-                  Return to live
-                </button>
-              ) : null}
-              {historySummary ? <p className="mt-1 text-[10px] text-slate-400">{historySummary}</p> : null}
-              {historyError ? <p className="mt-1 text-[10px] text-rose-300">{historyError}</p> : null}
-            </div>
-          ) : null}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span
+                  aria-label={connectionLabel}
+                  className={`inline-flex h-2.5 w-2.5 rounded-full ${
+                    connected
+                      ? 'bg-[var(--status-success)]'
+                      : reconnecting
+                        ? 'animate-flow-pulse bg-[var(--status-warning)]'
+                        : 'bg-[var(--status-error)]'
+                  }`}
+                />
+              </TooltipTrigger>
+              <TooltipContent>{connectionTooltip}</TooltipContent>
+            </Tooltip>
+            <span className="text-sm text-[var(--text-secondary)]">{connectionLabel}</span>
+          </div>
         </div>
-      </div>
-    </header>
+
+        <div className="flex items-center justify-center gap-2">
+          <Tabs value={viewMode} onValueChange={(value) => onViewModeChange(value as FlowViewMode)}>
+            <TabsList>
+              {availableViewModes.map((mode) => (
+                <TabsTrigger key={mode} value={mode}>
+                  {mode === 'canvas' ? 'Canvas' : mode === 'metrics' ? 'Metrics' : 'Logs'}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Badge variant={modeBadgeVariant(historyMode)} className="px-3 py-1 text-sm font-normal">
+            {historyMode ? 'History' : 'Live'}
+          </Badge>
+          <Badge variant="secondary" className="px-3 py-1 text-sm font-normal">
+            {displayedEventCount}/{totalEventCount} events
+            {queuedEventCount > 0 ? ` (${queuedEventCount} queued)` : ''}
+          </Badge>
+
+          <AnimatePresence initial={false}>
+            {historyMode ? (
+              <motion.div
+                initial={{ opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                transition={{ duration: 0.18, ease: 'easeOut' }}
+                className="flex items-center gap-2 rounded-md border border-[var(--border-default)] bg-[var(--surface-primary)]/40 px-2 py-1"
+              >
+                <label
+                  htmlFor="playback-speed"
+                  className="text-xs uppercase tracking-wide text-[var(--text-muted)]"
+                >
+                  Speed
+                </label>
+                <Select
+                  value={String(playbackSpeed)}
+                  onValueChange={(value) => onPlaybackSpeedChange(Number.parseFloat(value))}
+                >
+                  <SelectTrigger id="playback-speed" className="h-8 w-[88px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {playbackSpeedOptions.map((option) => (
+                      <SelectItem key={option} value={String(option)}>
+                        {option}x
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Button type="button" variant="outline" size="sm" onClick={onPlaybackPauseToggle}>
+                  {playbackPaused ? 'Resume' : 'Pause'}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={onPlaybackStep}
+                  disabled={queuedEventCount === 0}
+                >
+                  Step
+                </Button>
+              </motion.div>
+            ) : null}
+          </AnimatePresence>
+        </div>
+
+        <div className="flex items-center justify-end gap-2">
+          {showCanvasControls ? (
+            <Toggle
+              size="sm"
+              pressed={focusMode}
+              onPressedChange={onToggleFocusMode}
+              aria-label="Toggle focus mode"
+            >
+              Focus
+            </Toggle>
+          ) : null}
+
+          <Button type="button" variant="ghost" size="sm" onClick={onToggleTheme}>
+            {theme === 'dark' ? <SunMedium className="size-4" /> : <MoonStar className="size-4" />}
+            {theme === 'dark' ? 'Light' : 'Dark'}
+          </Button>
+
+          <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
+            <DropdownMenuTrigger asChild>
+              <Button type="button" variant="ghost" size="icon" aria-label="Open settings">
+                <Settings2 className="size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-80">
+              <div className="space-y-3 p-2">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                    Session
+                  </p>
+                  {showCanvasControls ? (
+                    <Button
+                      type="button"
+                      variant={focusActivePath ? 'default' : 'outline'}
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        onToggleFocusActivePath()
+                        setSettingsOpen(false)
+                      }}
+                    >
+                      Focus active path: {focusActivePath ? 'on' : 'off'}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      onClearSession()
+                      setSettingsOpen(false)
+                    }}
+                  >
+                    Clear session
+                  </Button>
+                </div>
+
+                <DropdownMenuSeparator />
+
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                    History
+                  </p>
+                  <Select value={historyWindow} onValueChange={onHistoryWindowChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {historyWindowOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    value={historyQuery}
+                    onChange={(event) => onHistoryQueryChange(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !historyLoading) {
+                        onLoadHistory()
+                        setSettingsOpen(false)
+                      }
+                    }}
+                    placeholder="trace/job/thread id (optional)"
+                  />
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    disabled={historyLoading}
+                    onClick={() => {
+                      onLoadHistory()
+                      setSettingsOpen(false)
+                    }}
+                  >
+                    {historyLoading ? 'Loading…' : 'Load history window'}
+                  </Button>
+
+                  {historyMode ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => {
+                        onExitHistory()
+                        setSettingsOpen(false)
+                      }}
+                    >
+                      Return to live
+                    </Button>
+                  ) : null}
+
+                  {historySummary ? (
+                    <p className="text-xs text-[var(--text-secondary)]">{historySummary}</p>
+                  ) : null}
+                  {historyError ? (
+                    <p className="text-xs text-[var(--status-error)]">{historyError}</p>
+                  ) : null}
+                </div>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </header>
+    </TooltipProvider>
   )
 }

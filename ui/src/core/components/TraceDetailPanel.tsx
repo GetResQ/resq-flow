@@ -1,5 +1,19 @@
 import { useEffect, useMemo, useState } from 'react'
 
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  ScrollArea,
+  Sheet,
+  SheetContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui'
+
 import { formatEasternTime } from '../time'
 import type { TraceJourney, TraceStage, TraceStatus } from '../types'
 import { DurationBadge } from './DurationBadge'
@@ -17,30 +31,30 @@ interface InsightItem {
   text: string
 }
 
-function statusClass(status: TraceStatus): string {
+function journeyStatusVariant(status: TraceStatus): 'default' | 'destructive' | 'success' | 'warning' {
   if (status === 'error') {
-    return 'bg-rose-500/20 text-rose-200 border-rose-500/40'
+    return 'destructive'
   }
   if (status === 'success') {
-    return 'bg-emerald-500/20 text-emerald-200 border-emerald-500/40'
+    return 'success'
   }
   if (status === 'partial') {
-    return 'bg-amber-500/20 text-amber-200 border-amber-500/40'
+    return 'warning'
   }
-  return 'bg-sky-500/20 text-sky-200 border-sky-500/40'
+  return 'default'
 }
 
 function insightToneClasses(tone: InsightTone): string {
   if (tone === 'success') {
-    return 'border-emerald-500/30 bg-emerald-950/30 text-emerald-100'
+    return 'border-[var(--status-success)] [background-color:color-mix(in_srgb,var(--status-success)_12%,transparent)] text-[var(--text-primary)]'
   }
   if (tone === 'warning') {
-    return 'border-amber-500/30 bg-amber-950/30 text-amber-100'
+    return 'border-[var(--status-warning)] [background-color:color-mix(in_srgb,var(--status-warning)_12%,transparent)] text-[var(--text-primary)]'
   }
   if (tone === 'error') {
-    return 'border-rose-500/30 bg-rose-950/30 text-rose-100'
+    return 'border-[var(--status-error)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)] text-[var(--text-primary)]'
   }
-  return 'border-slate-700 bg-slate-900/60 text-slate-200'
+  return 'border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-primary)]'
 }
 
 function formatDurationText(durationMs?: number): string | null {
@@ -168,194 +182,207 @@ export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
   const focusMeta = !failedStep && slowestStep?.durationMs ? formatDurationText(slowestStep.durationMs) : null
 
   return (
-    <aside
-      className="flex w-[380px] flex-col border-l border-slate-700/50 bg-slate-900"
-      style={{ transition: 'transform 200ms ease', transform: 'translateX(0)' }}
-    >
-      <header className="border-b border-slate-700/50 px-4 py-3">
-        <div className="mb-2 flex items-start justify-between gap-2">
+    <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
+      <SheetContent side="right" className="w-[440px] gap-0 p-0 sm:max-w-[440px]">
+      <header className="border-b border-[var(--border-default)] px-4 py-3">
+        <div className="mb-3 flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">Run</h2>
-            <p className="mt-1 text-xs text-slate-500">
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">Run</h2>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
               {journey.stages.length} {journey.stages.length === 1 ? 'step' : 'steps'} · updated {formatEasternTime(journey.lastUpdatedAt)}
             </p>
           </div>
-          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-200">
-            close
-          </button>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </div>
 
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className={`rounded border px-2 py-0.5 text-[10px] uppercase ${statusClass(journey.status)}`}>
-            {journey.status}
-          </span>
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <Badge variant={journeyStatusVariant(journey.status)}>{journey.status}</Badge>
           <DurationBadge durationMs={journey.durationMs} />
-          {journey.rootEntity ? (
-            <span className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] text-slate-200">
-              {journey.rootEntity}
-            </span>
-          ) : null}
+          {journey.rootEntity ? <Badge variant="secondary">{journey.rootEntity}</Badge> : null}
         </div>
 
-        <div className="flex flex-wrap gap-1">
+        <div className="flex flex-wrap gap-2">
           {identifierEntries.length === 0 ? (
-            <span className="text-[10px] text-slate-500">No key IDs on this run yet.</span>
+            <span className="text-xs text-[var(--text-muted)]">No key IDs on this run yet.</span>
           ) : (
             identifierEntries.slice(0, 4).map(([label, value]) => (
-              <span key={label} className="rounded border border-slate-700 bg-slate-800 px-2 py-0.5 text-[10px] text-slate-200">
+              <Badge key={label} variant="secondary">
                 {label}: {value}
-              </span>
+              </Badge>
             ))
           )}
         </div>
       </header>
 
-      <div className="flex border-b border-slate-700/50 px-2 py-2">
-        {(['overview', 'advanced'] as const).map((tabKey) => (
-          <button
-            key={tabKey}
-            type="button"
-            onClick={() => setTab(tabKey)}
-            className={`rounded px-3 py-1 text-xs uppercase ${
-              tab === tabKey ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            {tabKey === 'advanced' ? 'Advanced telemetry' : 'Overview'}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)} className="flex min-h-0 flex-1 flex-col">
+        <div className="border-b border-[var(--border-default)] px-4 py-3">
+          <TabsList className="min-h-0 border-none bg-transparent p-0">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="advanced">Advanced telemetry</TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3">
-        {tab === 'overview' ? (
-          <div className="space-y-4">
-            <section className="grid grid-cols-2 gap-2">
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Status</div>
-                <div className="mt-1 text-sm capitalize text-slate-100">{journey.status}</div>
-              </div>
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Duration</div>
-                <div className="mt-1 text-sm text-slate-100">{formatDurationText(journey.durationMs) ?? 'Running'}</div>
-              </div>
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Last Updated</div>
-                <div className="mt-1 text-sm text-slate-100">{formatEasternTime(journey.lastUpdatedAt)}</div>
-              </div>
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">{focusLabel}</div>
-                <div className="mt-1 truncate text-sm text-slate-100">{focusValue}</div>
-                {focusMeta ? <div className="mt-1 text-[10px] text-slate-500">{focusMeta}</div> : null}
-              </div>
-            </section>
-
-            {insights.length > 0 ? (
-              <section className="space-y-2">
-                <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Key Insights</h3>
-                {insights.map((insight, index) => (
-                  <div key={`${insight.text}-${index}`} className={`rounded border p-2 text-xs leading-5 ${insightToneClasses(insight.tone)}`}>
-                    {insight.text}
-                  </div>
-                ))}
-              </section>
-            ) : null}
-
-            <section className="space-y-2">
-              <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Path Through Flow</h3>
-              {journey.stages.length === 0 ? (
-                <p className="text-xs text-slate-500">No steps recorded yet.</p>
-              ) : (
-                journey.stages.map((stage, index) => {
-                  const errorSummary = stageErrorSummary(stage)
-                  return (
-                    <div key={`${stage.stageId}-${index}`} className="rounded border border-slate-700 bg-slate-900/50 p-2">
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="text-xs text-slate-100">{stepLabel(stage)}</span>
-                        <span className={`rounded border px-1.5 py-0.5 text-[10px] uppercase ${statusClass(stage.status)}`}>
-                          {stage.status}
-                        </span>
-                        <DurationBadge durationMs={stage.durationMs} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
-                        <span>step {index + 1}</span>
-                        {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                        {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                      </div>
-                      {errorSummary ? (
-                        <div className="mt-2 rounded border border-rose-500/30 bg-rose-900/20 px-2 py-1 text-[10px] text-rose-200">
-                          {errorSummary}
-                        </div>
-                      ) : null}
+        <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
+          <ScrollArea className="h-full">
+            <div className="space-y-4 px-4 py-3">
+              <section className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Status</div>
+                    <div className="mt-1 text-sm capitalize text-[var(--text-primary)]">{journey.status}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Duration</div>
+                    <div className="mt-1 text-sm text-[var(--text-primary)]">
+                      {formatDurationText(journey.durationMs) ?? 'Running'}
                     </div>
-                  )
-                })
-              )}
-            </section>
-          </div>
-        ) : null}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Last Updated</div>
+                    <div className="mt-1 text-sm text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</div>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{focusLabel}</div>
+                    <div className="mt-1 truncate text-sm text-[var(--text-primary)]">{focusValue}</div>
+                    {focusMeta ? <div className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</div> : null}
+                  </CardContent>
+                </Card>
+              </section>
 
-        {tab === 'advanced' ? (
-          <div className="space-y-4">
-            <section className="rounded border border-slate-700 bg-slate-900/60 p-3">
-              <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Run Telemetry</h3>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="rounded border border-slate-700 bg-slate-950/60 p-2">
-                  <div className="text-[10px] uppercase tracking-wide text-slate-500">Raw Events</div>
-                  <div className="mt-1 text-sm text-slate-100">{journey.eventCount}</div>
-                </div>
-                <div className="rounded border border-slate-700 bg-slate-950/60 p-2">
-                  <div className="text-[10px] uppercase tracking-wide text-slate-500">Steps</div>
-                  <div className="mt-1 text-sm text-slate-100">{journey.stages.length}</div>
-                </div>
-              </div>
-              <div className="mt-3 rounded border border-slate-700 bg-slate-950/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Run ID</div>
-                <code className="mt-1 block break-all text-[11px] text-slate-200">{journey.traceId}</code>
-              </div>
-            </section>
-
-            <section className="space-y-2">
-              <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Step Telemetry</h3>
-              <div className="space-y-2">
-                {journey.stages.map((stage, index) => {
-                  const selected = selectedStage?.stageId === stage.stageId
-                  return (
-                    <button
-                      key={`${stage.stageId}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedStageId(stage.stageId)}
-                      className={`w-full rounded border p-2 text-left ${
-                        selected ? 'border-sky-500/60 bg-sky-900/15' : 'border-slate-700 bg-slate-900/50'
-                      }`}
+              {insights.length > 0 ? (
+                <section className="space-y-2">
+                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
+                  {insights.map((insight, index) => (
+                    <div
+                      key={`${insight.text}-${index}`}
+                      className={`rounded-lg border p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
                     >
-                      <div className="mb-1 flex items-center gap-2">
-                        <span className="text-xs text-slate-100">{stepLabel(stage)}</span>
-                        <span className={`rounded border px-1.5 py-0.5 text-[10px] uppercase ${statusClass(stage.status)}`}>
-                          {stage.status}
-                        </span>
-                        <DurationBadge durationMs={stage.durationMs} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-[10px] text-slate-400">
-                        <span>
-                          seq {stage.startSeq} {'->'} {stage.endSeq}
-                        </span>
-                        {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                        {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
+                      {insight.text}
+                    </div>
+                  ))}
+                </section>
+              ) : null}
 
-            <section className="rounded border border-slate-700 bg-slate-900/60 p-3">
-              <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Selected Step Attributes</h3>
-              <pre className="mt-3 overflow-x-auto rounded border border-slate-700 bg-slate-950/70 p-3 text-[11px] text-slate-200">
-                {JSON.stringify(selectedStage?.attrs ?? {}, null, 2)}
-              </pre>
-            </section>
-          </div>
-        ) : null}
-      </div>
-    </aside>
+              <section className="space-y-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
+                {journey.stages.length === 0 ? (
+                  <p className="text-sm text-[var(--text-secondary)]">No steps recorded yet.</p>
+                ) : (
+                  journey.stages.map((stage, index) => {
+                    const errorSummary = stageErrorSummary(stage)
+                    return (
+                      <div
+                        key={`${stage.stageId}-${index}`}
+                        className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]/40 p-3"
+                      >
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                          <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
+                          <DurationBadge durationMs={stage.durationMs} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                          <span>step {index + 1}</span>
+                          {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
+                          {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
+                        </div>
+                        {errorSummary ? (
+                          <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
+                            {errorSummary}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })
+                )}
+              </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="advanced" className="mt-0 min-h-0 flex-1 pt-0">
+          <ScrollArea className="h-full">
+            <div className="space-y-4 px-4 py-3">
+              <Card>
+                <CardContent className="p-3">
+                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run Telemetry</h3>
+                  <div className="mt-3 grid grid-cols-2 gap-3">
+                    <Card>
+                      <CardContent className="p-3">
+                        <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Raw Events</div>
+                        <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.eventCount}</div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardContent className="p-3">
+                        <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Steps</div>
+                        <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.stages.length}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <Card className="mt-3">
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run ID</div>
+                      <code className="mt-1 block break-all text-xs text-[var(--text-primary)]">{journey.traceId}</code>
+                    </CardContent>
+                  </Card>
+                </CardContent>
+              </Card>
+
+              <section className="space-y-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
+                <div className="space-y-2">
+                  {journey.stages.map((stage, index) => {
+                    const selected = selectedStage?.stageId === stage.stageId
+                    return (
+                      <button
+                        key={`${stage.stageId}-${index}`}
+                        type="button"
+                        onClick={() => setSelectedStageId(stage.stageId)}
+                        className={`w-full rounded-lg border p-3 text-left ${
+                          selected
+                            ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
+                            : 'border-[var(--border-default)] bg-[var(--surface-primary)]/40'
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center gap-2">
+                          <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                          <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
+                          <DurationBadge durationMs={stage.durationMs} />
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                          <span>
+                            seq {stage.startSeq} {'->'} {stage.endSeq}
+                          </span>
+                          {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
+                          {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </section>
+
+              <Card>
+                <CardContent className="p-3">
+                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Selected Step Attributes</h3>
+                  <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
+                    {JSON.stringify(selectedStage?.attrs ?? {}, null, 2)}
+                  </pre>
+                </CardContent>
+              </Card>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+      </Tabs>
+      </SheetContent>
+    </Sheet>
   )
 }

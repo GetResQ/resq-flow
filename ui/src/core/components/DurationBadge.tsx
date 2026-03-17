@@ -38,7 +38,7 @@ export function DurationBadge({
     <span
       data-testid="duration-badge"
       className={clsx(
-        'inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 transition-opacity',
+        'inline-flex items-center rounded-full px-3 py-1.5 text-xs font-semibold ring-1 transition-opacity',
         toneClass,
         faded ? 'opacity-65 hover:opacity-100' : 'opacity-100',
         className,

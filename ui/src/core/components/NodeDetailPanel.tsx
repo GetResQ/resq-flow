@@ -1,5 +1,18 @@
 import { useMemo, useState } from 'react'
 
+import {
+  Button,
+  Card,
+  CardContent,
+  ScrollArea,
+  Sheet,
+  SheetContent,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui'
+
 import { DurationBadge } from './DurationBadge'
 import { NodeStatusBadge } from './NodeStatusBadge'
 import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
@@ -262,129 +275,135 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
   }
 
   return (
-    <aside
-      className="flex w-[340px] flex-col border-l border-slate-700/50 bg-slate-900"
-      style={{ transition: 'transform 200ms ease', transform: 'translateX(0)' }}
-    >
+    <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
+      <SheetContent side="right" className="w-[400px] gap-0 p-0 sm:max-w-[400px]">
       <header className="border-b border-slate-700/50 px-4 py-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-sm font-semibold text-slate-100">{node.label}</h2>
-            {roleLabel ? <p className="mt-1 text-xs text-slate-500">{roleLabel}</p> : null}
+            <h2 className="text-base font-semibold text-slate-100">{node.label}</h2>
+            {roleLabel ? <p className="mt-1 text-sm text-slate-500">{roleLabel}</p> : null}
           </div>
-          <button type="button" onClick={onClose} className="text-xs text-slate-500 hover:text-slate-200">
-            close
-          </button>
+          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
+            Close
+          </Button>
         </div>
 
         <div className="flex items-center gap-2">
           <NodeStatusBadge status={status?.status ?? 'idle'} />
         </div>
 
-        {node.description ? <p className="mt-3 text-xs leading-5 text-slate-300">{node.description}</p> : null}
+        {node.description ? <p className="mt-3 text-sm leading-6 text-slate-300">{node.description}</p> : null}
       </header>
 
-      <div className="flex border-b border-slate-700/50 px-2 py-2">
-        {(['overview', 'timing'] as const).map((tabKey) => (
-          <button
-            key={tabKey}
-            type="button"
-            onClick={() => setTab(tabKey)}
-            className={`rounded px-3 py-1 text-xs uppercase ${
-              tab === tabKey ? 'bg-sky-600 text-white' : 'text-slate-300 hover:bg-slate-800'
-            }`}
-          >
-            {tabKey}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={tab}
+        onValueChange={(value) => setTab(value as TabKey)}
+        className="flex min-h-0 flex-1 flex-col"
+      >
+        <div className="border-b border-slate-700/50 px-4 py-3">
+          <TabsList className="border-0">
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="timing">Timing</TabsTrigger>
+          </TabsList>
+        </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3">
-        {tab === 'overview' ? (
-          <div className="space-y-4">
-            <section className="grid grid-cols-2 gap-2">
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Latest Run</div>
-                <div className="mt-1 text-sm text-slate-100">{formatDurationText(latestSpan?.durationMs) ?? 'None yet'}</div>
-              </div>
-              <div className="rounded border border-slate-700 bg-slate-900/60 p-2">
-                <div className="text-[10px] uppercase tracking-wide text-slate-500">Last Seen</div>
-                <div className="mt-1 text-sm text-slate-100">{lastSeenLabel ?? 'Waiting'}</div>
-              </div>
-            </section>
-
-            {insights.length > 0 ? (
-              <section className="space-y-2">
-                <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Key Insights</h3>
-                {insights.map((insight, index) => (
-                  <div key={`${insight.text}-${index}`} className={`rounded border p-2 text-xs leading-5 ${insightToneClasses(insight.tone)}`}>
-                    {insight.text}
-                  </div>
-                ))}
-              </section>
-            ) : null}
-          </div>
-        ) : null}
-
-        {tab === 'timing' ? (
-          <div className="space-y-4">
-            <section className="rounded border border-slate-700 bg-slate-900/60 p-3">
-              <h3 className="text-[10px] uppercase tracking-wide text-slate-500">Timing View</h3>
-              <p className="mt-2 text-xs leading-5 text-slate-300">
-                This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
-              </p>
-            </section>
-
-            {tracesByTraceId.length === 0 ? (
-              <p className="text-xs text-slate-500">No completed timings yet.</p>
-            ) : (
-              tracesByTraceId.map(([traceId, traceSpans]) => {
-                const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
-                const depthMap = computeDepthMap(traceSpans)
-
-                return (
-                  <details key={traceId} className="rounded border border-slate-700 bg-slate-900/50 p-2" open>
-                    <summary className="cursor-pointer text-xs text-slate-200">
-                      run: {traceId.slice(0, 12)}…
-                    </summary>
-
-                    <div className="mt-2 space-y-2">
-                      {traceSpans.map((span) => {
-                        const depth = depthMap.get(span.spanId) ?? 0
-                        const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
-                        const seenLabel = formatRelativeTime(spanSortTime(span))
-
-                        return (
-                          <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
-                            <div className="mb-1 flex items-center gap-2 text-[10px] text-slate-300">
-                              <span>{span.spanName}</span>
-                              <DurationBadge durationMs={span.durationMs} />
-                              {seenLabel ? <span className="text-slate-500">{seenLabel}</span> : null}
-                            </div>
-                            <div className="h-2 rounded bg-slate-800">
-                              <div
-                                className={`h-2 rounded ${span.status === 'error' ? 'bg-rose-500/70' : 'bg-sky-500/70'}`}
-                                style={{ width: `${widthPercent}%` }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
+        <ScrollArea className="flex-1">
+          <div className="px-4 py-3">
+            <TabsContent value="overview" className="mt-0 space-y-4 pt-0">
+              <section className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-slate-500">Latest Run</div>
+                    <div className="mt-1 text-sm text-slate-100">
+                      {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
                     </div>
-                  </details>
-                )
-              })
-            )}
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-slate-500">Last Seen</div>
+                    <div className="mt-1 text-sm text-slate-100">{lastSeenLabel ?? 'Waiting'}</div>
+                  </CardContent>
+                </Card>
+              </section>
 
-            <details className="rounded border border-slate-700 bg-slate-900/60 p-3">
-              <summary className="cursor-pointer text-xs text-slate-200">Latest telemetry attributes</summary>
-              <pre className="mt-3 overflow-x-auto rounded border border-slate-700 bg-slate-950/70 p-3 text-[11px] text-slate-200">
-                {JSON.stringify(latestAttributes ?? {}, null, 2)}
-              </pre>
-            </details>
+              {insights.length > 0 ? (
+                <section className="space-y-2">
+                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Key Insights</h3>
+                  {insights.map((insight, index) => (
+                    <div
+                      key={`${insight.text}-${index}`}
+                      className={`rounded border p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
+                    >
+                      {insight.text}
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+            </TabsContent>
+
+            <TabsContent value="timing" className="mt-0 space-y-4 pt-0">
+              <Card>
+                <CardContent className="p-3">
+                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Timing View</h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                    This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {tracesByTraceId.length === 0 ? (
+                <p className="text-sm text-slate-500">No completed timings yet.</p>
+              ) : (
+                tracesByTraceId.map(([traceId, traceSpans]) => {
+                  const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
+                  const depthMap = computeDepthMap(traceSpans)
+
+                  return (
+                    <details key={traceId} className="rounded border border-slate-700 bg-slate-900/50 p-3" open>
+                      <summary className="cursor-pointer text-sm text-slate-200">
+                        run: {traceId.slice(0, 12)}…
+                      </summary>
+
+                      <div className="mt-2 space-y-2">
+                        {traceSpans.map((span) => {
+                          const depth = depthMap.get(span.spanId) ?? 0
+                          const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
+                          const seenLabel = formatRelativeTime(spanSortTime(span))
+
+                          return (
+                            <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
+                              <div className="mb-2 flex items-center gap-2 text-xs text-slate-300">
+                                <span>{span.spanName}</span>
+                                <DurationBadge durationMs={span.durationMs} />
+                                {seenLabel ? <span className="text-slate-500">{seenLabel}</span> : null}
+                              </div>
+                              <div className="h-2 rounded bg-slate-800">
+                                <div
+                                  className={`h-2 rounded ${span.status === 'error' ? 'bg-rose-500/70' : 'bg-sky-500/70'}`}
+                                  style={{ width: `${widthPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </details>
+                  )
+                })
+              )}
+
+              <details className="rounded border border-slate-700 bg-slate-900/60 p-3">
+                <summary className="cursor-pointer text-sm text-slate-200">Latest telemetry attributes</summary>
+                <pre className="mt-3 overflow-x-auto rounded border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-200">
+                  {JSON.stringify(latestAttributes ?? {}, null, 2)}
+                </pre>
+              </details>
+            </TabsContent>
           </div>
-        ) : null}
-      </div>
-    </aside>
+        </ScrollArea>
+      </Tabs>
+      </SheetContent>
+    </Sheet>
   )
 }

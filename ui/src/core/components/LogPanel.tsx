@@ -1,5 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 
+import {
+  Badge,
+  Button,
+  Input,
+  ScrollArea,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui'
+
 import { formatEasternTime } from '../time'
 import { DurationBadge } from './DurationBadge'
 import type { FlowConfig, LogEntry } from '../types'
@@ -9,6 +21,10 @@ interface LogPanelProps {
   globalLogs: LogEntry[]
   selectedNodeId?: string
   onSelectNode: (nodeId: string) => void
+}
+
+function logVariant(level: LogEntry['level']): 'destructive' | 'success' {
+  return level === 'error' ? 'destructive' : 'success'
 }
 
 export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: LogPanelProps) {
@@ -63,126 +79,112 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
       return
     }
 
-    const list = listRef.current
-    if (!list) {
-      return
+    const viewport = listRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+    if (viewport instanceof HTMLDivElement) {
+      viewport.scrollTop = 0
     }
-
-    list.scrollTop = 0
   }, [filteredLogs, liveTail, open])
 
   if (!open) {
     return (
-      <aside className="w-14 border-l border-slate-700/60 bg-slate-950/85 p-2">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className="w-full rounded border border-slate-700 px-2 py-1 text-[10px] text-slate-200"
-        >
+      <aside className="w-16 border-l border-[var(--border-default)] bg-[var(--surface-primary)]/90 p-3">
+        <Button type="button" variant="outline" size="sm" className="w-full" onClick={() => setOpen(true)}>
           Logs
-        </button>
+        </Button>
       </aside>
     )
   }
 
   return (
-    <aside className="flex w-[340px] flex-col border-l border-slate-700/60 bg-slate-950/85">
-      <div className="flex items-center justify-between border-b border-slate-700/50 px-3 py-2">
-        <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-200">Live logs</h2>
-        <button
-          type="button"
-          onClick={() => setOpen(false)}
-          className="text-xs text-slate-400 hover:text-slate-200"
-        >
-          collapse
-        </button>
+    <aside className="flex w-[340px] flex-col border-l border-[var(--border-default)] bg-[var(--surface-primary)]/90">
+      <div className="flex items-center justify-between border-b border-[var(--border-default)] px-4 py-3">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-primary)]">Live logs</h2>
+        <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>
+          Collapse
+        </Button>
       </div>
 
-      <div className="space-y-2 border-b border-slate-700/50 px-3 py-2">
-        <input
-          placeholder="Search logs"
-          value={search}
-          onChange={(event) => setSearch(event.target.value)}
-          className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 outline-none focus:border-sky-400"
-        />
+      <div className="space-y-3 border-b border-[var(--border-default)] px-4 py-3">
+        <Input placeholder="Search logs" value={search} onChange={(event) => setSearch(event.target.value)} />
 
-        <div className="flex gap-1">
+        <div className="flex gap-2">
           {(['all', 'info', 'error'] as const).map((level) => (
-            <button
+            <Button
               key={level}
               type="button"
+              variant={levelFilter === level ? 'default' : 'outline'}
+              size="sm"
               onClick={() => setLevelFilter(level)}
-              className={`rounded px-2 py-1 text-[10px] uppercase ${
-                levelFilter === level
-                  ? 'bg-sky-600 text-white'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
             >
               {level}
-            </button>
+            </Button>
           ))}
         </div>
 
-        <select
-          value={nodeFilter}
-          onChange={(event) => setNodeFilter(event.target.value)}
-          className="w-full rounded border border-slate-700 bg-slate-900 px-2 py-1 text-xs text-slate-100 outline-none focus:border-sky-400"
-        >
-          <option value="all">All nodes</option>
-          {flow.nodes.map((node) => (
-            <option key={node.id} value={node.id}>
-              {node.label}
-            </option>
-          ))}
-        </select>
+        <Select value={nodeFilter} onValueChange={(value) => setNodeFilter(value as string | 'all')}>
+          <SelectTrigger>
+            <SelectValue placeholder="All nodes" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All nodes</SelectItem>
+            {flow.nodes.map((node) => (
+              <SelectItem key={node.id} value={node.id}>
+                {node.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
-      <div
+      <ScrollArea
         ref={listRef}
-        onScroll={(event) => {
-          const target = event.currentTarget
-          setLiveTail(target.scrollTop < 12)
+        className="flex-1"
+        onScrollCapture={(event) => {
+          if (event.target instanceof HTMLDivElement) {
+            setLiveTail(event.target.scrollTop < 12)
+          }
         }}
-        className="flex-1 space-y-2 overflow-y-auto px-3 py-2"
       >
-        {filteredLogs.map((entry, index) => {
-          const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) ?? entry.nodeId : 'unmapped'
-          const timestamp = formatEasternTime(entry.timestamp)
+        <div className="space-y-3 px-4 py-3">
+          {filteredLogs.map((entry, index) => {
+            const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) ?? entry.nodeId : 'unmapped'
+            const timestamp = formatEasternTime(entry.timestamp)
 
-          return (
-            <button
-              key={`${entry.timestamp}-${entry.message}-${index}`}
-              type="button"
-              onClick={() => entry.nodeId && onSelectNode(entry.nodeId)}
-              className="w-full rounded border border-slate-700/70 bg-slate-900/70 p-2 text-left text-[11px] hover:border-sky-500/60"
-            >
-              <div className="mb-1 flex items-center gap-1 text-[10px] text-slate-400">
-                <span>{timestamp}</span>
-                <span className="rounded bg-slate-700 px-1.5 py-0.5 text-slate-200">{nodeLabel}</span>
-                <span className={entry.level === 'error' ? 'text-rose-300' : 'text-emerald-300'}>
-                  {entry.level === 'error' ? 'ERR' : 'OK'}
-                </span>
-                <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
-              </div>
-              <p className="truncate text-slate-100">{entry.message}</p>
-            </button>
-          )
-        })}
-      </div>
+            return (
+              <button
+                key={`${entry.timestamp}-${entry.message}-${index}`}
+                type="button"
+                onClick={() => entry.nodeId && onSelectNode(entry.nodeId)}
+                className="w-full rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] p-3 text-left transition-colors hover:border-[var(--border-accent)]"
+              >
+                <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                  <span className="font-mono">{timestamp}</span>
+                  <Badge variant="secondary">{nodeLabel}</Badge>
+                  <Badge variant={logVariant(entry.level)}>{entry.level === 'error' ? 'Error' : 'OK'}</Badge>
+                  <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
+                </div>
+                <p className="truncate text-sm text-[var(--text-primary)]">{entry.message}</p>
+              </button>
+            )
+          })}
+        </div>
+      </ScrollArea>
 
       {!liveTail ? (
-        <button
+        <Button
           type="button"
+          variant="secondary"
+          className="justify-start rounded-none border-t border-[var(--border-default)]"
           onClick={() => {
             setLiveTail(true)
-            if (listRef.current) {
-              listRef.current.scrollTop = 0
+            const viewport = listRef.current?.querySelector('[data-radix-scroll-area-viewport]')
+            if (viewport instanceof HTMLDivElement) {
+              viewport.scrollTop = 0
             }
           }}
-          className="border-t border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-100"
         >
           Live tail paused. Click to resume.
-        </button>
+        </Button>
       ) : null}
     </aside>
   )
