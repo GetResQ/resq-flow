@@ -1,6 +1,9 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
+import { useEffect, useRef, useState } from 'react'
 
 import type { FlowEdge } from '../nodes/types'
+
+const PARTICLE_FADE_MS = 3_000
 
 export function AnimatedEdge({
   id,
@@ -27,6 +30,31 @@ export function AnimatedEdge({
   const isActive = Boolean(edgeState?.active)
   const isDimmed = Boolean(edgeState?.dimmed)
 
+  // Track when the edge was last active for fade-out
+  const [showParticle, setShowParticle] = useState(false)
+  const fadeTimerRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    if (isActive) {
+      setShowParticle(true)
+      if (fadeTimerRef.current !== null) {
+        window.clearTimeout(fadeTimerRef.current)
+      }
+      fadeTimerRef.current = null
+    } else if (showParticle) {
+      fadeTimerRef.current = window.setTimeout(() => {
+        setShowParticle(false)
+        fadeTimerRef.current = null
+      }, PARTICLE_FADE_MS)
+    }
+
+    return () => {
+      if (fadeTimerRef.current !== null) {
+        window.clearTimeout(fadeTimerRef.current)
+      }
+    }
+  }, [isActive])
+
   return (
     <>
       <BaseEdge
@@ -40,6 +68,29 @@ export function AnimatedEdge({
           transition: 'stroke 300ms ease, stroke-width 300ms ease, opacity 220ms ease',
         }}
       />
+
+      {showParticle && !isDimmed ? (
+        <>
+          <path
+            id={`particle-path-${id}`}
+            d={edgePath}
+            fill="none"
+            stroke="none"
+          />
+          <circle
+            r={2.5}
+            fill="var(--color-active)"
+            opacity={isActive ? 0.9 : 0.4}
+            style={{ transition: 'opacity 600ms ease' }}
+          >
+            <animateMotion
+              dur="1.2s"
+              repeatCount="indefinite"
+              path={edgePath}
+            />
+          </circle>
+        </>
+      ) : null}
 
       {label ? (
         <EdgeLabelRenderer>

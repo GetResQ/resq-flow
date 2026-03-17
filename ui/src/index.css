@@ -149,6 +149,27 @@ body[data-theme='light'] {
   height: 100vh;
 }
 
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--surface-inset) 25%,
+    var(--surface-overlay) 50%,
+    var(--surface-inset) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
 @keyframes flowPulse {
   0% {
     transform: scale(1);
@@ -195,25 +216,25 @@ body[data-theme='light'] {
 .node-glow-active {
   box-shadow:
     0 0 0 1.5px var(--glow-active),
-    0 0 8px 1px color-mix(in oklch, var(--glow-active), transparent 55%),
-    0 0 20px 4px color-mix(in oklch, var(--glow-active), transparent 80%);
-  transition: box-shadow 200ms ease-in;
+    0 0 10px 2px color-mix(in oklch, var(--glow-active), transparent 50%),
+    0 0 24px 6px color-mix(in oklch, var(--glow-active), transparent 75%);
+  transition: box-shadow 300ms ease-out;
 }
 
 .node-glow-success {
   box-shadow:
     0 0 0 1.5px var(--glow-success),
-    0 0 8px 1px color-mix(in oklch, var(--glow-success), transparent 55%),
-    0 0 20px 4px color-mix(in oklch, var(--glow-success), transparent 80%);
-  transition: box-shadow 200ms ease-in;
+    0 0 10px 2px color-mix(in oklch, var(--glow-success), transparent 50%),
+    0 0 24px 6px color-mix(in oklch, var(--glow-success), transparent 75%);
+  transition: box-shadow 300ms ease-out;
 }
 
 .node-glow-error {
   box-shadow:
     0 0 0 1.5px var(--glow-error),
-    0 0 8px 1px color-mix(in oklch, var(--glow-error), transparent 55%),
-    0 0 20px 4px color-mix(in oklch, var(--glow-error), transparent 80%);
-  transition: box-shadow 200ms ease-in;
+    0 0 10px 2px color-mix(in oklch, var(--glow-error), transparent 50%),
+    0 0 24px 6px color-mix(in oklch, var(--glow-error), transparent 75%);
+  transition: box-shadow 300ms ease-out;
 }
 
 .node-ping-active {

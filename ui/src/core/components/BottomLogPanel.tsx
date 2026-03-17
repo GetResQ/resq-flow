@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
+import { Inbox, Radio } from 'lucide-react'
 
 import {
   Button,
@@ -350,20 +351,28 @@ export function BottomLogPanel({
           <>
             <TabsContent value="logs" className="mt-0 flex min-h-0 flex-1 flex-col pt-0">
               <ScrollArea ref={logsScrollAreaRef} className="flex-1">
-                <LogsTable
-                  logs={filteredLogs}
-                  nodeLabels={nodeLabels}
-                  selectedTraceId={selectedTraceId}
-                  onSelectLog={(entry) => {
-                    const executionId = entry.runId ?? entry.traceId
-                    if (executionId) {
-                      onSelectTrace(executionId)
-                    }
-                    if (entry.nodeId) {
-                      onSelectNode(entry.nodeId)
-                    }
-                  }}
-                />
+                {filteredLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                    <Radio className="size-8 text-[var(--text-muted)]" />
+                    <p className="text-sm text-[var(--text-secondary)]">No logs yet</p>
+                    <p className="text-xs text-[var(--text-muted)]">Logs will appear here as telemetry arrives.</p>
+                  </div>
+                ) : (
+                  <LogsTable
+                    logs={filteredLogs}
+                    nodeLabels={nodeLabels}
+                    selectedTraceId={selectedTraceId}
+                    onSelectLog={(entry) => {
+                      const executionId = entry.runId ?? entry.traceId
+                      if (executionId) {
+                        onSelectTrace(executionId)
+                      }
+                      if (entry.nodeId) {
+                        onSelectNode(entry.nodeId)
+                      }
+                    }}
+                  />
+                )}
               </ScrollArea>
 
               {!liveTail ? (
@@ -386,13 +395,21 @@ export function BottomLogPanel({
 
             <TabsContent value="traces" className="mt-0 flex min-h-0 flex-1 flex-col pt-0">
               <ScrollArea className="flex-1">
-                <RunsTable
-                  journeys={filteredJourneys}
-                  selectedTraceId={selectedTraceId}
-                  pinnedTraceIds={pinnedTraceIds}
-                  onSelectTrace={onSelectTrace}
-                  onTogglePinned={togglePinnedTrace}
-                />
+                {filteredJourneys.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
+                    <Inbox className="size-8 text-[var(--text-muted)]" />
+                    <p className="text-sm text-[var(--text-secondary)]">No runs yet</p>
+                    <p className="text-xs text-[var(--text-muted)]">Runs will appear here as telemetry arrives.</p>
+                  </div>
+                ) : (
+                  <RunsTable
+                    journeys={filteredJourneys}
+                    selectedTraceId={selectedTraceId}
+                    pinnedTraceIds={pinnedTraceIds}
+                    onSelectTrace={onSelectTrace}
+                    onTogglePinned={togglePinnedTrace}
+                  />
+                )}
               </ScrollArea>
             </TabsContent>
           </>

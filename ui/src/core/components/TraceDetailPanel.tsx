@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
   Badge,
   Button,
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
   ScrollArea,
   Sheet,
   SheetContent,
@@ -15,15 +18,19 @@ import {
 } from '@/components/ui'
 
 import { formatEasternTime } from '../time'
-import type { TraceJourney, TraceStage, TraceStatus } from '../types'
+import type { SpanEntry, TraceJourney, TraceStage, TraceStatus } from '../types'
 import { DurationBadge } from './DurationBadge'
+import { PanelSkeleton } from './PanelSkeleton'
+import { WaterfallChart } from './WaterfallChart'
 
-type TabKey = 'overview' | 'advanced'
+type TabKey = 'overview' | 'waterfall' | 'advanced'
 type InsightTone = 'neutral' | 'success' | 'warning' | 'error'
 
 interface TraceDetailPanelProps {
   journey: TraceJourney
+  spans?: SpanEntry[]
   onClose: () => void
+  onSelectNode?: (nodeId: string) => void
 }
 
 interface InsightItem {
@@ -55,6 +62,13 @@ function insightToneClasses(tone: InsightTone): string {
     return 'border-[var(--status-error)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)] text-[var(--text-primary)]'
   }
   return 'border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-primary)]'
+}
+
+function insightIcon(tone: InsightTone) {
+  if (tone === 'success') return <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--status-success)]" />
+  if (tone === 'warning') return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--status-warning)]" />
+  if (tone === 'error') return <XCircle className="mt-0.5 size-4 shrink-0 text-[var(--status-error)]" />
+  return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
 function formatDurationText(durationMs?: number): string | null {
@@ -99,7 +113,7 @@ function defaultSelectedStepId(journey: TraceJourney): string | undefined {
   return journey.stages.find((stage) => stage.status === 'error')?.stageId ?? journey.stages.at(-1)?.stageId
 }
 
-export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
+export function TraceDetailPanel({ journey, spans = [], onClose, onSelectNode }: TraceDetailPanelProps) {
   const [tab, setTab] = useState<TabKey>('overview')
   const [selectedStageId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
 
@@ -220,6 +234,7 @@ export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
         <div className="border-b border-[var(--border-default)] px-4 py-3">
           <TabsList className="min-h-0 border-none bg-transparent p-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
             <TabsTrigger value="advanced">Advanced telemetry</TabsTrigger>
           </TabsList>
         </div>
@@ -229,30 +244,38 @@ export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
             <div className="space-y-4 px-4 py-3">
               <section className="grid grid-cols-2 gap-3">
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Status</div>
-                    <div className="mt-1 text-sm capitalize text-[var(--text-primary)]">{journey.status}</div>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Status</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Duration</div>
-                    <div className="mt-1 text-sm text-[var(--text-primary)]">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Duration</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
                       {formatDurationText(journey.durationMs) ?? 'Running'}
-                    </div>
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Last Updated</div>
-                    <div className="mt-1 text-sm text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</div>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Last Updated</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">{focusLabel}</div>
-                    <div className="mt-1 truncate text-sm text-[var(--text-primary)]">{focusValue}</div>
-                    {focusMeta ? <div className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</div> : null}
+                  <CardHeader className="pb-2">
+                    <CardDescription>{focusLabel}</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{focusValue}</p>
+                    {focusMeta ? <p className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</p> : null}
                   </CardContent>
                 </Card>
               </section>
@@ -263,9 +286,10 @@ export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
                   {insights.map((insight, index) => (
                     <div
                       key={`${insight.text}-${index}`}
-                      className={`rounded-lg border p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
+                      className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
                     >
-                      {insight.text}
+                      {insightIcon(insight.tone)}
+                      <span>{insight.text}</span>
                     </div>
                   ))}
                 </section>
@@ -274,35 +298,75 @@ export function TraceDetailPanel({ journey, onClose }: TraceDetailPanelProps) {
               <section className="space-y-2">
                 <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
                 {journey.stages.length === 0 ? (
-                  <p className="text-sm text-[var(--text-secondary)]">No steps recorded yet.</p>
+                  <PanelSkeleton lines={2} />
                 ) : (
-                  journey.stages.map((stage, index) => {
-                    const errorSummary = stageErrorSummary(stage)
-                    return (
-                      <div
-                        key={`${stage.stageId}-${index}`}
-                        className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)]/40 p-3"
-                      >
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
-                          <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
-                          <DurationBadge durationMs={stage.durationMs} />
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                          <span>step {index + 1}</span>
-                          {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                          {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                        </div>
-                        {errorSummary ? (
-                          <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
-                            {errorSummary}
+                  <div className="relative ml-3">
+                    {/* Vertical connecting line */}
+                    <div
+                      className="absolute left-[7px] top-3 w-px bg-[var(--border-default)]"
+                      style={{ height: `calc(100% - 24px)` }}
+                    />
+
+                    {journey.stages.map((stage, index) => {
+                      const errorSummary = stageErrorSummary(stage)
+                      const isError = stage.status === 'error'
+                      const isActive = stage.status === 'running' || stage.status === 'partial'
+                      const dotColor = isError
+                        ? 'var(--status-error)'
+                        : isActive
+                          ? 'var(--status-active)'
+                          : stage.status === 'success'
+                            ? 'var(--status-success)'
+                            : 'var(--text-muted)'
+
+                      return (
+                        <div key={`${stage.stageId}-${index}`} className="relative flex gap-3 pb-3">
+                          {/* Timeline dot */}
+                          <div className="relative z-10 mt-3 flex shrink-0 items-start">
+                            <div
+                              className="size-[15px] rounded-full border-2 border-[var(--surface-raised)]"
+                              style={{
+                                backgroundColor: dotColor,
+                                boxShadow: isActive ? `0 0 6px ${dotColor}` : undefined,
+                                animation: isActive ? 'flowPulse 2s ease-in-out infinite' : undefined,
+                              }}
+                            />
                           </div>
-                        ) : null}
-                      </div>
-                    )
-                  })
+
+                          {/* Step card */}
+                          <Card className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}>
+                            <CardContent className="p-3">
+                              <div className="mb-2 flex items-center gap-2">
+                                <span className="text-sm font-medium text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                                <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
+                                <DurationBadge durationMs={stage.durationMs} />
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                                <span>step {index + 1}</span>
+                                {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
+                                {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
+                              </div>
+                              {errorSummary ? (
+                                <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
+                                  {errorSummary}
+                                </div>
+                              ) : null}
+                            </CardContent>
+                          </Card>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
               </section>
+            </div>
+          </ScrollArea>
+        </TabsContent>
+
+        <TabsContent value="waterfall" className="mt-0 min-h-0 flex-1 pt-0">
+          <ScrollArea className="h-full">
+            <div className="px-4 py-3">
+              <WaterfallChart spans={spans} onSelectNode={onSelectNode} />
             </div>
           </ScrollArea>
         </TabsContent>

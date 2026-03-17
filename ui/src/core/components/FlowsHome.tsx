@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
+import { Zap } from 'lucide-react'
 
 import { Button } from '@/components/ui'
 
@@ -47,16 +48,24 @@ export function FlowsHome({
           </Button>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {registeredFlows.map((flow) => (
-            <FlowHealthCard
-              key={flow.id}
-              flow={flow}
-              metrics={metricMap.get(flow.id) ?? getMockFlowMetrics([flow])[0]}
-              onSelect={(flowId) => navigate(`/flows/${flowId}?mode=live`)}
-            />
-          ))}
-        </section>
+        {registeredFlows.length === 0 ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-16 text-center">
+            <Zap className="size-10 text-[var(--text-muted)]" />
+            <p className="text-lg font-medium text-[var(--text-secondary)]">No flows registered</p>
+            <p className="text-sm text-[var(--text-muted)]">Register flows in the flow config to see them here.</p>
+          </div>
+        ) : (
+          <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {registeredFlows.map((flow) => (
+              <FlowHealthCard
+                key={flow.id}
+                flow={flow}
+                metrics={metricMap.get(flow.id) ?? getMockFlowMetrics([flow])[0]}
+                onSelect={(flowId) => navigate(`/flows/${flowId}?mode=live`)}
+              />
+            ))}
+          </section>
+        )}
       </div>
     </main>
   )

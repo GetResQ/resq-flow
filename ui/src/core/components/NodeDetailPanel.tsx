@@ -1,9 +1,12 @@
 import { useMemo, useState } from 'react'
+import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
   Button,
   Card,
   CardContent,
+  CardDescription,
+  CardHeader,
   ScrollArea,
   Sheet,
   SheetContent,
@@ -15,6 +18,7 @@ import {
 
 import { DurationBadge } from './DurationBadge'
 import { NodeStatusBadge } from './NodeStatusBadge'
+import { PanelSkeleton } from './PanelSkeleton'
 import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
 
 interface NodeDetailPanelProps {
@@ -151,15 +155,22 @@ function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
 
 function insightToneClasses(tone: InsightTone): string {
   if (tone === 'success') {
-    return 'border-emerald-500/30 bg-emerald-950/30 text-emerald-100'
+    return 'border-l-[var(--status-success)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-success)_8%,transparent)] text-[var(--text-primary)]'
   }
   if (tone === 'warning') {
-    return 'border-amber-500/30 bg-amber-950/30 text-amber-100'
+    return 'border-l-[var(--status-warning)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-warning)_8%,transparent)] text-[var(--text-primary)]'
   }
   if (tone === 'error') {
-    return 'border-rose-500/30 bg-rose-950/30 text-rose-100'
+    return 'border-l-[var(--status-error)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-error)_8%,transparent)] text-[var(--text-primary)]'
   }
-  return 'border-slate-700 bg-slate-900/60 text-slate-200'
+  return 'border-l-[var(--text-muted)] border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-primary)]'
+}
+
+function insightIcon(tone: InsightTone) {
+  if (tone === 'success') return <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--status-success)]" />
+  if (tone === 'warning') return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--status-warning)]" />
+  if (tone === 'error') return <XCircle className="mt-0.5 size-4 shrink-0 text-[var(--status-error)]" />
+  return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
 export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDetailPanelProps) {
@@ -277,11 +288,11 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
   return (
     <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
       <SheetContent side="right" className="w-[400px] gap-0 p-0 sm:max-w-[400px]">
-      <header className="border-b border-slate-700/50 px-4 py-3">
+      <header className="border-b border-[var(--border-default)] px-4 py-3">
         <div className="mb-2 flex items-start justify-between gap-2">
           <div>
-            <h2 className="text-base font-semibold text-slate-100">{node.label}</h2>
-            {roleLabel ? <p className="mt-1 text-sm text-slate-500">{roleLabel}</p> : null}
+            <h2 className="text-base font-semibold text-[var(--text-primary)]">{node.label}</h2>
+            {roleLabel ? <p className="mt-1 text-sm text-[var(--text-muted)]">{roleLabel}</p> : null}
           </div>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
             Close
@@ -292,7 +303,7 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
           <NodeStatusBadge status={status?.status ?? 'idle'} />
         </div>
 
-        {node.description ? <p className="mt-3 text-sm leading-6 text-slate-300">{node.description}</p> : null}
+        {node.description ? <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{node.description}</p> : null}
       </header>
 
       <Tabs
@@ -300,7 +311,7 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
         onValueChange={(value) => setTab(value as TabKey)}
         className="flex min-h-0 flex-1 flex-col"
       >
-        <div className="border-b border-slate-700/50 px-4 py-3">
+        <div className="border-b border-[var(--border-default)] px-4 py-3">
           <TabsList className="border-0">
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="timing">Timing</TabsTrigger>
@@ -312,30 +323,35 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
             <TabsContent value="overview" className="mt-0 space-y-4 pt-0">
               <section className="grid grid-cols-2 gap-3">
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Latest Run</div>
-                    <div className="mt-1 text-sm text-slate-100">
+                  <CardHeader className="pb-2">
+                    <CardDescription>Latest Run</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
                       {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
-                    </div>
+                    </p>
                   </CardContent>
                 </Card>
                 <Card>
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-slate-500">Last Seen</div>
-                    <div className="mt-1 text-sm text-slate-100">{lastSeenLabel ?? 'Waiting'}</div>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Last Seen</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
                   </CardContent>
                 </Card>
               </section>
 
               {insights.length > 0 ? (
                 <section className="space-y-2">
-                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Key Insights</h3>
+                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
                   {insights.map((insight, index) => (
                     <div
                       key={`${insight.text}-${index}`}
-                      className={`rounded border p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
+                      className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
                     >
-                      {insight.text}
+                      {insightIcon(insight.tone)}
+                      <span>{insight.text}</span>
                     </div>
                   ))}
                 </section>
@@ -345,23 +361,23 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
             <TabsContent value="timing" className="mt-0 space-y-4 pt-0">
               <Card>
                 <CardContent className="p-3">
-                  <h3 className="text-xs uppercase tracking-wide text-slate-500">Timing View</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">
+                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Timing View</h3>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                     This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
                   </p>
                 </CardContent>
               </Card>
 
               {tracesByTraceId.length === 0 ? (
-                <p className="text-sm text-slate-500">No completed timings yet.</p>
+                <PanelSkeleton lines={3} />
               ) : (
                 tracesByTraceId.map(([traceId, traceSpans]) => {
                   const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
                   const depthMap = computeDepthMap(traceSpans)
 
                   return (
-                    <details key={traceId} className="rounded border border-slate-700 bg-slate-900/50 p-3" open>
-                      <summary className="cursor-pointer text-sm text-slate-200">
+                    <details key={traceId} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/50 p-3" open>
+                      <summary className="cursor-pointer text-sm text-[var(--text-primary)]">
                         run: {traceId.slice(0, 12)}…
                       </summary>
 
@@ -373,15 +389,19 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
 
                           return (
                             <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
-                              <div className="mb-2 flex items-center gap-2 text-xs text-slate-300">
+                              <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                                 <span>{span.spanName}</span>
                                 <DurationBadge durationMs={span.durationMs} />
-                                {seenLabel ? <span className="text-slate-500">{seenLabel}</span> : null}
+                                {seenLabel ? <span className="text-[var(--text-muted)]">{seenLabel}</span> : null}
                               </div>
-                              <div className="h-2 rounded bg-slate-800">
+                              <div className="h-2 rounded bg-[var(--surface-inset)]">
                                 <div
-                                  className={`h-2 rounded ${span.status === 'error' ? 'bg-rose-500/70' : 'bg-sky-500/70'}`}
-                                  style={{ width: `${widthPercent}%` }}
+                                  className="h-2 rounded"
+                                  style={{
+                                    width: `${widthPercent}%`,
+                                    backgroundColor: span.status === 'error' ? 'var(--status-error)' : 'var(--accent-primary)',
+                                    opacity: 0.7,
+                                  }}
                                 />
                               </div>
                             </div>
@@ -393,9 +413,9 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
                 })
               )}
 
-              <details className="rounded border border-slate-700 bg-slate-900/60 p-3">
-                <summary className="cursor-pointer text-sm text-slate-200">Latest telemetry attributes</summary>
-                <pre className="mt-3 overflow-x-auto rounded border border-slate-700 bg-slate-950/70 p-3 text-xs text-slate-200">
+              <details className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/60 p-3">
+                <summary className="cursor-pointer text-sm text-[var(--text-primary)]">Latest telemetry attributes</summary>
+                <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
                   {JSON.stringify(latestAttributes ?? {}, null, 2)}
                 </pre>
               </details>

@@ -1,6 +1,8 @@
+import { useViewport } from '@xyflow/react'
 import clsx from 'clsx'
 
 import { NodeStatusBadge } from '../components/NodeStatusBadge'
+import { resolveZoomLevel } from '../hooks/useCanvasZoom'
 import type { FlowNodeData } from './types'
 import { resolveIcon } from './nodePrimitives'
 
@@ -18,7 +20,45 @@ export function StandardNodeContent({
   const status = data.status?.status ?? 'idle'
   const icon = resolveIcon(data.style?.icon)
   const isQueueNode = data.style?.icon === 'queue'
+  const { zoom } = useViewport()
+  const zoomLevel = resolveZoomLevel(zoom)
 
+  // Far zoom: shape + status color only
+  if (zoomLevel === 'far') {
+    return (
+      <div className={clsx('relative flex h-full items-center justify-center p-1.5', compact && 'p-1')}>
+        <div
+          className={clsx(
+            'h-2.5 w-2.5 rounded-full transition-colors duration-300',
+            status === 'active' && 'bg-[var(--status-active)]',
+            status === 'success' && 'bg-[var(--status-success)]',
+            status === 'error' && 'bg-[var(--status-error)]',
+            status === 'idle' && 'bg-[var(--status-idle)]',
+          )}
+        />
+      </div>
+    )
+  }
+
+  // Medium zoom: label + status badge (no sublabel, no bullets)
+  if (zoomLevel === 'medium') {
+    return (
+      <div className={clsx('relative flex h-full flex-col gap-2 p-3', compact && 'gap-1.5 p-2')}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="truncate text-xs font-semibold leading-tight">{data.label}</p>
+          </div>
+          <NodeStatusBadge
+            status={status}
+            durationMs={data.status?.durationMs}
+            durationVisibleUntil={data.status?.durationVisibleUntil}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Close zoom: everything visible
   return (
     <div className={clsx('relative flex h-full flex-col gap-2 p-3', compact && 'gap-1.5 p-2')}>
       <div className="flex items-start justify-between gap-2">

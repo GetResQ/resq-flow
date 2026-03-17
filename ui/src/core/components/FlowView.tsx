@@ -567,7 +567,12 @@ export function FlowView() {
       ) : null}
 
       {selectedJourney ? (
-        <TraceDetailPanel journey={selectedJourney} onClose={() => setSelectedTraceId(undefined, { replace: true })} />
+        <TraceDetailPanel
+          journey={selectedJourney}
+          spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
+          onClose={() => setSelectedTraceId(undefined, { replace: true })}
+          onSelectNode={(nodeId) => handleSelectNode(nodeId)}
+        />
       ) : null}
 
       {!selectedJourney && selectedNode ? (

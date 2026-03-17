@@ -124,12 +124,17 @@ function mapFlowNodes(
   selectedNodeIds: Set<string>,
   runtimePositions: Map<string, { x: number; y: number }>,
   elkPositions?: Map<string, { x: number; y: number }>,
+  entranceDelays?: Map<string, number>,
+  entranceHidden?: boolean,
 ): FlowNode[] {
   return flow.nodes.map((node) => {
     const status = nodeStatuses.get(node.id)
     const dimmed = Boolean(focusNodeIds && !focusNodeIds.has(node.id))
     const selected = selectedNodeIds.has(node.id)
     const runtimePosition = runtimePositions.get(node.id)
+    const staggerDelay = entranceDelays?.get(node.id)
+    const hasEntrance = typeof staggerDelay === 'number'
+    const shouldHide = hasEntrance && entranceHidden
 
     return {
       id: node.id,
@@ -154,9 +159,11 @@ function mapFlowNodes(
         width: node.size?.width,
         height: node.type === 'group' ? node.size?.height : undefined,
         zIndex: node.type === 'group' ? 0 : selected ? 20 : 10,
-        opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : 1,
+        opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : shouldHide ? 0 : 1,
         filter: dimmed ? 'saturate(0.5)' : undefined,
-        transition: 'opacity 220ms ease, filter 220ms ease, outline 220ms ease',
+        transform: shouldHide ? 'scale(0.92)' : undefined,
+        transition: 'opacity 220ms ease, filter 220ms ease, outline 220ms ease, transform 220ms ease',
+        transitionDelay: hasEntrance ? `${staggerDelay}ms` : undefined,
       },
       extent: node.parentId ? 'parent' : undefined,
       selected,
@@ -237,12 +244,40 @@ export function FlowCanvas({
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     () => new Set(selectedNodeId ? [selectedNodeId] : []),
   )
+  const [entranceDelays, setEntranceDelays] = useState<Map<string, number>>(new Map())
+  const [entranceHidden, setEntranceHidden] = useState(true)
 
   useEffect(() => {
     setElkPositions(null)
     setRuntimePositions(new Map())
     setSelectedNodeIds(new Set())
     setSaveState('idle')
+
+    // Trigger entrance stagger for initial load:
+    // 1) Set per-node delays and hide (opacity 0, scale 0.92)
+    // 2) On next frame, reveal — CSS transition + per-node transitionDelay creates stagger
+    // 3) After animations complete, clear delays to remove transitionDelay from future updates
+    const delays = new Map<string, number>()
+    const nonGroupNodes = flow.nodes.filter((n) => n.type !== 'group')
+    nonGroupNodes.forEach((node, index) => {
+      delays.set(node.id, index * 30)
+    })
+    setEntranceDelays(delays)
+    setEntranceHidden(true)
+
+    const raf = requestAnimationFrame(() => {
+      setEntranceHidden(false)
+    })
+
+    const totalMs = nonGroupNodes.length * 30 + 350
+    const clearTimer = window.setTimeout(() => {
+      setEntranceDelays(new Map())
+    }, totalMs)
+
+    return () => {
+      cancelAnimationFrame(raf)
+      window.clearTimeout(clearTimer)
+    }
   }, [flow.id])
 
   useEffect(() => {
@@ -325,8 +360,10 @@ export function FlowCanvas({
         selectedNodeIds,
         runtimePositions,
         elkPositions ?? undefined,
+        entranceDelays,
+        entranceHidden,
       ),
-    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, elkPositions],
+    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, elkPositions, entranceDelays, entranceHidden],
   )
   const initialEdges = useMemo(
     () => mapFlowEdges(flow, activeEdges, focusState.edgeIds),
@@ -346,6 +383,8 @@ export function FlowCanvas({
         selectedNodeIds,
         runtimePositions,
         elkPositions ?? undefined,
+        entranceDelays,
+        entranceHidden,
       ),
     )
   }, [
@@ -357,6 +396,8 @@ export function FlowCanvas({
     runtimePositions,
     setNodes,
     elkPositions,
+    entranceDelays,
+    entranceHidden,
   ])
 
   useEffect(() => {
