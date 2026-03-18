@@ -232,7 +232,7 @@ describe('useFlowAnimations', () => {
     })
   })
 
-  it('animates the autosend handoff when replay events use exact stage and component ids', async () => {
+  it('animates the autosend -> actions -> send handoff when replay events use exact stage and component ids', async () => {
     const draftInserted: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -263,7 +263,7 @@ describe('useFlowAnimations', () => {
       attributes: {
         action: 'stage',
         stage_id: 'analyze.execute_enqueue',
-        component_id: 'autosend-decision',
+        component_id: 'actions-queue',
       },
     }
     const sendHandoffDetail: FlowEvent = {
@@ -307,6 +307,7 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('draft-reply')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('actions-queue')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
@@ -315,7 +316,7 @@ describe('useFlowAnimations', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('actions-worker')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
@@ -328,7 +329,8 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBe('active')
       expect(result.current.activeEdges.has('e-draft-autosend')).toBe(true)
-      expect(result.current.activeEdges.has('e-autosend-send')).toBe(true)
+      expect(result.current.activeEdges.has('e-autosend-actions')).toBe(true)
+      expect(result.current.activeEdges.has('e-actions-send')).toBe(true)
     })
   })
 
@@ -361,8 +363,8 @@ describe('useFlowAnimations', () => {
 
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('trigger-oauth')?.status).toBe('active')
-      expect(result.current.nodeStatuses.get('batchfill-queue')?.status).toBe('active')
-      expect(result.current.activeEdges.has('e-trigger-batchfill')).toBe(true)
+      expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('active')
+      expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(true)
     })
   })
 })

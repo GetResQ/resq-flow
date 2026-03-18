@@ -23,12 +23,12 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        component_id: 'check-process',
+        component_id: 'incoming-schedule-process',
         stage_id: 'scheduler.cursor_update',
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('check-process')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-schedule-process')
   })
 
   it('maps function_name to extract-worker', () => {
@@ -43,7 +43,7 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('maps backfill worker function_name to batchfill-worker', () => {
+  it('maps backfill worker function_name to backfill-worker', () => {
     const event: FlowEvent = {
       type: 'span_start',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -52,7 +52,31 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('batchfill-worker')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('backfill-worker')
+  })
+
+  it('preserves legacy batchfill aliases for older replay fixtures', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        component_id: 'batchfill-worker',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('backfill-worker')
+  })
+
+  it('preserves legacy check-process alias for older replay fixtures', () => {
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      attributes: {
+        component_id: 'check-process',
+      },
+    }
+
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-schedule-process')
   })
 
   it('maps queue_name to analyze-queue', () => {
@@ -127,7 +151,7 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('autosend-decision')
   })
 
-  it('maps autosend enqueue details back onto autosend-decision', () => {
+  it('maps autosend execute enqueue detail to actions-queue', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -136,10 +160,10 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('autosend-decision')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('actions-queue')
   })
 
-  it('does not promote actions.send_enqueue stage detail into a standalone node', () => {
+  it('maps actions.send_enqueue stage detail onto actions-worker', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -150,7 +174,7 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBeNull()
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('actions-worker')
   })
 
   it('still honors explicit component_id when actions.send_enqueue is mis-emitted as a node', () => {
@@ -167,7 +191,7 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('send-queue')
   })
 
-  it('maps send precheck detail onto send-worker', () => {
+  it('maps send precheck detail onto send-process', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -176,7 +200,7 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('send-worker')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('send-process')
   })
 
   it('returns null for unmapped event', () => {

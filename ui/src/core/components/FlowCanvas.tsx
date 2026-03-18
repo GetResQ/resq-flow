@@ -148,14 +148,16 @@ function mapFlowNodes(
     const dimmed = Boolean(focusNodeIds && !focusNodeIds.has(node.id))
     const selected = selectedNodeIds.has(node.id)
     const runtimePosition = runtimePositions.get(node.id)
+    const defaultDraggable = !node.parentId && node.type !== 'group' && node.type !== 'annotation'
+    const defaultSelectable = node.type !== 'annotation'
 
     return {
       id: node.id,
       type: node.type,
       position: runtimePosition ?? elkPositions?.get(node.id) ?? node.position,
       parentId: node.parentId,
-      selectable: node.selectable ?? true,
-      draggable: node.draggable ?? true,
+      selectable: node.selectable ?? defaultSelectable,
+      draggable: node.draggable ?? defaultDraggable,
       data: {
         label: node.label,
         sublabel: node.sublabel,
