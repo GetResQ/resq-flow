@@ -95,6 +95,19 @@ export function statusGlowClass(status: NodeStatus | undefined): string {
   return 'node-glow-idle'
 }
 
+export function resolveHandleId(
+  nodeId: string,
+  handle: NodeHandleConfig,
+  role: Exclude<NonNullable<NodeHandleConfig['type']>, 'both'> = handle.type === 'target' ? 'target' : 'source',
+) {
+  if (handle.id) {
+    return `${nodeId}-${handle.id}`
+  }
+
+  const direction = role === 'target' ? 'in' : 'out'
+  return `${nodeId}-${direction}-${handle.position}`
+}
+
 export function renderHandles(
   nodeId: string,
   handles: NodeHandleConfig[] | undefined,
@@ -102,22 +115,21 @@ export function renderHandles(
 ) {
   const merged = handles && handles.length > 0 ? handles : defaults
 
-  return merged.flatMap((handle, index) => {
+  return merged.flatMap((handle) => {
     const position = positionMap[handle.position]
-    const idBase = handle.id ? `${nodeId}-${handle.id}` : `${nodeId}-${handle.position}-${index}`
 
     if (handle.type === 'both') {
       return [
         <Handle
-          key={`${idBase}-target`}
-          id={`${idBase}-target`}
+          key={`${nodeId}-${handle.position}-target`}
+          id={resolveHandleId(nodeId, handle, 'target')}
           type="target"
           position={position}
           className="!h-2 !w-2 !border !border-white/30 !bg-slate-700"
         />,
         <Handle
-          key={`${idBase}-source`}
-          id={`${idBase}-source`}
+          key={`${nodeId}-${handle.position}-source`}
+          id={resolveHandleId(nodeId, handle, 'source')}
           type="source"
           position={position}
           className="!h-2 !w-2 !border !border-white/30 !bg-slate-700"
@@ -127,8 +139,8 @@ export function renderHandles(
 
     return (
       <Handle
-        key={idBase}
-        id={idBase}
+        key={resolveHandleId(nodeId, handle)}
+        id={resolveHandleId(nodeId, handle)}
         type={handle.type ?? 'source'}
         position={position}
         className="!h-2 !w-2 !border !border-white/30 !bg-slate-700"

@@ -1,16 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
   Badge,
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   ScrollArea,
-  Sheet,
-  SheetContent,
   Tabs,
   TabsContent,
   TabsList,
@@ -26,10 +23,9 @@ import { WaterfallChart } from './WaterfallChart'
 type TabKey = 'overview' | 'waterfall' | 'advanced'
 type InsightTone = 'neutral' | 'success' | 'warning' | 'error'
 
-interface TraceDetailPanelProps {
+interface TraceDetailContentProps {
   journey: TraceJourney
   spans?: SpanEntry[]
-  onClose: () => void
   onSelectNode?: (nodeId: string) => void
 }
 
@@ -113,33 +109,13 @@ function defaultSelectedStepId(journey: TraceJourney): string | undefined {
   return journey.stages.find((stage) => stage.status === 'error')?.stageId ?? journey.stages.at(-1)?.stageId
 }
 
-export function TraceDetailPanel({ journey, spans = [], onClose, onSelectNode }: TraceDetailPanelProps) {
+export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
   const [selectedStageId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
-
-  useEffect(() => {
-    setSelectedStageId(defaultSelectedStepId(journey))
-    setTab('overview')
-  }, [journey.traceId])
 
   const selectedStage = useMemo(
     () => journey.stages.find((stage) => stage.stageId === selectedStageId) ?? journey.stages.at(-1) ?? journey.stages[0],
     [journey.stages, selectedStageId],
-  )
-
-  const identifierEntries = useMemo(
-    () =>
-      [
-        ['mailbox_owner', journey.identifiers.mailboxOwner],
-        ['provider', journey.identifiers.provider],
-        ['thread_id', journey.identifiers.threadId],
-        ['reply_draft_id', journey.identifiers.replyDraftId],
-        ['job_id', journey.identifiers.jobId],
-        ['request_id', journey.identifiers.requestId],
-        ['content_hash', journey.identifiers.contentHash],
-        ['journey_key', journey.identifiers.journeyKey],
-      ].filter((entry): entry is [string, string] => Boolean(entry[1])),
-    [journey.identifiers],
   )
 
   const failedStep = useMemo(
@@ -196,257 +172,221 @@ export function TraceDetailPanel({ journey, spans = [], onClose, onSelectNode }:
   const focusMeta = !failedStep && slowestStep?.durationMs ? formatDurationText(slowestStep.durationMs) : null
 
   return (
-    <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <SheetContent side="right" className="w-[440px] gap-0 p-0 sm:max-w-[440px]">
-      <header className="border-b border-[var(--border-default)] px-4 py-3">
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">Run</h2>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              {journey.stages.length} {journey.stages.length === 1 ? 'step' : 'steps'} · updated {formatEasternTime(journey.lastUpdatedAt)}
-            </p>
-          </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Close
-          </Button>
-        </div>
+    <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)} className="flex min-h-0 flex-1 flex-col">
+      <div className="border-b border-[var(--border-default)] px-4 py-3">
+        <TabsList className="min-h-0 border-none bg-transparent p-0">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced telemetry</TabsTrigger>
+        </TabsList>
+      </div>
 
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <Badge variant={journeyStatusVariant(journey.status)}>{journey.status}</Badge>
-          <DurationBadge durationMs={journey.durationMs} />
-          {journey.rootEntity ? <Badge variant="secondary">{journey.rootEntity}</Badge> : null}
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          {identifierEntries.length === 0 ? (
-            <span className="text-xs text-[var(--text-muted)]">No key IDs on this run yet.</span>
-          ) : (
-            identifierEntries.slice(0, 4).map(([label, value]) => (
-              <Badge key={label} variant="secondary">
-                {label}: {value}
-              </Badge>
-            ))
-          )}
-        </div>
-      </header>
-
-      <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)} className="flex min-h-0 flex-1 flex-col">
-        <div className="border-b border-[var(--border-default)] px-4 py-3">
-          <TabsList className="min-h-0 border-none bg-transparent p-0">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced telemetry</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
-          <ScrollArea className="h-full">
-            <div className="space-y-4 px-4 py-3">
-              <section className="grid grid-cols-2 gap-3">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Status</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Duration</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                      {formatDurationText(journey.durationMs) ?? 'Running'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Last Updated</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>{focusLabel}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{focusValue}</p>
-                    {focusMeta ? <p className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</p> : null}
-                  </CardContent>
-                </Card>
-              </section>
-
-              {insights.length > 0 ? (
-                <section className="space-y-2">
-                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
-                  {insights.map((insight, index) => (
-                    <div
-                      key={`${insight.text}-${index}`}
-                      className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
-                    >
-                      {insightIcon(insight.tone)}
-                      <span>{insight.text}</span>
-                    </div>
-                  ))}
-                </section>
-              ) : null}
-
-              <section className="space-y-2">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
-                {journey.stages.length === 0 ? (
-                  <PanelSkeleton lines={2} />
-                ) : (
-                  <div className="relative ml-3">
-                    {/* Vertical connecting line */}
-                    <div
-                      className="absolute left-[7px] top-3 w-px bg-[var(--border-default)]"
-                      style={{ height: `calc(100% - 24px)` }}
-                    />
-
-                    {journey.stages.map((stage, index) => {
-                      const errorSummary = stageErrorSummary(stage)
-                      const isError = stage.status === 'error'
-                      const isActive = stage.status === 'running' || stage.status === 'partial'
-                      const dotColor = isError
-                        ? 'var(--status-error)'
-                        : isActive
-                          ? 'var(--status-active)'
-                          : stage.status === 'success'
-                            ? 'var(--status-success)'
-                            : 'var(--text-muted)'
-
-                      return (
-                        <div key={`${stage.stageId}-${index}`} className="relative flex gap-3 pb-3">
-                          {/* Timeline dot */}
-                          <div className="relative z-10 mt-3 flex shrink-0 items-start">
-                            <div
-                              className="size-[15px] rounded-full border-2 border-[var(--surface-raised)]"
-                              style={{
-                                backgroundColor: dotColor,
-                                boxShadow: isActive ? `0 0 6px ${dotColor}` : undefined,
-                                animation: isActive ? 'flowPulse 2s ease-in-out infinite' : undefined,
-                              }}
-                            />
-                          </div>
-
-                          {/* Step card */}
-                          <Card className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}>
-                            <CardContent className="p-3">
-                              <div className="mb-2 flex items-center gap-2">
-                                <span className="text-sm font-medium text-[var(--text-primary)]">{stepLabel(stage)}</span>
-                                <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
-                                <DurationBadge durationMs={stage.durationMs} />
-                              </div>
-                              <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                                <span>step {index + 1}</span>
-                                {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                                {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                              </div>
-                              {errorSummary ? (
-                                <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
-                                  {errorSummary}
-                                </div>
-                              ) : null}
-                            </CardContent>
-                          </Card>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </section>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="waterfall" className="mt-0 min-h-0 flex-1 pt-0">
-          <ScrollArea className="h-full">
-            <div className="px-4 py-3">
-              <WaterfallChart spans={spans} onSelectNode={onSelectNode} />
-            </div>
-          </ScrollArea>
-        </TabsContent>
-
-        <TabsContent value="advanced" className="mt-0 min-h-0 flex-1 pt-0">
-          <ScrollArea className="h-full">
-            <div className="space-y-4 px-4 py-3">
+      <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-4 px-4 py-3">
+            <section className="grid grid-cols-2 gap-3">
               <Card>
-                <CardContent className="p-3">
-                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run Telemetry</h3>
-                  <div className="mt-3 grid grid-cols-2 gap-3">
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Raw Events</div>
-                        <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.eventCount}</div>
-                      </CardContent>
-                    </Card>
-                    <Card>
-                      <CardContent className="p-3">
-                        <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Steps</div>
-                        <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.stages.length}</div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <Card className="mt-3">
-                    <CardContent className="p-3">
-                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run ID</div>
-                      <code className="mt-1 block break-all text-xs text-[var(--text-primary)]">{journey.traceId}</code>
-                    </CardContent>
-                  </Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Status</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
                 </CardContent>
               </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Duration</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                    {formatDurationText(journey.durationMs) ?? 'Running'}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Last Updated</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>{focusLabel}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{focusValue}</p>
+                  {focusMeta ? <p className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</p> : null}
+                </CardContent>
+              </Card>
+            </section>
 
+            {insights.length > 0 ? (
               <section className="space-y-2">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
-                <div className="space-y-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
+                {insights.map((insight, index) => (
+                  <div
+                    key={`${insight.text}-${index}`}
+                    className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
+                  >
+                    {insightIcon(insight.tone)}
+                    <span>{insight.text}</span>
+                  </div>
+                ))}
+              </section>
+            ) : null}
+
+            <section className="space-y-2">
+              <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
+              {journey.stages.length === 0 ? (
+                <PanelSkeleton lines={2} />
+              ) : (
+                <div className="relative ml-3">
+                    {/* Vertical connecting line */}
+                  <div
+                    className="absolute left-[7px] top-3 w-px bg-[var(--border-default)]"
+                    style={{ height: `calc(100% - 24px)` }}
+                  />
+
                   {journey.stages.map((stage, index) => {
-                    const selected = selectedStage?.stageId === stage.stageId
+                    const errorSummary = stageErrorSummary(stage)
+                    const isError = stage.status === 'error'
+                    const isActive = stage.status === 'running' || stage.status === 'partial'
+                    const dotColor = isError
+                      ? 'var(--status-error)'
+                      : isActive
+                        ? 'var(--status-active)'
+                        : stage.status === 'success'
+                          ? 'var(--status-success)'
+                          : 'var(--text-muted)'
+
                     return (
-                      <button
-                        key={`${stage.stageId}-${index}`}
-                        type="button"
-                        onClick={() => setSelectedStageId(stage.stageId)}
-                        className={`w-full rounded-lg border p-3 text-left ${
-                          selected
-                            ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
-                            : 'border-[var(--border-default)] bg-[var(--surface-primary)]/40'
-                        }`}
-                      >
-                        <div className="mb-2 flex items-center gap-2">
-                          <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
-                          <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
-                          <DurationBadge durationMs={stage.durationMs} />
+                      <div key={`${stage.stageId}-${index}`} className="relative flex gap-3 pb-3">
+                          {/* Timeline dot */}
+                        <div className="relative z-10 mt-3 flex shrink-0 items-start">
+                          <div
+                            className="size-[15px] rounded-full border-2 border-[var(--surface-raised)]"
+                            style={{
+                              backgroundColor: dotColor,
+                              boxShadow: isActive ? `0 0 6px ${dotColor}` : undefined,
+                              animation: isActive ? 'flowPulse 2s ease-in-out infinite' : undefined,
+                            }}
+                          />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                          <span>
-                            seq {stage.startSeq} {'->'} {stage.endSeq}
-                          </span>
-                          {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                          {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                        </div>
-                      </button>
+
+                        {/* Step card */}
+                        <Card className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}>
+                          <CardContent className="p-3">
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-sm font-medium text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                              <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
+                              <DurationBadge durationMs={stage.durationMs} />
+                            </div>
+                            <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                              <span>step {index + 1}</span>
+                              {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
+                              {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
+                            </div>
+                            {errorSummary ? (
+                              <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
+                                {errorSummary}
+                              </div>
+                            ) : null}
+                          </CardContent>
+                        </Card>
+                      </div>
                     )
                   })}
                 </div>
-              </section>
+              )}
+            </section>
+          </div>
+        </ScrollArea>
+      </TabsContent>
 
-              <Card>
-                <CardContent className="p-3">
-                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Selected Step Attributes</h3>
-                  <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
-                    {JSON.stringify(selectedStage?.attrs ?? {}, null, 2)}
-                  </pre>
-                </CardContent>
-              </Card>
-            </div>
-          </ScrollArea>
-        </TabsContent>
-      </Tabs>
-      </SheetContent>
-    </Sheet>
+      <TabsContent value="waterfall" className="mt-0 min-h-0 flex-1 pt-0">
+        <ScrollArea className="h-full">
+          <div className="px-4 py-3">
+            <WaterfallChart spans={spans} onSelectNode={onSelectNode} />
+          </div>
+        </ScrollArea>
+      </TabsContent>
+
+      <TabsContent value="advanced" className="mt-0 min-h-0 flex-1 pt-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-4 px-4 py-3">
+            <Card>
+              <CardContent className="p-3">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run Telemetry</h3>
+                <div className="mt-3 grid grid-cols-2 gap-3">
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Raw Events</div>
+                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.eventCount}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="p-3">
+                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Steps</div>
+                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.stages.length}</div>
+                    </CardContent>
+                  </Card>
+                </div>
+                <Card className="mt-3">
+                  <CardContent className="p-3">
+                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run ID</div>
+                    <code className="mt-1 block break-all text-xs text-[var(--text-primary)]">{journey.traceId}</code>
+                  </CardContent>
+                </Card>
+              </CardContent>
+            </Card>
+
+            <section className="space-y-2">
+              <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
+              <div className="space-y-2">
+                {journey.stages.map((stage, index) => {
+                  const selected = selectedStage?.stageId === stage.stageId
+                  return (
+                    <button
+                      key={`${stage.stageId}-${index}`}
+                      type="button"
+                      onClick={() => setSelectedStageId(stage.stageId)}
+                      className={`w-full rounded-lg border p-3 text-left ${
+                        selected
+                          ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
+                          : 'border-[var(--border-default)] bg-[var(--surface-primary)]/40'
+                      }`}
+                    >
+                      <div className="mb-2 flex items-center gap-2">
+                        <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                        <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
+                        <DurationBadge durationMs={stage.durationMs} />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
+                        <span>
+                          seq {stage.startSeq} {'->'} {stage.endSeq}
+                        </span>
+                        {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
+                        {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+
+            <Card>
+              <CardContent className="p-3">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Selected Step Attributes</h3>
+                <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
+                  {JSON.stringify(selectedStage?.attrs ?? {}, null, 2)}
+                </pre>
+              </CardContent>
+            </Card>
+          </div>
+        </ScrollArea>
+      </TabsContent>
+    </Tabs>
   )
 }

@@ -26,7 +26,6 @@ interface BottomLogPanelProps {
   flow: FlowConfig
   globalLogs: LogEntry[]
   journeys: TraceJourney[]
-  selectedNodeId?: string
   selectedTraceId?: string
   onSelectNode: (nodeId: string) => void
   onSelectTrace: (traceId?: string) => void
@@ -44,7 +43,6 @@ export function BottomLogPanel({
   flow,
   globalLogs,
   journeys,
-  selectedNodeId,
   selectedTraceId,
   onSelectNode,
   onSelectTrace,
@@ -63,14 +61,6 @@ export function BottomLogPanel({
 
   const collapsed = panelHeight <= MIN_BOTTOM_PANEL_HEIGHT
   const maximized = typeof window !== 'undefined' && panelHeight >= window.innerHeight * MAX_HEIGHT_RATIO - 4
-
-  useEffect(() => {
-    if (selectedNodeId) {
-      setActiveNodeFilters(new Set([selectedNodeId]))
-    } else {
-      setActiveNodeFilters(new Set())
-    }
-  }, [selectedNodeId])
 
   const nodeLabels = useMemo(() => {
     const map = new Map<string, string>()
@@ -214,7 +204,7 @@ export function BottomLogPanel({
       window.addEventListener('mousemove', onMouseMove)
       window.addEventListener('mouseup', onMouseUp)
     },
-    [panelHeight],
+    [panelHeight, setPanelHeight],
   )
 
   const toggleNodeFilter = useCallback((nodeId: string) => {

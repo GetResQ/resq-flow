@@ -51,6 +51,7 @@ export function useUrlState() {
     (updates: UrlStateUpdate, options?: UrlStateOptions) => {
       setSearchParams(
         (previous) => {
+          const previousSearch = previous.toString()
           const next = new URLSearchParams(previous)
 
           if ('node' in updates) {
@@ -66,7 +67,7 @@ export function useUrlState() {
             setOrDeleteParam(next, 'view', updates.view)
           }
 
-          return next
+          return next.toString() === previousSearch ? previous : next
         },
         { replace: options?.replace ?? false },
       )

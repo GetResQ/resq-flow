@@ -1,5 +1,4 @@
 import { useMemo } from 'react'
-import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 import {
@@ -70,11 +69,12 @@ export function CommandPalette() {
   const closePalette = () => setCommandPaletteOpen(false)
 
   return (
-    <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
-      <DialogPrimitive.Title className="sr-only">Command palette</DialogPrimitive.Title>
-      <DialogPrimitive.Description className="sr-only">
-        Search flows, actions, node filters, and run filters.
-      </DialogPrimitive.Description>
+    <CommandDialog
+      open={commandPaletteOpen}
+      onOpenChange={setCommandPaletteOpen}
+      title="Command palette"
+      description="Search flows, actions, node filters, and run filters."
+    >
       <CommandInput placeholder="Search flows, actions, nodes, or runs…" />
       <CommandList>
         <CommandEmpty>No commands match that search.</CommandEmpty>

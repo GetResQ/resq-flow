@@ -2,14 +2,11 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
-  Button,
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   ScrollArea,
-  Sheet,
-  SheetContent,
   Tabs,
   TabsContent,
   TabsList,
@@ -17,20 +14,19 @@ import {
 } from '@/components/ui'
 
 import { DurationBadge } from './DurationBadge'
-import { NodeStatusBadge } from './NodeStatusBadge'
 import { PanelSkeleton } from './PanelSkeleton'
-import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
+import type { LogEntry, NodeStatus, SpanEntry } from '../types'
 
-interface NodeDetailPanelProps {
-  node: FlowNodeConfig | null
-  status?: {
-    status: NodeStatus
-    durationMs?: number
-    durationVisibleUntil?: number
-  }
+export interface NodeDetailStatus {
+  status: NodeStatus
+  durationMs?: number
+  durationVisibleUntil?: number
+}
+
+interface NodeDetailContentProps {
+  status?: NodeDetailStatus
   logs: LogEntry[]
   spans: SpanEntry[]
-  onClose: () => void
 }
 
 type TabKey = 'overview' | 'timing'
@@ -89,38 +85,6 @@ function formatRelativeTime(timestampMs: number): string | null {
   return `${Math.round(deltaMs / 86_400_000)}d ago`
 }
 
-function resolveNodeRole(node: FlowNodeConfig): string | null {
-  if (node.style?.icon === 'worker') {
-    return 'Worker'
-  }
-  if (node.style?.icon === 'queue') {
-    return 'Queue'
-  }
-  if (node.style?.icon === 'cron') {
-    return 'Scheduler'
-  }
-  if (node.type === 'diamond') {
-    return 'Decision'
-  }
-  if (node.type === 'cylinder') {
-    return 'Store'
-  }
-  if (node.type === 'badge') {
-    return 'Step'
-  }
-
-  const sublabel = node.sublabel?.trim()
-  if (!sublabel) {
-    return null
-  }
-
-  if (sublabel.toLowerCase() === 'workers') {
-    return 'Worker'
-  }
-
-  return sublabel.replace(/^\(/, '').replace(/\)$/, '')
-}
-
 function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
   const depth = new Map<string, number>()
 
@@ -173,7 +137,7 @@ function insightIcon(tone: InsightTone) {
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDetailPanelProps) {
+export function NodeDetailContent({ status, logs, spans }: NodeDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
 
   const sortedLogs = useMemo(
@@ -219,7 +183,6 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
     latestSpan ? spanSortTime(latestSpan) : 0,
   )
   const lastSeenLabel = formatRelativeTime(lastSeenTimestamp)
-  const roleLabel = node ? resolveNodeRole(node) : null
 
   const insights = useMemo(() => {
     const items: InsightItem[] = []
@@ -281,149 +244,127 @@ export function NodeDetailPanel({ node, status, logs, spans, onClose }: NodeDeta
     return items.slice(0, 2)
   }, [failedSpanCount, latestErrorLog, latestSpan, logs.length, spans.length, status])
 
-  if (!node) {
-    return null
-  }
-
   return (
-    <Sheet open onOpenChange={(open) => (!open ? onClose() : undefined)}>
-      <SheetContent side="right" className="w-[400px] gap-0 p-0 sm:max-w-[400px]">
-      <header className="border-b border-[var(--border-default)] px-4 py-3">
-        <div className="mb-2 flex items-start justify-between gap-2">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--text-primary)]">{node.label}</h2>
-            {roleLabel ? <p className="mt-1 text-sm text-[var(--text-muted)]">{roleLabel}</p> : null}
-          </div>
-          <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            Close
-          </Button>
-        </div>
+    <Tabs
+      value={tab}
+      onValueChange={(value) => setTab(value as TabKey)}
+      className="flex min-h-0 flex-1 flex-col"
+    >
+      <div className="border-b border-[var(--border-default)] px-4 py-3">
+        <TabsList className="border-0">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="timing">Timing</TabsTrigger>
+        </TabsList>
+      </div>
 
-        <div className="flex items-center gap-2">
-          <NodeStatusBadge status={status?.status ?? 'idle'} />
-        </div>
-
-        {node.description ? <p className="mt-3 text-sm leading-6 text-[var(--text-secondary)]">{node.description}</p> : null}
-      </header>
-
-      <Tabs
-        value={tab}
-        onValueChange={(value) => setTab(value as TabKey)}
-        className="flex min-h-0 flex-1 flex-col"
-      >
-        <div className="border-b border-[var(--border-default)] px-4 py-3">
-          <TabsList className="border-0">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="timing">Timing</TabsTrigger>
-          </TabsList>
-        </div>
-
-        <ScrollArea className="flex-1">
-          <div className="px-4 py-3">
-            <TabsContent value="overview" className="mt-0 space-y-4 pt-0">
-              <section className="grid grid-cols-2 gap-3">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Latest Run</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                      {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Last Seen</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
-                  </CardContent>
-                </Card>
-              </section>
-
-              {insights.length > 0 ? (
-                <section className="space-y-2">
-                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
-                  {insights.map((insight, index) => (
-                    <div
-                      key={`${insight.text}-${index}`}
-                      className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
-                    >
-                      {insightIcon(insight.tone)}
-                      <span>{insight.text}</span>
-                    </div>
-                  ))}
-                </section>
-              ) : null}
-            </TabsContent>
-
-            <TabsContent value="timing" className="mt-0 space-y-4 pt-0">
+      <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-4 px-4 py-3">
+            <section className="grid grid-cols-2 gap-3">
               <Card>
-                <CardContent className="p-3">
-                  <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Timing View</h3>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
+                <CardHeader className="pb-2">
+                  <CardDescription>Latest Run</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                    {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
                   </p>
                 </CardContent>
               </Card>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardDescription>Last Seen</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
+                </CardContent>
+              </Card>
+            </section>
 
-              {tracesByTraceId.length === 0 ? (
-                <PanelSkeleton lines={3} />
-              ) : (
-                tracesByTraceId.map(([traceId, traceSpans]) => {
-                  const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
-                  const depthMap = computeDepthMap(traceSpans)
-
-                  return (
-                    <details key={traceId} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/50 p-3" open>
-                      <summary className="cursor-pointer text-sm text-[var(--text-primary)]">
-                        run: {traceId.slice(0, 12)}…
-                      </summary>
-
-                      <div className="mt-2 space-y-2">
-                        {traceSpans.map((span) => {
-                          const depth = depthMap.get(span.spanId) ?? 0
-                          const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
-                          const seenLabel = formatRelativeTime(spanSortTime(span))
-
-                          return (
-                            <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
-                              <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                                <span>{span.spanName}</span>
-                                <DurationBadge durationMs={span.durationMs} />
-                                {seenLabel ? <span className="text-[var(--text-muted)]">{seenLabel}</span> : null}
-                              </div>
-                              <div className="h-2 rounded bg-[var(--surface-inset)]">
-                                <div
-                                  className="h-2 rounded"
-                                  style={{
-                                    width: `${widthPercent}%`,
-                                    backgroundColor: span.status === 'error' ? 'var(--status-error)' : 'var(--accent-primary)',
-                                    opacity: 0.7,
-                                  }}
-                                />
-                              </div>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </details>
-                  )
-                })
-              )}
-
-              <details className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/60 p-3">
-                <summary className="cursor-pointer text-sm text-[var(--text-primary)]">Latest telemetry attributes</summary>
-                <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
-                  {JSON.stringify(latestAttributes ?? {}, null, 2)}
-                </pre>
-              </details>
-            </TabsContent>
+            {insights.length > 0 ? (
+              <section className="space-y-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
+                {insights.map((insight, index) => (
+                  <div
+                    key={`${insight.text}-${index}`}
+                    className={`flex items-start gap-2.5 rounded-lg border border-l-[3px] p-3 text-sm leading-6 ${insightToneClasses(insight.tone)}`}
+                  >
+                    {insightIcon(insight.tone)}
+                    <span>{insight.text}</span>
+                  </div>
+                ))}
+              </section>
+            ) : null}
           </div>
         </ScrollArea>
-      </Tabs>
-      </SheetContent>
-    </Sheet>
+      </TabsContent>
+
+      <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0">
+        <ScrollArea className="h-full">
+          <div className="space-y-4 px-4 py-3">
+            <Card>
+              <CardContent className="p-3">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Timing View</h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                  This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
+                </p>
+              </CardContent>
+            </Card>
+
+            {tracesByTraceId.length === 0 ? (
+              <PanelSkeleton lines={3} />
+            ) : (
+              tracesByTraceId.map(([traceId, traceSpans]) => {
+                const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
+                const depthMap = computeDepthMap(traceSpans)
+
+                return (
+                  <details key={traceId} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/50 p-3" open>
+                    <summary className="cursor-pointer text-sm text-[var(--text-primary)]">
+                      run: {traceId.slice(0, 12)}…
+                    </summary>
+
+                    <div className="mt-2 space-y-2">
+                      {traceSpans.map((span) => {
+                        const depth = depthMap.get(span.spanId) ?? 0
+                        const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
+                        const seenLabel = formatRelativeTime(spanSortTime(span))
+
+                        return (
+                          <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
+                            <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                              <span>{span.spanName}</span>
+                              <DurationBadge durationMs={span.durationMs} />
+                              {seenLabel ? <span className="text-[var(--text-muted)]">{seenLabel}</span> : null}
+                            </div>
+                            <div className="h-2 rounded bg-[var(--surface-inset)]">
+                              <div
+                                className="h-2 rounded"
+                                style={{
+                                  width: `${widthPercent}%`,
+                                  backgroundColor: span.status === 'error' ? 'var(--status-error)' : 'var(--accent-primary)',
+                                  opacity: 0.7,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </details>
+                )
+              })
+            )}
+
+            <details className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/60 p-3">
+              <summary className="cursor-pointer text-sm text-[var(--text-primary)]">Latest telemetry attributes</summary>
+              <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
+                {JSON.stringify(latestAttributes ?? {}, null, 2)}
+              </pre>
+            </details>
+          </div>
+        </ScrollArea>
+      </TabsContent>
+    </Tabs>
   )
 }

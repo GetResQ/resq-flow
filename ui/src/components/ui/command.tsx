@@ -5,7 +5,10 @@ import { Command as CommandPrimitive } from 'cmdk'
 
 import { cn } from '@/lib/utils'
 
-type CommandDialogProps = React.ComponentProps<typeof DialogPrimitive.Root>
+type CommandDialogProps = React.ComponentProps<typeof DialogPrimitive.Root> & {
+  title?: React.ReactNode
+  description?: React.ReactNode
+}
 
 const Command = React.forwardRef<
   React.ElementRef<typeof CommandPrimitive>,
@@ -22,11 +25,18 @@ const Command = React.forwardRef<
 ))
 Command.displayName = 'Command'
 
-const CommandDialog = ({ children, ...props }: CommandDialogProps) => (
+const CommandDialog = ({
+  children,
+  title = 'Command palette',
+  description = 'Search flows, actions, node filters, and run filters.',
+  ...props
+}: CommandDialogProps) => (
   <DialogPrimitive.Root {...props}>
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="fixed inset-0 z-50 [background-color:color-mix(in_srgb,var(--surface-primary)_78%,transparent)]" />
       <DialogPrimitive.Content className="fixed left-1/2 top-[20%] z-50 w-full max-w-xl -translate-x-1/2 overflow-hidden rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)] shadow-2xl focus:outline-none">
+        <DialogPrimitive.Title className="sr-only">{title}</DialogPrimitive.Title>
+        <DialogPrimitive.Description className="sr-only">{description}</DialogPrimitive.Description>
         <Command className="[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-2 [&_[cmdk-group-heading]]:text-xs [&_[cmdk-group-heading]]:font-medium [&_[cmdk-group-heading]]:uppercase [&_[cmdk-group-heading]]:tracking-widest [&_[cmdk-group-heading]]:text-[var(--text-muted)]">
           {children}
         </Command>

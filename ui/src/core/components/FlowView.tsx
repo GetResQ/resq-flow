@@ -7,12 +7,15 @@ import { Badge, Button } from '@/components/ui'
 import { BottomLogPanel } from './BottomLogPanel'
 import { eventMatchesFlow } from '../events'
 import { FlowCanvas } from './FlowCanvas'
+import { InspectorPanel } from './InspectorPanel'
 import { LogsView } from './LogsView'
 import { MetricsView } from './MetricsView'
+import { getNodeInspectorPresentation } from './NodeInspectorPresentation'
 import { FlowSelector } from './FlowSelector'
+import { getTraceInspectorPresentation } from './TraceInspectorPresentation'
 import { useEventPlayback } from '../hooks/useEventPlayback'
-import { NodeDetailPanel } from './NodeDetailPanel'
-import { TraceDetailPanel } from './TraceDetailPanel'
+import { NodeDetailContent } from './NodeDetailPanel'
+import { TraceDetailContent } from './TraceDetailPanel'
 import { useFlowAnimations } from '../hooks/useFlowAnimations'
 import { useLogStream } from '../hooks/useLogStream'
 import { DEFAULT_RELAY_WS_URL, useRelayConnection } from '../hooks/useRelayConnection'
@@ -120,7 +123,13 @@ export function FlowView() {
   }>()
 
   const relayWsUrl = DEFAULT_RELAY_WS_URL
-  const relay = useRelayConnection(relayWsUrl)
+  const {
+    events: relayEvents,
+    connected: relayConnected,
+    reconnecting: relayReconnecting,
+    resetKey: relayResetKey,
+    clearEvents: clearRelayEvents,
+  } = useRelayConnection(relayWsUrl)
 
   const currentFlow = useMemo(
     () => flows.find((flow) => flow.id === flowIdParam) ?? flows[0],
@@ -164,15 +173,15 @@ export function FlowView() {
   }, [activeViewMode, availableViewModes, hasViewParam, setViewMode, viewMode])
 
   const liveEvents = useMemo(
-    () => relay.events.filter((event) => eventMatchesFlow(event, currentFlow.id)),
-    [currentFlow.id, relay.events],
+    () => relayEvents.filter((event) => eventMatchesFlow(event, currentFlow.id)),
+    [currentFlow.id, relayEvents],
   )
   const historyEvents = useMemo(
     () => historyState.events.filter((event) => eventMatchesFlow(event, currentFlow.id)),
     [currentFlow.id, historyState.events],
   )
   const historyPlayback = useEventPlayback(historyEvents, { resetKey: historyState.resetKey })
-  const runtimeSessionKey = `${sourceMode}:${currentFlow.id}:${sourceMode === 'history' ? historyState.resetKey : relay.resetKey}`
+  const runtimeSessionKey = `${sourceMode}:${currentFlow.id}:${sourceMode === 'history' ? historyState.resetKey : relayResetKey}`
   const displayedEvents = sourceMode === 'history' ? historyPlayback.events : liveEvents
   const totalSourceEventCount = sourceMode === 'history' ? historyEvents.length : liveEvents.length
 
@@ -247,13 +256,13 @@ export function FlowView() {
   }, [runtimeSessionKey, updateUrlState])
 
   const clearAll = useCallback(() => {
-    relay.clearEvents()
+    clearRelayEvents()
     updateUrlState({ node: null, run: null, mode: 'live' }, { replace: true })
     setHistoryState({ events: [], resetKey: 0 })
     setHistoryLoading(false)
     setHistoryError(undefined)
     setHistorySummary(undefined)
-  }, [relay, updateUrlState])
+  }, [clearRelayEvents, updateUrlState])
 
   const loadHistory = useCallback(async () => {
     const now = new Date()
@@ -382,6 +391,42 @@ export function FlowView() {
   )
 
   const selectedNode = currentFlow.nodes.find((node) => node.id === selectedNodeId) ?? null
+  const selectedNodeStatus = selectedNodeId ? animations.nodeStatuses.get(selectedNodeId) : undefined
+  const selectedNodeLogs = selectedNodeId ? logStream.nodeLogMap.get(selectedNodeId) ?? [] : []
+  const selectedNodeSpans = selectedNodeId ? traceTimeline.nodeSpans.get(selectedNodeId) ?? [] : []
+  const commandRunOptions = useMemo(
+    () =>
+      traceJourney.journeys.slice(0, 12).map((journey) => ({
+        traceId: journey.traceId,
+        label: journey.rootEntity ?? journey.traceId,
+      })),
+    [traceJourney.journeys],
+  )
+  const handleCommandPaletteLoadHistory = useCallback(() => {
+    void loadHistory()
+  }, [loadHistory])
+  const handleCommandPaletteEscape = useCallback(() => {
+    if (selectedJourney) {
+      setSelectedTraceId(undefined, { replace: true })
+      return
+    }
+
+    if (selectedNode) {
+      setSelectedNodeId(undefined, { replace: true })
+      return
+    }
+
+    if (focusMode) {
+      toggleFocusModeWithLayout()
+    }
+  }, [
+    focusMode,
+    selectedJourney,
+    selectedNode,
+    setSelectedNodeId,
+    setSelectedTraceId,
+    toggleFocusModeWithLayout,
+  ])
 
   useEffect(() => {
     if (focusMode && activeViewMode !== 'canvas') {
@@ -391,51 +436,28 @@ export function FlowView() {
 
   useEffect(() => {
     registerCommandContext({
-      runOptions: traceJourney.journeys.slice(0, 12).map((journey) => ({
-        traceId: journey.traceId,
-        label: journey.rootEntity ?? journey.traceId,
-      })),
+      runOptions: commandRunOptions,
       onSelectViewMode: setActiveFlowViewMode,
       onToggleFocusMode: toggleFocusModeWithLayout,
       onClearSession: clearAll,
-      onLoadHistory: () => {
-        void loadHistory()
-      },
-      onEscape: () => {
-        if (selectedJourney) {
-          setSelectedTraceId(undefined, { replace: true })
-          return
-        }
-
-        if (selectedNode) {
-          setSelectedNodeId(undefined, { replace: true })
-          return
-        }
-
-        if (focusMode) {
-          toggleFocusModeWithLayout()
-        }
-      },
+      onLoadHistory: handleCommandPaletteLoadHistory,
+      onEscape: handleCommandPaletteEscape,
     })
 
     return () => clearCommandContext()
   }, [
     clearAll,
     clearCommandContext,
-    focusMode,
-    loadHistory,
+    commandRunOptions,
+    handleCommandPaletteEscape,
+    handleCommandPaletteLoadHistory,
     registerCommandContext,
     setActiveFlowViewMode,
-    selectedJourney,
-    selectedNode,
-    setSelectedNodeId,
-    setSelectedTraceId,
     toggleFocusModeWithLayout,
-    traceJourney.journeys,
   ])
 
   return (
-    <div className="relative flex h-screen w-screen flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
+    <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
       <AnimatePresence initial={false}>
         {!focusMode ? (
           <motion.div
@@ -448,8 +470,8 @@ export function FlowView() {
             <FlowSelector
               flows={flows}
               currentFlowId={currentFlow.id}
-              connected={relay.connected}
-              reconnecting={relay.reconnecting}
+              connected={relayConnected}
+              reconnecting={relayReconnecting}
               relayWsUrl={relayWsUrl}
               displayedEventCount={displayedEvents.length}
               totalEventCount={totalSourceEventCount}
@@ -559,31 +581,60 @@ export function FlowView() {
           flow={currentFlow}
           globalLogs={logStream.globalLogs}
           journeys={traceJourney.journeys}
-          selectedNodeId={selectedNodeId}
           selectedTraceId={selectedTraceId}
           onSelectNode={handleSelectNode}
           onSelectTrace={handleSelectTrace}
         />
       ) : null}
 
-      {selectedJourney ? (
-        <TraceDetailPanel
-          journey={selectedJourney}
-          spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
-          onClose={() => setSelectedTraceId(undefined, { replace: true })}
-          onSelectNode={(nodeId) => handleSelectNode(nodeId)}
-        />
-      ) : null}
+      {(() => {
+        if (selectedJourney) {
+          const presentation = getTraceInspectorPresentation(selectedJourney)
 
-      {!selectedJourney && selectedNode ? (
-        <NodeDetailPanel
-          node={selectedNode}
-          status={selectedNodeId ? animations.nodeStatuses.get(selectedNodeId) : undefined}
-          logs={selectedNodeId ? logStream.nodeLogMap.get(selectedNodeId) ?? [] : []}
-          spans={selectedNodeId ? traceTimeline.nodeSpans.get(selectedNodeId) ?? [] : []}
-          onClose={() => setSelectedNodeId(undefined, { replace: true })}
-        />
-      ) : null}
+          return (
+            <AnimatePresence initial={false}>
+              <InspectorPanel
+                title={presentation.title}
+                description={presentation.description}
+                headerContent={presentation.headerContent}
+                onClose={() => setSelectedTraceId(undefined, { replace: true })}
+              >
+                <TraceDetailContent
+                  key={selectedJourney.traceId}
+                  journey={selectedJourney}
+                  spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
+                  onSelectNode={(nodeId) => handleSelectNode(nodeId)}
+                />
+              </InspectorPanel>
+            </AnimatePresence>
+          )
+        }
+
+        if (selectedNode) {
+          const presentation = getNodeInspectorPresentation(selectedNode, selectedNodeStatus)
+
+          return (
+            <AnimatePresence initial={false}>
+              <InspectorPanel
+                title={presentation.title}
+                description={presentation.description}
+                headerContent={presentation.headerContent}
+                onClose={() => setSelectedNodeId(undefined, { replace: true })}
+              >
+                <NodeDetailContent
+                  key={selectedNode.id}
+                  status={selectedNodeStatus}
+                  logs={selectedNodeLogs}
+                  spans={selectedNodeSpans}
+                />
+              </InspectorPanel>
+            </AnimatePresence>
+          )
+        }
+
+        return null
+      })()}
+
     </div>
   )
 }

@@ -10,7 +10,7 @@ import {
   type NodeChange,
   type NodeMouseHandler,
 } from '@xyflow/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { edgeTypes } from '../edges'
 import { computeElkLayout } from '../layout/elkLayout'
@@ -38,6 +38,20 @@ function isEditableTarget(target: EventTarget | null): boolean {
     tagName === 'SELECT' ||
     Boolean(target.closest('[contenteditable="true"]'))
   )
+}
+
+function areSetsEqual<T>(left: ReadonlySet<T>, right: ReadonlySet<T>): boolean {
+  if (left.size !== right.size) {
+    return false
+  }
+
+  for (const value of left.values()) {
+    if (!right.has(value)) {
+      return false
+    }
+  }
+
+  return true
 }
 
 function resolveFocusState(
@@ -124,17 +138,16 @@ function mapFlowNodes(
   selectedNodeIds: Set<string>,
   runtimePositions: Map<string, { x: number; y: number }>,
   elkPositions?: Map<string, { x: number; y: number }>,
-  entranceDelays?: Map<string, number>,
-  entranceHidden?: boolean,
+  isEntering?: boolean,
 ): FlowNode[] {
+  let nonGroupIndex = 0
   return flow.nodes.map((node) => {
+    const isNonGroup = node.type !== 'group'
+    const staggerIndex = isNonGroup ? nonGroupIndex++ : 0
     const status = nodeStatuses.get(node.id)
     const dimmed = Boolean(focusNodeIds && !focusNodeIds.has(node.id))
     const selected = selectedNodeIds.has(node.id)
     const runtimePosition = runtimePositions.get(node.id)
-    const staggerDelay = entranceDelays?.get(node.id)
-    const hasEntrance = typeof staggerDelay === 'number'
-    const shouldHide = hasEntrance && entranceHidden
 
     return {
       id: node.id,
@@ -159,11 +172,12 @@ function mapFlowNodes(
         width: node.size?.width,
         height: node.type === 'group' ? node.size?.height : undefined,
         zIndex: node.type === 'group' ? 0 : selected ? 20 : 10,
-        opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : shouldHide ? 0 : 1,
+        opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : 1,
         filter: dimmed ? 'saturate(0.5)' : undefined,
-        transform: shouldHide ? 'scale(0.92)' : undefined,
-        transition: 'opacity 220ms ease, filter 220ms ease, outline 220ms ease, transform 220ms ease',
-        transitionDelay: hasEntrance ? `${staggerDelay}ms` : undefined,
+        transition: 'opacity 220ms ease, filter 220ms ease, outline 220ms ease',
+        animation: isEntering && isNonGroup
+          ? `nodeEntrance 300ms ease-out ${staggerIndex * 30}ms backwards`
+          : undefined,
       },
       extent: node.parentId ? 'parent' : undefined,
       selected,
@@ -244,8 +258,11 @@ export function FlowCanvas({
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     () => new Set(selectedNodeId ? [selectedNodeId] : []),
   )
-  const [entranceDelays, setEntranceDelays] = useState<Map<string, number>>(new Map())
-  const [entranceHidden, setEntranceHidden] = useState(true)
+  const entranceRef = useRef(true)
+  const nonGroupNodeCount = useMemo(
+    () => flow.nodes.filter((node) => node.type !== 'group').length,
+    [flow.nodes],
+  )
 
   useEffect(() => {
     setElkPositions(null)
@@ -253,32 +270,17 @@ export function FlowCanvas({
     setSelectedNodeIds(new Set())
     setSaveState('idle')
 
-    // Trigger entrance stagger for initial load:
-    // 1) Set per-node delays and hide (opacity 0, scale 0.92)
-    // 2) On next frame, reveal — CSS transition + per-node transitionDelay creates stagger
-    // 3) After animations complete, clear delays to remove transitionDelay from future updates
-    const delays = new Map<string, number>()
-    const nonGroupNodes = flow.nodes.filter((n) => n.type !== 'group')
-    nonGroupNodes.forEach((node, index) => {
-      delays.set(node.id, index * 30)
-    })
-    setEntranceDelays(delays)
-    setEntranceHidden(true)
-
-    const raf = requestAnimationFrame(() => {
-      setEntranceHidden(false)
-    })
-
-    const totalMs = nonGroupNodes.length * 30 + 350
-    const clearTimer = window.setTimeout(() => {
-      setEntranceDelays(new Map())
-    }, totalMs)
+    // CSS animation handles the stagger via @keyframes nodeEntrance + animation-delay.
+    // We only track the entering flag so mapFlowNodes applies the animation class.
+    entranceRef.current = true
+    const entranceTimer = window.setTimeout(() => {
+      entranceRef.current = false
+    }, nonGroupNodeCount * 30 + 350)
 
     return () => {
-      cancelAnimationFrame(raf)
-      window.clearTimeout(clearTimer)
+      window.clearTimeout(entranceTimer)
     }
-  }, [flow.id])
+  }, [flow.id, nonGroupNodeCount])
 
   useEffect(() => {
     if (saveState === 'idle') {
@@ -316,15 +318,17 @@ export function FlowCanvas({
   }, [])
 
   useEffect(() => {
-    if (!selectedNodeId) {
-      return
-    }
-
     setSelectedNodeIds((previous) => {
-      if (previous.size === 1 && previous.has(selectedNodeId)) {
-        return previous
+      if (selectedNodeId) {
+        const nextSelectedIds = new Set([selectedNodeId])
+        return areSetsEqual(previous, nextSelectedIds) ? previous : nextSelectedIds
       }
-      return new Set([selectedNodeId])
+
+      if (previous.size <= 1) {
+        return previous.size === 0 ? previous : new Set()
+      }
+
+      return previous
     })
   }, [selectedNodeId])
 
@@ -360,10 +364,9 @@ export function FlowCanvas({
         selectedNodeIds,
         runtimePositions,
         elkPositions ?? undefined,
-        entranceDelays,
-        entranceHidden,
+        entranceRef.current,
       ),
-    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, elkPositions, entranceDelays, entranceHidden],
+    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, elkPositions],
   )
   const initialEdges = useMemo(
     () => mapFlowEdges(flow, activeEdges, focusState.edgeIds),
@@ -383,8 +386,7 @@ export function FlowCanvas({
         selectedNodeIds,
         runtimePositions,
         elkPositions ?? undefined,
-        entranceDelays,
-        entranceHidden,
+        entranceRef.current,
       ),
     )
   }, [
@@ -396,42 +398,45 @@ export function FlowCanvas({
     runtimePositions,
     setNodes,
     elkPositions,
-    entranceDelays,
-    entranceHidden,
   ])
 
   useEffect(() => {
     setEdges(mapFlowEdges(flow, activeEdges, focusState.edgeIds))
   }, [activeEdges, flow, focusState.edgeIds, setEdges])
 
-  const handleNodeClick: NodeMouseHandler = (event, node) => {
-    if (event.shiftKey || event.metaKey || event.ctrlKey) {
-      return
-    }
-
-    setSelectedNodeIds(new Set([node.id]))
-    onSelectNode(node.id)
-  }
-
-  const handleSelectionChange = useCallback(
-    ({ nodes: currentSelection }: { nodes: FlowNode[] }) => {
-      const nextSelectedIds = new Set(currentSelection.map((node) => node.id))
-      setSelectedNodeIds(nextSelectedIds)
-
-      if (currentSelection.length === 1) {
-        onSelectNode(currentSelection[0].id)
+  const handleNodeClick = useCallback<NodeMouseHandler>(
+    (event, node) => {
+      if (event.shiftKey || event.metaKey || event.ctrlKey) {
         return
       }
 
-      onSelectNode(undefined)
+      const nextSelectedIds = new Set([node.id])
+      setSelectedNodeIds((previous) => (areSetsEqual(previous, nextSelectedIds) ? previous : nextSelectedIds))
+
+      if (selectedNodeId !== node.id) {
+        onSelectNode(node.id)
+      }
     },
-    [onSelectNode],
+    [onSelectNode, selectedNodeId],
+  )
+
+  const handleSelectionChange = useCallback(
+    ({ nodes: currentSelection }: { nodes: FlowNode[] }) => {
+      // React Flow selection is canvas-local state. The inspector is opened and
+      // closed by explicit actions elsewhere (node click, pane click, log/run click, close button).
+      const nextSelectedIds = new Set(currentSelection.map((node) => node.id))
+      setSelectedNodeIds((previous) => (areSetsEqual(previous, nextSelectedIds) ? previous : nextSelectedIds))
+    },
+    [],
   )
 
   const handlePaneClick = useCallback(() => {
-    setSelectedNodeIds(new Set())
-    onSelectNode(undefined)
-  }, [onSelectNode])
+    setSelectedNodeIds((previous) => (previous.size === 0 ? previous : new Set()))
+
+    if (selectedNodeId !== undefined) {
+      onSelectNode(undefined)
+    }
+  }, [onSelectNode, selectedNodeId])
 
   const handleNodesChange = useCallback(
     (changes: NodeChange<FlowNode>[]) => {
@@ -502,7 +507,6 @@ export function FlowCanvas({
     } catch {
       setSaveState('failed')
       // Fallback for environments where clipboard is blocked.
-      // eslint-disable-next-line no-console
       console.log('save positions', payload)
     }
   }, [nodes])

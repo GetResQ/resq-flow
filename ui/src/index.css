@@ -195,6 +195,15 @@ body[data-theme='light'] {
   animation: flowPulse 2s ease-in-out infinite;
 }
 
+/* ── Node entrance stagger ── */
+
+@keyframes nodeEntrance {
+  from {
+    opacity: 0;
+    scale: 0.92;
+  }
+}
+
 /* ── Node activation glow ── */
 
 @keyframes nodePing {
