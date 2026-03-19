@@ -14,6 +14,8 @@ const PRIMARY_VERTICAL_GAP = 132
 const PRIMARY_RANK_SPACING = 132
 const RIGHT_HORIZONTAL_OFFSET = 320
 const RIGHT_DOMAIN_COLUMN_OFFSET = 240
+const LEFT_HORIZONTAL_OFFSET = 220
+const LEFT_DOMAIN_COLUMN_OFFSET = 180
 const RIGHT_BASE_VERTICAL_OFFSET = 8
 const RIGHT_RANK_SPACING = 124
 const BRANCH_VERTICAL_CLEARANCE = 28
@@ -144,6 +146,18 @@ export function applyBranchTemplatePositions(
           anchorPosition.y +
           anchorDimensions.height +
           mergeOffset(PRIMARY_VERTICAL_GAP + branch.rank * PRIMARY_RANK_SPACING, dy),
+      })
+      continue
+    }
+
+    if (branch.track === 'left') {
+      nextPositions.set(node.id, {
+        x:
+          anchorPosition.x -
+          nodeDimensionsValue.width -
+          (LEFT_HORIZONTAL_OFFSET + (branch.column ?? 0) * LEFT_DOMAIN_COLUMN_OFFSET) +
+          dx,
+        y: anchorPosition.y + mergeOffset(RIGHT_BASE_VERTICAL_OFFSET + branch.rank * RIGHT_RANK_SPACING, dy),
       })
       continue
     }

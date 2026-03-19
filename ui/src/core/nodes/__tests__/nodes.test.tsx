@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest'
 import { AnnotationNode } from '../AnnotationNode'
 import { BadgeNode } from '../BadgeNode'
 import { CircleNode } from '../CircleNode'
+import { CylinderNode } from '../CylinderNode'
 import { DiamondNode } from '../DiamondNode'
 import { GroupNode } from '../GroupNode'
 import { OctagonNode } from '../OctagonNode'
@@ -97,5 +98,31 @@ describe('shape nodes', () => {
     expect(screen.getByTestId('status-badge-idle')).toBeInTheDocument()
     expect(screen.getByTestId('status-badge-success')).toBeInTheDocument()
     expect(screen.getByTestId('status-badge-error')).toBeInTheDocument()
+  })
+
+  it('renders cylinders with concrete resource tags and hides duplicate titles', () => {
+    renderNode(
+      <>
+        <CylinderNode
+          {...baseNodeProps({
+            label: 'S3',
+            style: { color: 'resource', icon: 's3' },
+            status: { status: 'idle', updatedAt: Date.now() },
+          })}
+        />
+        <CylinderNode
+          {...baseNodeProps({
+            id: 'node-2',
+            label: 'postgres',
+            style: { color: 'resource', icon: 'postgres' },
+            status: { status: 'idle', updatedAt: Date.now() },
+          })}
+        />
+      </>,
+    )
+
+    expect(screen.getByText('S3')).toBeInTheDocument()
+    expect(screen.queryByText(/^postgres$/i)).toBeInTheDocument()
+    expect(screen.getByText('PG')).toBeInTheDocument()
   })
 })

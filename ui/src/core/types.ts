@@ -43,7 +43,7 @@ export interface NodeHandleConfig {
 
 export type LayoutLane = 'main' | 'branch' | 'sidecar' | 'resource' | 'note'
 export type GroupLayoutMode = 'stack' | 'decision-tree'
-export type BranchTrack = 'primary' | 'right'
+export type BranchTrack = 'primary' | 'right' | 'left'
 
 export interface AnnotationAnchorConfig {
   targetId: string
@@ -76,6 +76,7 @@ export interface FlowNodeConfig {
   label: string
   sublabel?: string
   description?: string
+  notes?: string[]
   bullets?: string[]
   style?: NodeStyle
   position: { x: number; y: number }

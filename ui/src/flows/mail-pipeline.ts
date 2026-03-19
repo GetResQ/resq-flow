@@ -101,6 +101,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'pill',
       label: 'vendor email account connected',
       sublabel: '(triggered by Fullstack -> integrations -> oauth flow)',
+      description: 'External mailbox connection trigger that starts the mail pipeline.',
       position: { x: -270, y: -40 },
     },
     {
@@ -108,16 +109,14 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'roundedRect',
       label: 'rrq:queue:mail-backfill',
       sublabel: '(read batches of email)',
+      notes: [
+        'Uses mail_cursors.backfill_page_token to control paging.',
+        'An empty token starts from the first page; a saved token resumes from that page.',
+        'A done marker skips future fetch/enqueue for the mailbox.',
+      ],
       style: { icon: 'queue' },
       position: { x: 110, y: -70 },
       size: { width: 340 },
-    },
-    {
-      id: 'backfill-note',
-      type: 'annotation',
-      label:
-        '* uses mail_cursors.backfill_page_token to control paging\n- empty=start from first page\n- token=resume from that page\n- done marker=skip fetch/enqueue',
-      position: { x: 485, y: -25 },
     },
     {
       id: 'backfill-worker',
@@ -135,6 +134,7 @@ export const mailPipelineFlow: FlowConfig = {
       type: 'roundedRect',
       label: 'rrq cron (scheduler)',
       sublabel: 'function: handle_mail_cron_tick',
+      description: 'Recurring scheduler boundary that decides when mailbox checks should run.',
       style: { icon: 'cron' },
       position: { x: 175, y: 220 },
       size: { width: 250 },
@@ -154,6 +154,10 @@ export const mailPipelineFlow: FlowConfig = {
       id: 'incoming-queue',
       type: 'roundedRect',
       label: 'rrq:queue:mail-incoming',
+      notes: [
+        'Contains both handle_mail_cron_tick and handle_mail_incoming_check jobs.',
+        'Jobs can arrive from multiple vendors and mailboxes.',
+      ],
       style: { icon: 'queue' },
       position: { x: 145, y: 405 },
       size: { width: 315 },
@@ -164,18 +168,14 @@ export const mailPipelineFlow: FlowConfig = {
       ],
     },
     {
-      id: 'incoming-queue-note',
-      type: 'annotation',
-      label:
-        'contains both job types:\n- handle_mail_cron_tick\n- handle_mail_incoming_check\n* jobs can be from multiple vendors/mailboxes',
-      position: { x: 490, y: 420 },
-    },
-    {
       id: 'incoming-worker',
       type: 'rectangle',
       label: 'mail_incoming',
       sublabel: 'workers',
       description: 'Checks connected inboxes for new mail and hands off downstream work.',
+      notes: [
+        'If no incoming_history_id exists yet, incoming processing writes the baseline cursor and stops.',
+      ],
       style: { icon: 'worker' },
       position: { x: 205, y: 535 },
       bullets: workerBullets,
@@ -239,6 +239,8 @@ export const mailPipelineFlow: FlowConfig = {
       id: 'postgres-main',
       type: 'cylinder',
       label: 'postgres',
+      style: { icon: 'postgres' },
+      description: 'Primary relational store for mail cursors and mailbox metadata.',
 
       position: { x: 250, y: 715 },
       handles: [
@@ -278,22 +280,15 @@ export const mailPipelineFlow: FlowConfig = {
       size: { width: 320 },
     },
     {
-      id: 'baseline-note',
-      type: 'annotation',
-      label: 'if no incoming_history_id:\nwrite mail_cursors.incoming_history_id\nand stop',
-      position: { x: 600, y: 560 },
-    },
-    {
-      id: 'thread-store-note',
-      type: 'annotation',
-      label: '- 1 job corresponds to 1 mailbox\n- 1 mailbox can have 1..n mail threads',
-      position: { x: 930, y: 700 },
-    },
-    {
       id: 's3',
       type: 'cylinder',
       label: 'S3',
       style: { icon: 's3' },
+      description: 'Thread artifact store for raw mailbox thread data.',
+      notes: [
+        'One job corresponds to one mailbox.',
+        'A single mailbox can contain 1..n mail threads.',
+      ],
       position: { x: 950, y: 650 },
     },
     {
@@ -370,23 +365,13 @@ export const mailPipelineFlow: FlowConfig = {
       id: 'analyze-decision',
       type: 'diamond',
       label: 'analyze reply decision\n(propose mode)',
+      notes: [
+        'Prechecks run before the LLM branch.',
+        'The LLM can return skip, needs_review, or draft_reply.',
+      ],
       style: { borderStyle: 'dashed' },
       position: { x: 1035, y: 1355 },
       layout: { lane: 'main', order: 60 },
-    },
-    {
-      id: 'analyze-note',
-      type: 'annotation',
-      label: '- prechecks before LLM\n- LLM can return skip / needs_review / draft_reply',
-      position: { x: 1275, y: 1285 },
-      layout: { anchor: { targetId: 'analyze-decision', dx: 240, dy: -70 } },
-    },
-    {
-      id: 'analyze-exception-label',
-      type: 'annotation',
-      label: 'other outcomes',
-      position: { x: 1270, y: 1370 },
-      layout: { anchor: { targetId: 'skip-owner-stop', dx: -8, dy: -34 } },
     },
     {
       id: 'skip-owner-stop',
@@ -572,6 +557,10 @@ export const mailPipelineFlow: FlowConfig = {
       id: 'extract-queue',
       type: 'roundedRect',
       label: 'rrq:queue:mail-extract',
+      notes: [
+        'Contains both handle_mail_extract and handle_mail_recompute_opportunities.',
+        'AI provider credentials are required only for handle_mail_extract.',
+      ],
       style: { icon: 'queue' },
       position: { x: 1565, y: 900 },
       size: { width: 250 },
@@ -580,14 +569,6 @@ export const mailPipelineFlow: FlowConfig = {
         { id: 'in-left', position: 'left', type: 'target' },
         { id: 'out-bottom', position: 'bottom', type: 'source' },
       ],
-    },
-    {
-      id: 'extract-creds-note',
-      type: 'annotation',
-      label:
-        'contains both job types:\n- handle_mail_extract\n- handle_mail_recompute_opportunities\n\n* AI provider creds required for handle_mail_extract only',
-      position: { x: 1825, y: 915 },
-      layout: { anchor: { targetId: 'extract-queue', dx: 260, dy: 15 } },
     },
     {
       id: 'extract-worker',
@@ -631,23 +612,22 @@ export const mailPipelineFlow: FlowConfig = {
       id: 'upsert-contacts',
       type: 'badge',
       label: 'upsert_contacts() to\nmail_extracted_contacts',
+      notes: [
+        'Normalize emails.',
+        'Dedupe per thread.',
+        'Prefer higher-confidence and richer non-empty fields.',
+        'Never overwrite non-empty stored fields with empty values.',
+      ],
 
       position: { x: 1535, y: 1605 },
       size: { width: 220 },
       layout: { lane: 'sidecar', order: 74, branch: { anchorId: 'extract-ai-success', track: 'primary', rank: 0 } },
     },
     {
-      id: 'extract-upsert-note',
-      type: 'annotation',
-      label:
-        '- normalize emails\n- dedupe per thread\n- prefer higher-confidence / richer non-empty fields\n- never overwrite non-empty stored fields with empty',
-      position: { x: 1790, y: 1585 },
-      layout: { anchor: { targetId: 'upsert-contacts', dx: 250, dy: -20 } },
-    },
-    {
       id: 'postgres-extract',
       type: 'cylinder',
       label: 'postgres',
+      style: { icon: 'postgres' },
 
       position: { x: 2050, y: 1635 },
       layout: { lane: 'resource', order: 75 },
@@ -678,6 +658,11 @@ export const mailPipelineFlow: FlowConfig = {
       position: { x: 1535, y: 1995 },
       size: { width: 260 },
       layout: { lane: 'sidecar', order: 78, branch: { anchorId: 'contact-upsert-success', track: 'primary', rank: 0 } },
+      handles: [
+        { id: 'in-top', position: 'top', type: 'target' },
+        { id: 'out-bottom', position: 'bottom', type: 'source' },
+        { id: 'out-right', position: 'right', type: 'source' },
+      ],
     },
     {
       id: 'recompute-enqueue',
@@ -686,10 +671,10 @@ export const mailPipelineFlow: FlowConfig = {
 
       position: { x: 1825, y: 1965 },
       size: { width: 320 },
-      layout: { lane: 'branch', order: 79, branch: { anchorId: 'contact-upsert-success', track: 'right', rank: 1, domain: 'extract', column: 1, dx: -10 } },
+      layout: { lane: 'branch', order: 79, branch: { anchorId: 'extract-record-success', track: 'right', rank: 0, domain: 'extract', column: 0, dx: -80, dy: -8 } },
       handles: [
-        { position: 'top', type: 'target' },
-        { position: 'left', type: 'source' },
+        { id: 'in-left', position: 'left', type: 'target' },
+        { id: 'out-left', position: 'left', type: 'source' },
       ],
     },
     {
@@ -697,18 +682,14 @@ export const mailPipelineFlow: FlowConfig = {
       semanticRole: 'process',
       type: 'rectangle',
       label: 'recompute\nfollow_up_opportunities',
+      notes: [
+        'Scans mail_extracted_contacts for the mailbox.',
+        'Upserts or deletes follow_up_opportunities.',
+      ],
 
       position: { x: 1845, y: 1180 },
       size: { width: 240 },
       layout: { lane: 'branch', order: 69, branch: { anchorId: 'extract-worker', track: 'right', rank: 0, domain: 'extract', column: 1, dx: -20, dy: -12 } },
-    },
-    {
-      id: 'recompute-note',
-      type: 'annotation',
-      label:
-        '- scan mail_extracted_contacts for mailbox\n- upsert/delete follow_up_opportunities',
-      position: { x: 2125, y: 1210 },
-      layout: { anchor: { targetId: 'recompute-process', dx: 280, dy: 20 } },
     },
     {
       id: 'send-queue',
@@ -991,14 +972,16 @@ export const mailPipelineFlow: FlowConfig = {
     },
     {
       id: 'e-extract-recompute-enqueue',
-      source: 'contact-upsert-success',
-      sourceHandle: 'contact-upsert-success-out-bottom',
+      source: 'extract-record-success',
+      sourceHandle: 'extract-record-success-out-right',
       target: 'recompute-enqueue',
+      targetHandle: 'recompute-enqueue-in-left',
       type: 'dashed',
     },
     {
       id: 'e-recompute-enqueue-queue',
       source: 'recompute-enqueue',
+      sourceHandle: 'recompute-enqueue-out-left',
       target: 'extract-queue',
       targetHandle: 'extract-queue-in-left',
       type: 'dashed',

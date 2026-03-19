@@ -19,16 +19,21 @@ const roleTagLabels: Record<string, string> = {
 
 const firstClassRoles = new Set(['trigger', 'queue', 'worker', 'scheduler', 'process', 'resource', 'decision'])
 const firstClassColors = new Set(['queue', 'worker', 'cron', 'process', 'trigger', 'decision', 'resource'])
+const resourceRoleTags: Record<string, string> = {
+  s3: 'S3',
+  postgres: 'PG',
+  redis: 'REDIS',
+}
 
 function resolveRoleTag(semanticRole: string | undefined, color: string | undefined, icon: string | undefined): string | null {
   // Use semanticRole when available — it's the authoritative source
   if (semanticRole) {
-    if (semanticRole === 'resource') return icon ? icon.toUpperCase() : 'RES'
+    if (semanticRole === 'resource') return icon ? (resourceRoleTags[icon] ?? icon.toUpperCase()) : 'STORE'
     return roleTagLabels[semanticRole] ?? null
   }
   // Fallback: derive from color
   if (!color) return null
-  if (color === 'resource') return icon ? icon.toUpperCase() : 'RES'
+  if (color === 'resource') return icon ? (resourceRoleTags[icon] ?? icon.toUpperCase()) : 'STORE'
   if (color === 'cron') return 'CRON'
   const entry = Object.entries(roleTagLabels).find(([, v]) => v.toLowerCase() === color)
   return entry ? entry[1] : null
@@ -36,9 +41,9 @@ function resolveRoleTag(semanticRole: string | undefined, color: string | undefi
 
 function StatusDot({ status }: { status: NodeStatus }) {
   const dotColor = {
-    idle:    'bg-[var(--text-muted)]',
-    active:  'bg-[var(--node-cron-accent)]',
-    success: 'bg-[var(--node-cron-accent)]',
+    idle:    'bg-[var(--status-idle)]',
+    active:  'bg-[var(--status-active)]',
+    success: 'bg-[var(--status-success)]',
     error:   'bg-[var(--status-error)]',
   }[status]
 

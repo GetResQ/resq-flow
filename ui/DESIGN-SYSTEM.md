@@ -212,43 +212,39 @@ Colors are assigned **by semantic role**, not per-node. The factory in `ui/src/f
 | Semantic Role | Color Token | Visual Intent |
 |---|---|---|
 | `trigger` | `trigger` | Green — external starting condition |
-| `queue` | `execution` | Ocean blue — runtime execution family |
-| `worker` | `execution` | Ocean blue — runtime execution family |
-| `scheduler` | `execution` | Ocean blue — runtime execution family |
-| `process` | `execution` | Ocean blue — runtime execution family |
-| `decision` | `decision` | Amber — branching / conditional |
-| `resource` | `resource` | Neutral slate — external storage |
-| `detail` | `detail` | Muted slate — supporting info |
+| `queue` | `queue` | Amber — queue boundary / backlog visibility |
+| `worker` | `worker` | Ocean blue — worker execution family |
+| `scheduler` | `cron` | Neutral slate — temporal scheduler boundary |
+| `process` | `process` | Quieter blue — first-class business process |
+| `decision` | `decision` | Violet — branching / conditional |
+| `resource` | `resource` | Slate-teal — concrete storage/resource boundary |
+| `detail` | `detail` | Muted subordinate row / child detail |
 | `group` | `group` | Muted container |
 | `note` | `detail` | Muted slate — annotations |
 
-### CSS Token Groups
+### Notes And Inspector Rules
 
-Each color token maps to 3 CSS variables: `--node-{token}-border`, `--node-{token}-bg`, `--node-{token}-text`.
+- Notes default to the sidebar, not the canvas.
+- Canvas annotations should be rare and reserved for graph-critical context.
+- Process inspectors should be meaning-first:
+  - purpose
+  - notes / caveats
+  - related resources / side effects
+  - logs and timing after that
+- Detail nodes should stay visually and semantically subordinate to process
+  nodes.
 
-**Dark mode (`:root`)**
+### Resource Label Rules
 
-| Token | Border | Background | Text |
-|---|---|---|---|
-| `execution` | `rgba(66,165,245,0.3)` | `rgba(6,18,40,0.9)` | `#f1f5f9` |
-| `detail` | `rgba(30,58,95,0.7)` | `rgba(6,18,40,0.6)` | `#cbd5e1` |
-| `trigger` | `rgba(34,197,94,0.3)` | `rgba(6,78,59,0.4)` | `#a7f3d0` |
-| `decision` | `rgba(245,158,11,0.35)` | `rgba(69,26,3,0.4)` | `#fde68a` |
-| `resource` | `rgba(30,58,95,0.5)` | `rgba(6,18,40,0.7)` | `#94a3b8` |
-| `group` | `rgba(30,58,95,0.4)` | `rgba(6,18,40,0.3)` | `#64748b` |
+Resource cylinders should use concrete resource type labels.
 
-**Light mode (`:root[data-theme='light']`)**
+Preferred examples:
 
-All `--node-*-bg` values are `#ffffff` (white backgrounds), except `group` which uses `rgba(248,250,252,0.5)`.
+- `PG` + `postgres`
+- `S3`
+- `REDIS`
 
-| Token | Border | Text |
-|---|---|---|
-| `execution` | `rgba(21,101,192,0.28)` | `#0a1929` |
-| `detail` | `rgba(148,163,184,0.5)` | `#334155` |
-| `trigger` | `rgba(22,163,74,0.3)` | `#14532d` |
-| `decision` | `rgba(245,124,0,0.28)` | `#7c2d12` |
-| `resource` | `rgba(148,163,184,0.4)` | `#334155` |
-| `group` | `rgba(148,163,184,0.3)` | `#64748b` |
+Avoid generic visible labels like `RES`, `Store`, or `Data`.
 
 ---
 

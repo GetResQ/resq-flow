@@ -15,7 +15,7 @@ import {
 
 import { DurationBadge } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
-import type { LogEntry, NodeStatus, SpanEntry } from '../types'
+import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
 
 export interface NodeDetailStatus {
   status: NodeStatus
@@ -24,6 +24,7 @@ export interface NodeDetailStatus {
 }
 
 interface NodeDetailContentProps {
+  node: FlowNodeConfig
   status?: NodeDetailStatus
   logs: LogEntry[]
   spans: SpanEntry[]
@@ -137,8 +138,10 @@ function insightIcon(tone: InsightTone) {
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-export function NodeDetailContent({ status, logs, spans }: NodeDetailContentProps) {
+export function NodeDetailContent({ node, status, logs, spans }: NodeDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
+  const showTimingTab = new Set(['queue', 'worker', 'scheduler', 'process', 'decision']).has(node.semanticRole ?? '')
+  const showRuntimeCards = new Set(['queue', 'worker', 'scheduler', 'process', 'decision']).has(node.semanticRole ?? '')
 
   const sortedLogs = useMemo(
     () => [...logs].sort((left, right) => parseIsoTime(right.timestamp) - parseIsoTime(left.timestamp)),
@@ -253,33 +256,35 @@ export function NodeDetailContent({ status, logs, spans }: NodeDetailContentProp
       <div className="border-b border-[var(--border-default)] px-4 py-3">
         <TabsList className="border-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="timing">Timing</TabsTrigger>
+          {showTimingTab ? <TabsTrigger value="timing">Timing</TabsTrigger> : null}
         </TabsList>
       </div>
 
       <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
         <ScrollArea className="h-full">
           <div className="space-y-4 px-4 py-3">
-            <section className="grid grid-cols-2 gap-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Latest Run</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                    {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription>Last Seen</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
-                </CardContent>
-              </Card>
-            </section>
+            {showRuntimeCards ? (
+              <section className="grid grid-cols-2 gap-3">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Latest Run</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
+                      {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
+                    </p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardDescription>Last Seen</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
+                  </CardContent>
+                </Card>
+              </section>
+            ) : null}
 
             {insights.length > 0 ? (
               <section className="space-y-2">
@@ -299,7 +304,7 @@ export function NodeDetailContent({ status, logs, spans }: NodeDetailContentProp
         </ScrollArea>
       </TabsContent>
 
-      <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0">
+      <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0" hidden={!showTimingTab}>
         <ScrollArea className="h-full">
           <div className="space-y-4 px-4 py-3">
             <Card>

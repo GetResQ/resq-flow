@@ -6,6 +6,8 @@ export interface FlowNodeData extends Record<string, unknown> {
   label: string
   semanticRole?: NodeSemanticRole
   sublabel?: string
+  description?: string
+  notes?: string[]
   bullets?: string[]
   style?: NodeStyle
   status?: NodeRuntimeStatus

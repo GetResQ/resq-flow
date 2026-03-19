@@ -12,11 +12,17 @@ const defaultHandles = [
   { position: 'left', type: 'both' },
 ] as const
 
+const resourceRoleTags: Record<string, string> = {
+  s3: 'S3',
+  postgres: 'PG',
+  redis: 'REDIS',
+}
+
 function CylinderStatusDot({ status }: { status: NodeStatus }) {
   const dotColor = {
-    idle:    'bg-[var(--text-muted)]',
-    active:  'bg-[var(--node-cron-accent)]',
-    success: 'bg-[var(--node-cron-accent)]',
+    idle:    'bg-[var(--status-idle)]',
+    active:  'bg-[var(--status-active)]',
+    success: 'bg-[var(--status-success)]',
     error:   'bg-[var(--status-error)]',
   }[status]
 
@@ -32,8 +38,10 @@ export function CylinderNode({ id, data }: NodeProps<FlowNode>) {
   const status = data.status?.status ?? 'idle'
   const svgTone = resolveSvgTone(data.style?.color)
   const familyClass = `node-family-${data.style?.color ?? 'resource'}`
-  // Role tag: use icon as resource type (S3, POSTGRES, REDIS) or generic RES
-  const roleTag = data.style?.icon ? data.style.icon.toUpperCase() : 'RES'
+  const roleTag = data.style?.icon ? (resourceRoleTags[data.style.icon] ?? data.style.icon.toUpperCase()) : 'STORE'
+  const normalizedRoleTag = roleTag.trim().toLowerCase()
+  const normalizedLabel = data.label.trim().toLowerCase()
+  const showTitle = normalizedLabel !== normalizedRoleTag
 
   return (
     <div className={`relative h-28 w-24 ${familyClass}`} style={{ '--node-accent': svgTone.accent } as React.CSSProperties}>
@@ -66,12 +74,14 @@ export function CylinderNode({ id, data }: NodeProps<FlowNode>) {
         >
           {roleTag}
         </span>
-        <p
-          className="w-full truncate text-center text-[10px] font-medium leading-tight"
-          style={{ color: svgTone.stroke }}
-        >
-          {data.label}
-        </p>
+        {showTitle ? (
+          <p
+            className="w-full truncate text-center text-[10px] font-medium leading-tight"
+            style={{ color: svgTone.stroke }}
+          >
+            {data.label}
+          </p>
+        ) : null}
         <CylinderStatusDot status={status} />
       </div>
     </div>

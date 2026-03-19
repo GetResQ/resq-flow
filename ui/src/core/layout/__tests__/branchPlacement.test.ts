@@ -134,4 +134,29 @@ describe('applyBranchTemplatePositions', () => {
     expect(positions.get('right-b')).toEqual({ x: 664, y: 300 })
     expect(positions.get('right-c')).toEqual({ x: 904, y: 228 })
   })
+
+  it('supports left-side auxiliary branches for queue side-effects', () => {
+    const nodes: FlowNodeConfig[] = [
+      {
+        id: 'decision',
+        type: 'diamond',
+        label: 'Decision',
+        position: { x: 500, y: 200 },
+        size: { width: 144, height: 144 },
+      },
+      rectangleNode('left-aux', 0, 0, {
+        anchorId: 'decision',
+        track: 'left',
+        rank: 0,
+      }),
+    ]
+
+    const positions = applyBranchTemplatePositions(
+      nodes,
+      new Map(nodes.map((node) => [node.id, node.position])),
+      new Map(),
+    )
+
+    expect(positions.get('left-aux')).toEqual({ x: 80, y: 208 })
+  })
 })

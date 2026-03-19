@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { computeElkLayout } from '../elkLayout'
 import type { FlowEdgeConfig, FlowNodeConfig } from '../../types'
+import { mailPipelineFlow } from '../../../flows/mail-pipeline'
 
 describe('computeElkLayout', () => {
   it('includes group containers and their children in the computed layout', async () => {
@@ -68,5 +69,10 @@ describe('computeElkLayout', () => {
     expect(childA?.x).toBeGreaterThanOrEqual(0)
     expect(childA?.y).toBeGreaterThanOrEqual(0)
     expect(childB?.y).toBeGreaterThan(childA?.y ?? 0)
+  })
+
+  it('computes layout for the full mail pipeline graph', async () => {
+    const layout = await computeElkLayout(mailPipelineFlow.nodes, mailPipelineFlow.edges)
+    expect(layout).toBeInstanceOf(Map)
   })
 })

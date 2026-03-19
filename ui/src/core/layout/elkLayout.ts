@@ -199,9 +199,16 @@ export async function computeElkLayout(
       })),
   }
 
-  const result = await elk.layout(elkGraph)
-  const positions = new Map<string, LayoutGeometry>()
-  collectLayoutGeometry(result as { id: string; x?: number; y?: number; width?: number; height?: number; children?: unknown[] }, positions)
+  try {
+    const result = await elk.layout(elkGraph)
+    const positions = new Map<string, LayoutGeometry>()
+    collectLayoutGeometry(result as { id: string; x?: number; y?: number; width?: number; height?: number; children?: unknown[] }, positions)
 
-  return positions
+    return positions
+  } catch {
+    // Keep authored/lane/branch positions when ELK cannot safely resolve a
+    // compound graph. This avoids console noise and preserves the current
+    // semantic layout instead of crashing the canvas.
+    return new Map<string, LayoutGeometry>()
+  }
 }

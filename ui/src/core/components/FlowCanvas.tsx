@@ -240,6 +240,7 @@ function mapFlowNodes(
   annotationAnchors: Map<string, AnnotationAnchor>,
   elkLayout?: Map<string, LayoutGeometry>,
   isEntering?: boolean,
+  layoutReady = true,
 ): FlowNode[] {
   const nodeById = new Map(flow.nodes.map((node) => [node.id, node]))
   const directPositions = new Map<string, Position>()
@@ -277,7 +278,7 @@ function mapFlowNodes(
       }
     }
 
-    const defaultDraggable = node.type !== 'annotation'
+    const defaultDraggable = node.type !== 'annotation' && layoutReady
     const defaultSelectable = node.type !== 'annotation'
 
     return {
@@ -291,6 +292,8 @@ function mapFlowNodes(
         label: node.label,
         semanticRole: node.semanticRole,
         sublabel: node.sublabel,
+        description: node.description,
+        notes: node.notes,
         bullets: node.bullets,
         style: node.style,
         handles: node.handles,
@@ -384,6 +387,7 @@ export function FlowCanvas({
   onSelectNode,
 }: FlowCanvasProps) {
   const [elkLayout, setElkLayout] = useState<Map<string, LayoutGeometry> | null>(null)
+  const [layoutReady, setLayoutReady] = useState(false)
   const [interactionMode, setInteractionMode] = useState<CanvasInteractionMode>('pan')
   const [runtimePositions, setRuntimePositions] = useState<Map<string, { x: number; y: number }>>(new Map())
   const [saveState, setSaveState] = useState<'idle' | 'copied' | 'failed'>('idle')
@@ -399,6 +403,7 @@ export function FlowCanvas({
 
   useEffect(() => {
     setElkLayout(null)
+    setLayoutReady(false)
     setRuntimePositions(new Map())
     setSelectedNodeIds(new Set())
     setSaveState('idle')
@@ -422,10 +427,14 @@ export function FlowCanvas({
       .then((layout) => {
         if (!cancelled) {
           setElkLayout(layout)
+          setLayoutReady(true)
         }
       })
       .catch((error) => {
         console.error('ELK layout failed', error)
+        if (!cancelled) {
+          setLayoutReady(true)
+        }
       })
 
     return () => {
@@ -517,8 +526,9 @@ export function FlowCanvas({
         annotationAnchors,
         elkLayout ?? undefined,
         entranceRef.current,
+        layoutReady,
       ),
-    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, annotationAnchors, elkLayout],
+    [flow, nodeStatuses, nodeLogMap, focusState.nodeIds, selectedNodeIds, runtimePositions, annotationAnchors, elkLayout, layoutReady],
   )
   const initialEdges = useMemo(
     () => mapFlowEdges(flow, activeEdges, focusState.edgeIds),
@@ -540,6 +550,7 @@ export function FlowCanvas({
         annotationAnchors,
         elkLayout ?? undefined,
         entranceRef.current,
+        layoutReady,
       ),
     )
   }, [
@@ -552,6 +563,7 @@ export function FlowCanvas({
     annotationAnchors,
     setNodes,
     elkLayout,
+    layoutReady,
   ])
 
   useEffect(() => {
@@ -705,7 +717,16 @@ export function FlowCanvas({
           className="rounded border border-slate-700 bg-slate-900/95 px-2 py-1 text-[10px] text-slate-200"
           onClick={() => {
             setRuntimePositions(new Map())
-            computeElkLayout(flow.nodes, flow.edges).then(setElkLayout).catch(console.error)
+            setLayoutReady(false)
+            computeElkLayout(flow.nodes, flow.edges)
+              .then((layout) => {
+                setElkLayout(layout)
+                setLayoutReady(true)
+              })
+              .catch((error) => {
+                console.error('ELK layout failed', error)
+                setLayoutReady(true)
+              })
           }}
         >
           Re-layout
