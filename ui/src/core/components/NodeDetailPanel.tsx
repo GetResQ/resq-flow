@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
+  Badge,
   Card,
   CardContent,
   CardDescription,
@@ -15,6 +16,7 @@ import {
 
 import { DurationBadge } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
+import { isDefaultVisibleLogEntry } from '../telemetryClassification'
 import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
 
 export interface NodeDetailStatus {
@@ -147,6 +149,10 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
     () => [...logs].sort((left, right) => parseIsoTime(right.timestamp) - parseIsoTime(left.timestamp)),
     [logs],
   )
+  const defaultVisibleLogs = useMemo(
+    () => sortedLogs.filter((entry) => isDefaultVisibleLogEntry(entry)),
+    [sortedLogs],
+  )
 
   const sortedSpans = useMemo(
     () => [...spans].sort((left, right) => spanSortTime(right) - spanSortTime(left)),
@@ -186,6 +192,15 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
     latestSpan ? spanSortTime(latestSpan) : 0,
   )
   const lastSeenLabel = formatRelativeTime(lastSeenTimestamp)
+  const latestExecutionId = latestSpan?.runId ?? latestSpan?.traceId ?? latestLog?.runId ?? latestLog?.traceId
+  const recentActivity = useMemo(() => {
+    const runScoped = latestExecutionId
+      ? defaultVisibleLogs.filter((entry) => (entry.runId ?? entry.traceId) === latestExecutionId)
+      : defaultVisibleLogs
+
+    const source = runScoped.length > 0 ? runScoped : defaultVisibleLogs
+    return source.slice(0, 5)
+  }, [defaultVisibleLogs, latestExecutionId])
 
   const insights = useMemo(() => {
     const items: InsightItem[] = []
@@ -300,6 +315,39 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
                 ))}
               </section>
             ) : null}
+
+            <section className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Recent Activity</h3>
+                {latestExecutionId ? (
+                  <span className="truncate text-xs text-[var(--text-muted)]">latest run {latestExecutionId.slice(0, 12)}…</span>
+                ) : null}
+              </div>
+              {recentActivity.length === 0 ? (
+                <Card>
+                  <CardContent className="p-3">
+                    <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                      No meaningful activity has been surfaced for this node yet.
+                    </p>
+                  </CardContent>
+                </Card>
+              ) : (
+                recentActivity.map((entry, index) => (
+                  <Card key={`${entry.timestamp}-${entry.message}-${index}`}>
+                    <CardContent className="space-y-2 p-3">
+                      <div className="flex items-center gap-2">
+                        <Badge variant={entry.signal === 'critical' ? 'warning' : 'secondary'}>
+                          {entry.signal}
+                        </Badge>
+                        <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
+                        <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
+                      </div>
+                      <p className="text-sm leading-6 text-[var(--text-primary)]">{entry.stageId ? `${entry.stageId}: ${entry.message}` : entry.message}</p>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </section>
           </div>
         </ScrollArea>
       </TabsContent>

@@ -178,6 +178,7 @@ export interface NodeRuntimeStatus {
 }
 
 export type LogLevel = 'info' | 'error'
+export type TelemetrySignal = 'critical' | 'meaningful' | 'operational' | 'raw'
 
 export interface LogEntry {
   timestamp: string
@@ -196,6 +197,8 @@ export interface LogEntry {
   message: string
   status?: 'ok' | 'error'
   durationMs?: number
+  signal: TelemetrySignal
+  defaultVisible: boolean
   attributes?: Record<string, unknown>
   eventType: FlowEvent['type']
 }
