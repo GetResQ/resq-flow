@@ -2,51 +2,83 @@
 
 `resq-flow` is a local development-only flow visualizer for ResQ telemetry.
 
-It is built around one local contract:
+It sits on top of the shared observability stack and turns raw traces and logs into a flow-shaped product experience:
 
-- Producers send OTLP to `Vector` once.
-- `Vector` fans out to `Victoria` and `resq-flow`.
-- `Victoria` remains the storage and query source of truth.
-- `resq-flow` renders a low-latency, flow-oriented live view on top of that stream.
+- a live graph of first-class runtime boundaries
+- run- and node-level drill-down
+- filtered logs that prioritize useful signal over telemetry exhaust
+- replay and fixture support for UI and relay development
+
+`Victoria` remains the durable storage and query source of truth. `resq-flow` is the flow-aware consumer and presentation layer.
 
 ## Topology
 
 ```text
-producer(s) -> Vector -> VictoriaLogs / VictoriaTraces / VictoriaMetrics
-                     \
-                      -> resq-flow relay -> WebSocket -> UI
+resq-agent -> OTLP -> Vector -> Victoria
+                           \
+                            -> resq-flow relay -> WebSocket -> UI
 ```
 
-The applied local Vector runtime config lives in the `fullstack` repo at:
+The normal local mode is:
 
-- `observability/vector/vector.yaml`
+1. producers emit once
+2. `Vector` fans out
+3. `Victoria` remains primary storage and query
+4. `resq-flow` focuses on visualization, history, and flow-aware detail
 
-This repo keeps a discoverable example snippet in:
+This repo keeps a discoverable Vector example in:
 
 - `examples/vector/resq-flow-fanout.yaml`
 
-## Flow Model
+## What resq-flow is solving
 
-Each flow has two layers:
+Traditional observability tools are still necessary, but they often make a business or worker flow hard to read quickly.
 
-- Shared JSON contract in `ui/src/flow-contracts/*.json`
-- Optional TypeScript view config in `ui/src/flows/*.ts`
+`resq-flow` exists to answer questions like:
+
+- what path did this run take
+- where is work currently sitting
+- which boundary actually failed
+- which details matter, and which ones are just exhaust
+
+The goal is not to replace logs or traces. The goal is to make the execution spine visible while keeping drill-down rich.
+
+## Core principles
+
+The current product direction is built around a few stable ideas:
+
+- real queue and worker boundaries stay first-class by default
+- meaningful decisions and processes can also be first-class when they deserve it
+- the graph should stay sparse while drill-down stays rich
+- notes default to the sidebar, not the canvas
+- canvas detail and logs should share the same default filtering model
+- default surfaces should prioritize `critical`, `meaningful`, and selected `operational` signal
+- raw telemetry belongs behind advanced or show-all views
+- one node should have one consistent visible name across canvas, sidebar, logs, filters, and run views
+
+## Flow model
+
+Each flow currently has two layers:
+
+- shared JSON contract in `ui/src/flow-contracts/*.json`
+- optional TypeScript view config in `ui/src/flows/*.ts`
 
 The JSON contract is the stable shared boundary. It defines:
 
 - coarse telemetry matching rules
 - context retention rules
-- the flow identity/name used by the relay and UI
+- the flow identity and name used by the relay and UI
 
-The TypeScript view config is optional. It provides rich UI concerns such as:
+The TypeScript flow config is optional. It provides rich UI concerns such as:
 
 - React Flow nodes and edges
-- node/span mapping
+- span and node mapping
 - graph-specific presentation
+- layout metadata such as lanes, grouping, and branch behavior
 
-If a flow has no TypeScript view config yet, it still exists as a headless flow for history, logs, trace detail, and future non-graph views.
+If a flow has no TypeScript view config yet, it still exists as a headless flow for history, logs, run detail, and future non-graph views.
 
-## Relay Behavior
+## Relay behavior
 
 The Rust relay:
 
@@ -58,27 +90,27 @@ The Rust relay:
 - publishes WebSocket `snapshot` and `batch` envelopes for live clients
 - applies the same contract-driven filtering model to history queries via `flow_id`
 
-The React Flow canvas is the first rich view, but the normalized event model stays compatible with headless and future non-graph experiences.
+The React Flow canvas is the first rich view, but the normalized event model is meant to stay compatible with headless and future non-graph experiences.
 
-## Recommended Local Mode
+## Recommended local mode
 
 Use `resq-flow` behind the shared Vector stack by default:
 
-1. Start the shared observability stack from `fullstack`.
-2. Start `resq-flow` with `make dev`.
-3. Let Vector fan out a filtered copy of traces/logs to `http://host.docker.internal:4200`.
-4. Verify endpoints with `make print-endpoints`.
-5. Verify live ingest with `make verify-ingest`.
+1. start the shared observability stack from `fullstack`
+2. start `resq-flow` with `make dev`
+3. let Vector fan out a filtered copy of traces and logs to `http://host.docker.internal:4200`
+4. verify endpoints with `make print-endpoints`
+5. verify live ingest with `make verify-ingest`
 
 ### Vector coarse-filter policy
 
 For v1, the Vector layer stays coarse and cheap:
 
-- Do not fan out metrics to `resq-flow`.
-- Fan out logs only when they include the explicit mail telemetry event contract such as `mail_e2e_event`.
-- Fan out traces when the OTLP batch clearly contains stable mail markers such as `rrq:queue:mail-`, `handle_mail_`, `mail_` worker names, or mail stage IDs like `incoming.*`, `analyze.*`, `extract.*`, and `send.*`.
-- Treat `service.name` as a helpful secondary signal, not the only gate.
-- Keep exact flow membership out of Vector. The relay owns exact contract matching and `matched_flow_ids`.
+- do not fan out metrics to `resq-flow`
+- fan out logs only when they include the explicit mail telemetry event contract such as `mail_e2e_event`
+- fan out traces when the OTLP batch clearly contains stable mail markers such as `rrq:queue:mail-`, `handle_mail_`, `mail_` worker names, or mail stage IDs like `incoming.*`, `analyze.*`, `extract.*`, and `send.*`
+- treat `service.name` as a helpful secondary signal, not the only gate
+- keep exact flow membership out of Vector; the relay owns exact contract matching and `matched_flow_ids`
 
 ### Best-effort fanout
 
@@ -89,7 +121,7 @@ The `resq-flow` fanout sinks should be intentionally best-effort:
 - in-memory buffering with `drop_newest` when full
 - Victoria path remains the primary path even if `resq-flow` is down
 
-## Direct Mode
+## Direct mode
 
 Direct-to-relay mode still exists for isolated debugging:
 
@@ -97,6 +129,15 @@ Direct-to-relay mode still exists for isolated debugging:
 - logs: `http://localhost:4200/v1/logs`
 
 Use it only when you intentionally want to bypass the shared Vector path.
+
+## Design and docs
+
+Key references in this repo:
+
+- `ui/DESIGN-SYSTEM.md`
+- `examples/vector/resq-flow-fanout.yaml`
+
+If you change product direction, naming rules, filtering rules, or graph behavior, keep the surrounding docs and design references in sync with the code.
 
 ## Development
 
