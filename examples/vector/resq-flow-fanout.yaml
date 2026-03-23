@@ -22,9 +22,9 @@
 #
 # Note:
 # With `use_otlp_decoding: true`, these filters operate on the decoded OTLP
-# export request object. A whole OTLP batch is forwarded when it contains any
-# stable mail marker. The relay still performs exact flow matching and tags
-# events with `matched_flow_ids`.
+# export request object. A whole OTLP batch is forwarded when it contains the
+# shared flow-event contract markers. The relay still performs exact flow
+# matching and tags events with `matched_flow_ids`.
 
 transforms:
   resq_flow_logs_filter:
@@ -34,7 +34,10 @@ transforms:
     condition:
       type: vrl
       source: |
-        match(downcase(encode_json(.)), r'mail_e2e_event')
+        payload = downcase(encode_json(.))
+        match(payload, r'flow_event') &&
+        match(payload, r'flow_id') &&
+        match(payload, r'component_id')
 
   resq_flow_traces_filter:
     type: filter
@@ -44,16 +47,8 @@ transforms:
       type: vrl
       source: |
         payload = downcase(encode_json(.))
-        match_any(payload, [
-          r'rrq:queue:mail-',
-          r'handle_mail_',
-          r'\bmail_[a-z0-9_]+\b',
-          r'\bincoming\.[a-z0-9_.-]+\b',
-          r'\banalyze\.[a-z0-9_.-]+\b',
-          r'\bextract\.[a-z0-9_.-]+\b',
-          r'\bsend\.[a-z0-9_.-]+\b',
-          r'service\.name.{0,160}mail',
-        ])
+        match(payload, r'flow_id') &&
+        match(payload, r'component_id')
 
 sinks:
   otlp_traces_to_resq_flow:

@@ -14,7 +14,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.300Z',
         trace_id: 'trace-a',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_result',
           stage_id: 'send.finalize',
@@ -31,7 +31,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.100Z',
         trace_id: 'trace-a',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'run-1',
           action: 'enqueue',
           stage_id: 'incoming.write_threads',
@@ -47,7 +47,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.200Z',
         trace_id: 'trace-a',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_pickup',
           stage_id: 'analyze.decision',
@@ -150,7 +150,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.000Z',
         trace_id: 'trace-d',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'thread-301',
           component_id: 'analyze-queue',
           action: 'enqueue',
@@ -163,7 +163,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.100Z',
         trace_id: 'trace-d',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'thread-301',
           component_id: 'send-queue',
           action: 'enqueue',
@@ -176,7 +176,7 @@ describe('useTraceJourney', () => {
         timestamp: '2026-03-05T12:00:00.200Z',
         trace_id: 'trace-d',
         attributes: {
-          event: 'mail_e2e_event',
+          event: 'flow_event',
           run_id: 'thread-301',
           component_id: 'send-worker',
           action: 'worker_pickup',

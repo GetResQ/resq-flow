@@ -108,7 +108,7 @@ async fn reports_ingest_activity_after_trace_and_log_posts() {
                   "spanId": "bbbbbbbbbbbbbbbb",
                   "body": { "stringValue": "mail event" },
                   "attributes": [
-                    { "key": "event", "value": { "stringValue": "mail_e2e_event" } },
+                    { "key": "event", "value": { "stringValue": "flow_event" } },
                     { "key": "action", "value": { "stringValue": "enqueue" } },
                     { "key": "queue_name", "value": { "stringValue": "rrq:queue:mail-analyze" } }
                   ]
