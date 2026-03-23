@@ -21,7 +21,7 @@ fn trace_payload(span_id: &str, timestamp_nanos: &str) -> serde_json::Value {
                   "startTimeUnixNano": timestamp_nanos,
                   "endTimeUnixNano": (timestamp_nanos.parse::<u128>().expect("timestamp") + 10_000_000).to_string(),
                   "attributes": [
-                    { "key": "event", "value": { "stringValue": "mail_e2e_event" } }
+                    { "key": "event", "value": { "stringValue": "flow_event" } }
                   ]
                 }
               ]

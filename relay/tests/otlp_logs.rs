@@ -9,7 +9,7 @@ use prost::Message as _;
 use serde_json::json;
 
 #[tokio::test]
-async fn posts_mail_e2e_logs_and_receives_log_event() {
+async fn posts_flow_event_logs_and_receives_log_event() {
     let server = common::spawn_server().await;
     let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
 
@@ -30,7 +30,7 @@ async fn posts_mail_e2e_logs_and_receives_log_event() {
                   "spanId": "bbbbbbbbbbbbbbbb",
                   "body": { "stringValue": "mail event" },
                   "attributes": [
-                    { "key": "event", "value": { "stringValue": "mail_e2e_event" } },
+                    { "key": "event", "value": { "stringValue": "flow_event" } },
                     { "key": "flow_id", "value": { "stringValue": "mail-pipeline" } },
                     { "key": "run_id", "value": { "stringValue": "thread-123" } },
                     { "key": "component_id", "value": { "stringValue": "analyze-queue" } },
@@ -101,7 +101,7 @@ async fn posts_mail_e2e_logs_and_receives_log_event() {
 }
 
 #[tokio::test]
-async fn filters_non_mail_e2e_logs() {
+async fn filters_non_flow_event_logs() {
     let server = common::spawn_server().await;
     let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
 
@@ -161,7 +161,7 @@ async fn drops_logs_with_unknown_explicit_flow_id() {
                   "spanId": "dddddddddddddddd",
                   "body": { "stringValue": "mail event" },
                   "attributes": [
-                    { "key": "event", "value": { "stringValue": "mail_e2e_event" } },
+                    { "key": "event", "value": { "stringValue": "flow_event" } },
                     { "key": "flow_id", "value": { "stringValue": "unknown-flow" } },
                     { "key": "component_id", "value": { "stringValue": "analyze-queue" } },
                     { "key": "action", "value": { "stringValue": "enqueue" } },
@@ -189,7 +189,7 @@ async fn drops_logs_with_unknown_explicit_flow_id() {
 }
 
 #[tokio::test]
-async fn posts_protobuf_mail_e2e_logs_and_receives_log_event() {
+async fn posts_protobuf_flow_event_logs_and_receives_log_event() {
     let server = common::spawn_server().await;
     let mut socket = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
 
@@ -209,7 +209,7 @@ async fn posts_protobuf_mail_e2e_logs_and_receives_log_event() {
                     span_id: vec![0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb, 0xbb],
                     body: Some(string_any_value("mail event")),
                     attributes: vec![
-                        string_attribute("event", "mail_e2e_event"),
+                        string_attribute("event", "flow_event"),
                         string_attribute("flow_id", "mail-pipeline"),
                         string_attribute("run_id", "thread-123"),
                         string_attribute("component_id", "analyze-queue"),

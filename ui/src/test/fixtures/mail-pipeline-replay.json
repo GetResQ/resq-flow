@@ -5,7 +5,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-001",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-backfill",
       "function_name": "handle_mail_backfill_start",
@@ -27,7 +27,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-002",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-backfill",
       "worker_name": "mail_backfill",
@@ -94,7 +94,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-003",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "threads_written",
       "status": "ok",
       "provider": "gmail",
@@ -165,7 +165,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-004",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "metadata_written",
       "status": "ok",
       "provider": "gmail",
@@ -212,7 +212,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-005",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-extract",
       "function_name": "handle_mail_extract",
@@ -237,7 +237,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-006",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-extract",
       "function_name": "handle_mail_extract",
@@ -262,7 +262,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-007",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-backfill",
       "function_name": "handle_mail_backfill_chunk",
@@ -307,7 +307,7 @@
     "trace_id": "trace-backfill-001",
     "span_id": "log-008",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_backfill_start",
       "worker_name": "mail_backfill",
@@ -329,7 +329,7 @@
     "trace_id": "trace-extract-201",
     "span_id": "log-009",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-extract",
       "worker_name": "mail_extract",
@@ -378,7 +378,7 @@
     "trace_id": "trace-extract-202",
     "span_id": "log-010",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-extract",
       "worker_name": "mail_extract",
@@ -427,7 +427,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-011",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-backfill",
       "worker_name": "mail_backfill",
@@ -488,7 +488,7 @@
     "trace_id": "trace-extract-201",
     "span_id": "log-012",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "extract.upsert_contacts",
       "stage_name": "Extract: upsert contacts",
@@ -515,7 +515,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-013",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-incoming",
       "function_name": "handle_mail_incoming_check",
@@ -563,7 +563,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-014",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "cursor_updated",
       "stage_id": "scheduler.cursor_update",
       "stage_name": "Incoming: cursor update",
@@ -662,7 +662,7 @@
     "trace_id": "trace-extract-201",
     "span_id": "log-015",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_extract",
       "worker_name": "mail_extract",
@@ -709,7 +709,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-016",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "threads_written",
       "status": "ok",
       "provider": "gmail",
@@ -780,7 +780,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-017",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "metadata_written",
       "status": "ok",
       "provider": "gmail",
@@ -827,7 +827,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-018",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-extract",
       "function_name": "handle_mail_extract",
@@ -852,7 +852,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-019",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-extract",
       "function_name": "handle_mail_extract",
@@ -877,7 +877,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-020",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-incoming",
       "worker_name": "mail_incoming",
@@ -920,7 +920,7 @@
     "trace_id": "trace-extract-202",
     "span_id": "log-021",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "extract.upsert_contacts",
       "stage_name": "Extract: upsert contacts",
@@ -976,7 +976,7 @@
     "trace_id": "trace-extract-202",
     "span_id": "log-022",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_extract",
       "worker_name": "mail_extract",
@@ -1030,7 +1030,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-023",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "threads_written",
       "stage_id": "incoming.write_threads",
       "stage_name": "Incoming: write new mail threads",
@@ -1119,7 +1119,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-024",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "metadata_written",
       "stage_id": "incoming.write_metadata",
       "stage_name": "Incoming: write mail threads metadata",
@@ -1178,7 +1178,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-025",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-analyze",
       "function_name": "handle_mail_analyze_reply",
@@ -1203,7 +1203,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-026",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-extract",
       "function_name": "handle_mail_extract",
@@ -1255,7 +1255,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-027",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "cursor_updated",
       "stage_id": "incoming.cursor_update",
       "stage_name": "Incoming: cursor update",
@@ -1331,7 +1331,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-028",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_incoming_check",
       "worker_name": "mail_incoming",
@@ -1353,7 +1353,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-029",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-analyze",
       "worker_name": "mail_analyze",
@@ -1402,7 +1402,7 @@
     "trace_id": "trace-extract-301",
     "span_id": "log-030",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-extract",
       "worker_name": "mail_extract",
@@ -1451,7 +1451,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-031",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "analyze.decision",
       "stage_name": "Analyze: decision",
@@ -1478,7 +1478,7 @@
     "trace_id": "trace-extract-301",
     "span_id": "log-032",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "extract.upsert_contacts",
       "stage_name": "Extract: upsert contacts",
@@ -1505,7 +1505,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-033",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "analyze.draft_insert",
       "stage_name": "Analyze: draft insert",
@@ -1533,7 +1533,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-034a",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "analyze.action_batch_auto_approve",
       "stage_name": "Analyze: auto-approve action batch",
@@ -1562,7 +1562,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-034b",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "analyze.execute_enqueue",
       "stage_name": "Analyze: execute-approved enqueue",
@@ -1588,7 +1588,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-034",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "actions.send_enqueue",
       "stage_name": "Execute-approved: send handoff",
@@ -1616,7 +1616,7 @@
     "trace_id": "trace-actions-301",
     "span_id": "log-034-send-enqueue",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "enqueue",
       "queue_name": "rrq:queue:mail-send",
       "function_name": "handle_mail_send_reply",
@@ -1664,7 +1664,7 @@
     "trace_id": "trace-incoming-001",
     "span_id": "log-035",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_analyze_reply",
       "worker_name": "mail_analyze",
@@ -1711,7 +1711,7 @@
     "trace_id": "trace-backfill-002",
     "span_id": "log-036",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_backfill_chunk",
       "worker_name": "mail_backfill",
@@ -1759,7 +1759,7 @@
     "trace_id": "trace-extract-301",
     "span_id": "log-037",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_extract",
       "worker_name": "mail_extract",
@@ -1782,7 +1782,7 @@
     "trace_id": "trace-send-301",
     "span_id": "log-038",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_pickup",
       "queue_name": "rrq:queue:mail-send",
       "worker_name": "mail_send",
@@ -1829,7 +1829,7 @@
     "trace_id": "trace-send-301",
     "span_id": "log-039",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "send.precheck",
       "stage_name": "Send: precheck",
@@ -1854,7 +1854,7 @@
     "trace_id": "trace-send-301",
     "span_id": "log-040",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "send.provider_call",
       "stage_name": "Send: provider call",
@@ -1879,7 +1879,7 @@
     "trace_id": "trace-send-301",
     "span_id": "log-041",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "stage",
       "stage_id": "send.finalize",
       "stage_name": "Send: finalize",
@@ -1929,7 +1929,7 @@
     "trace_id": "trace-send-301",
     "span_id": "log-042",
     "attributes": {
-      "event": "mail_e2e_event",
+      "event": "flow_event",
       "action": "worker_result",
       "function_name": "handle_mail_send_reply",
       "worker_name": "mail_send",

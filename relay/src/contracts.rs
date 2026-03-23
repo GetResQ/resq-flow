@@ -138,6 +138,14 @@ impl FlowRegistry {
             format!("({})", clauses.join(" or "))
         };
 
+        if let Some(selected_flow_id) = flow_id.map(str::trim).filter(|value| !value.is_empty()) {
+            query.push_str(" and ");
+            query.push_str(&format!(
+                "flow_id:{}",
+                quote_logsql_string(selected_flow_id)
+            ));
+        }
+
         if let Some(term) = search.map(str::trim).filter(|term| !term.is_empty()) {
             let quoted = quote_logsql_string(term);
             let clauses = [
@@ -431,4 +439,55 @@ fn quote_logsql_string(value: &str) -> String {
     }
     out.push('"');
     out
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn contract(id: &str, log_events: &[&str]) -> FlowContract {
+        FlowContract {
+            version: 1,
+            id: id.to_string(),
+            name: id.to_string(),
+            telemetry: FlowTelemetryContract {
+                log_events: log_events
+                    .iter()
+                    .map(|value| (*value).to_string())
+                    .collect(),
+                ..FlowTelemetryContract::default()
+            },
+            keep_context: FlowKeepContext::default(),
+        }
+    }
+
+    #[test]
+    fn selected_flow_history_query_scopes_shared_event_name_by_flow_id() {
+        let registry = FlowRegistry {
+            contracts: Arc::new(vec![
+                contract("mail-pipeline", &["flow_event"]),
+                contract("nora-pipeline", &["flow_event"]),
+            ]),
+        };
+
+        let query = registry
+            .history_log_query(Some("mail-pipeline"), None)
+            .expect("query");
+
+        assert_eq!(query, r#"event:"flow_event" and flow_id:"mail-pipeline""#);
+    }
+
+    #[test]
+    fn unselected_history_query_keeps_shared_event_query_broad() {
+        let registry = FlowRegistry {
+            contracts: Arc::new(vec![
+                contract("mail-pipeline", &["flow_event"]),
+                contract("nora-pipeline", &["flow_event"]),
+            ]),
+        };
+
+        let query = registry.history_log_query(None, None).expect("query");
+
+        assert_eq!(query, r#"event:"flow_event""#);
+    }
 }

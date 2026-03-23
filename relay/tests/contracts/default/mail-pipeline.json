@@ -3,7 +3,7 @@
   "id": "mail-pipeline",
   "name": "Mail Pipeline",
   "telemetry": {
-    "log_events": ["mail_e2e_event"],
+    "log_events": ["flow_event"],
     "queue_prefixes": ["rrq:queue:mail-"],
     "function_prefixes": ["handle_mail_"],
     "worker_prefixes": ["mail_"],

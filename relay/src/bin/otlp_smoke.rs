@@ -67,7 +67,7 @@ async fn main() -> Result<()> {
                     span_id: hex::decode(span_id.clone())?,
                     body: Some(string_any_value(&message)),
                     attributes: vec![
-                        string_attribute("event", "mail_e2e_event"),
+                        string_attribute("event", "flow_event"),
                         string_attribute("action", "enqueue"),
                         string_attribute("function_name", "handle_mail_extract"),
                         string_attribute("queue_name", "rrq:queue:mail-analyze"),
