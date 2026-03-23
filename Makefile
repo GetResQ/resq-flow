@@ -1,4 +1,4 @@
-.PHONY: dev dev-relay dev-ui test test-relay test-ui build-cli test-cli replay replay-direct verify-ingest print-endpoints smoke-relay-ingest smoke-vector-fanout
+.PHONY: dev dev-relay dev-ui test test-relay test-ui build-cli test-cli test-cli-integration replay replay-direct verify-ingest print-endpoints smoke-relay-ingest smoke-vector-fanout
 
 RESQ_FLOW_BASE_URL ?= http://localhost:4200
 RESQ_FLOW_VECTOR_LOGS_URL ?= http://localhost:4318/v1/logs
@@ -26,6 +26,9 @@ build-cli: ## Build the CLI package
 
 test-cli: ## Run CLI tests
 	cd cli && bun test
+
+test-cli-integration: ## Run CLI integration tests only
+	cd cli && bun test src/__tests__/integration-*.test.ts
 
 replay: ## Run mock event replay (start relay + ui first)
 	cd ui && bun run replay

@@ -174,6 +174,8 @@ make build-cli
 make test-cli
 ```
 
+`make test-cli` runs both the fast CLI unit tests and the integration tests that boot a real relay on random local ports. If you only want the integration subset, run `make test-cli-integration`.
+
 Run the built entrypoint directly:
 
 ```bash
