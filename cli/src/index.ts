@@ -3,6 +3,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
+import { runLogsCommand, LOGS_HELP } from "./commands/logs.js";
 import { runStatusCommand, STATUS_HELP } from "./commands/status.js";
 import {
   EXIT_CODES,
@@ -16,14 +17,6 @@ import {
   writeStdout,
   type CliIo,
 } from "./lib/output.js";
-
-const LOGS_HELP = `Usage:
-  resq-flow logs <subcommand> [options]
-
-Subcommands:
-  list                List recent log rows
-  tail                Stream live log rows
-`;
 
 const MAIN_HELP = renderHelp({
   usage: `Usage:
@@ -80,7 +73,9 @@ export async function runCli(
           fetchImpl: runtime.fetchImpl,
         });
       case "logs":
-        return runLogsCommand(rest, io);
+        return runLogsCommand(rest, io, {
+          fetchImpl: runtime.fetchImpl,
+        });
       default:
         throw new BadArgumentError(`unknown command: ${command}`);
     }
@@ -89,15 +84,6 @@ export async function runCli(
     writeStderr(io, cliError.message);
     return cliError.exitCode;
   }
-}
-
-function runLogsCommand(args: string[], io: CliIo): number {
-  if (args.length === 0 || (args.length === 1 && args[0] === "--help")) {
-    writeStdout(io, LOGS_HELP.trimEnd());
-    return EXIT_CODES.OK;
-  }
-
-  throw new BadArgumentError(`unknown logs command: ${args[0]}`);
 }
 
 export function readCliVersion(): string {

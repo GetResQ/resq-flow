@@ -41,22 +41,22 @@ export interface RelayCapabilitiesPayload {
 
 export interface RelayFlowEvent {
   type: string;
-  seq?: number;
+  seq?: number | undefined;
   timestamp: string;
-  event_kind?: string;
-  node_key?: string;
-  queue_delta?: number;
-  span_name?: string;
-  service_name?: string;
-  trace_id?: string;
-  span_id?: string;
-  parent_span_id?: string;
-  start_time?: string;
-  end_time?: string;
-  duration_ms?: number;
+  event_kind?: string | undefined;
+  node_key?: string | undefined;
+  queue_delta?: number | undefined;
+  span_name?: string | undefined;
+  service_name?: string | undefined;
+  trace_id?: string | undefined;
+  span_id?: string | undefined;
+  parent_span_id?: string | undefined;
+  start_time?: string | undefined;
+  end_time?: string | undefined;
+  duration_ms?: number | undefined;
   attributes: JsonObject;
-  message?: string;
-  matched_flow_ids?: string[];
+  message?: string | undefined;
+  matched_flow_ids?: string[] | undefined;
 }
 
 export interface RelayHistoryPayload {
@@ -72,16 +72,15 @@ export interface RelayHistoryPayload {
 }
 
 export interface CliLogRow {
-  seq?: number;
+  seq?: number | undefined;
   timestamp: string;
   flowId: string;
-  runId?: string;
-  traceId?: string;
-  stageId?: string;
-  stageName?: string;
-  componentId?: string;
-  status?: string;
+  runId?: string | undefined;
+  traceId?: string | undefined;
+  stageId?: string | undefined;
+  stageName?: string | undefined;
+  componentId?: string | undefined;
+  status?: string | undefined;
   message: string;
   attributes: JsonObject;
-  rawType: string;
 }

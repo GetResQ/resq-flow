@@ -38,6 +38,32 @@ export function formatEnabled(value: boolean): string {
   return value ? "yes" : "no";
 }
 
+export function renderAlignedRows(rows: string[][]): string[] {
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const columnCount = rows[0]?.length ?? 0;
+  const widths = Array.from({ length: columnCount }, (_, columnIndex) =>
+    Math.max(
+      ...rows.map((row) => row[columnIndex]?.length ?? 0),
+      0,
+    ),
+  );
+
+  return rows.map((row) =>
+    row
+      .map((value, columnIndex) => {
+        if (columnIndex === row.length - 1) {
+          return value;
+        }
+
+        return value.padEnd(widths[columnIndex] ?? value.length);
+      })
+      .join("  "),
+  );
+}
+
 export function formatJsonValue(value: JsonValue | undefined): string {
   if (value === undefined) {
     return "";
