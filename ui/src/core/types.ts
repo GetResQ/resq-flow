@@ -195,6 +195,7 @@ export interface LogEntry {
   level: LogLevel
   nodeId?: string
   message: string
+  displayMessage?: string
   status?: 'ok' | 'error'
   durationMs?: number
   signal: TelemetrySignal

@@ -18,6 +18,7 @@ import {
   TableRow,
 } from '@/components/ui'
 
+import { getLogDisplayMessage } from '../logPresentation'
 import { formatEasternTime } from '../time'
 import type { LogEntry } from '../types'
 import { DurationBadge } from './DurationBadge'
@@ -36,6 +37,7 @@ interface LogRowData {
   nodeLabel: string
   nodeId?: string
   message: string
+  messageTitle: string
   entry: LogEntry
 }
 
@@ -65,7 +67,11 @@ export function LogsTable({
         timestamp: entry.timestamp,
         nodeLabel: entry.nodeId ? nodeLabels.get(entry.nodeId) ?? entry.nodeId : '—',
         nodeId: entry.nodeId,
-        message: (entry.stageName ?? entry.stageId) ? `${entry.stageName ?? entry.stageId}: ${entry.message}` : entry.message,
+        message: getLogDisplayMessage(entry),
+        messageTitle:
+          entry.displayMessage && entry.displayMessage !== entry.message
+            ? `${entry.displayMessage}\nraw: ${entry.message}`
+            : getLogDisplayMessage(entry),
         entry,
       })),
     [logs, nodeLabels],
@@ -110,7 +116,7 @@ export function LogsTable({
         accessorKey: 'message',
         header: 'Message',
         cell: ({ row }) => (
-          <span className="block truncate" title={row.original.message}>
+          <span className="block truncate" title={row.original.messageTitle}>
             {row.original.message}
           </span>
         ),

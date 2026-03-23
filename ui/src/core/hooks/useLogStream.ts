@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import { eventExecutionKey } from '../events'
+import { buildFlowLogDisplayMessage } from '../logPresentation'
 import { inferErrorState, readStringAttribute, resolveMappedNodeId } from '../mapping'
 import { classifyFlowEvent, isDefaultVisibleSignal } from '../telemetryClassification'
 import type { FlowEvent, LogEntry, LogStreamState, SpanMapping } from '../types'
@@ -22,6 +23,10 @@ function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
   const stageName = readStringAttribute(event.attributes, 'stage_name')
   const retryable = readStringAttribute(event.attributes, 'retryable')
   const signal = classifyFlowEvent(event)
+  const message =
+    event.message ??
+    event.span_name ??
+    (event.type === 'span_start' ? 'span started' : event.type === 'span_end' ? 'span completed' : 'log event')
 
   return {
     timestamp: event.timestamp,
@@ -41,10 +46,15 @@ function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
     durationMs: event.duration_ms,
     signal,
     defaultVisible: isDefaultVisibleSignal(signal),
-    message:
-      event.message ??
-      event.span_name ??
-      (event.type === 'span_start' ? 'span started' : event.type === 'span_end' ? 'span completed' : 'log event'),
+    message,
+    displayMessage: buildFlowLogDisplayMessage({
+      stageId,
+      stageName,
+      message,
+      retryable: retryable ? retryable.toLowerCase() === 'true' : undefined,
+      errorClass: readStringAttribute(event.attributes, 'error_class'),
+      attributes: event.attributes,
+    }),
     attributes: event.attributes,
     eventType: event.type,
   }
@@ -55,67 +65,57 @@ export function useLogStream(
   spanMapping: SpanMapping,
   sessionKey?: number | string,
 ): LogStreamState {
-  const [globalLogs, setGlobalLogs] = useState<LogEntry[]>([])
-  const [nodeLogMap, setNodeLogMap] = useState<Map<string, LogEntry[]>>(new Map())
-
-  const processedIndexRef = useRef(0)
-  const sessionKeyRef = useRef<number | string | undefined>(sessionKey)
+  const [clearMarker, setClearMarker] = useState<{
+    sessionKey?: number | string
+    eventCount: number
+  }>({
+    sessionKey,
+    eventCount: 0,
+  })
 
   const clearSession = useCallback(() => {
-    processedIndexRef.current = 0
-    setGlobalLogs([])
-    setNodeLogMap(new Map())
-  }, [])
-
-  useEffect(() => {
-    if (sessionKeyRef.current === sessionKey) {
-      return
-    }
-    sessionKeyRef.current = sessionKey
-    clearSession()
-  }, [clearSession, sessionKey])
-
-  useEffect(() => {
-    if (events.length < processedIndexRef.current) {
-      clearSession()
-      processedIndexRef.current = 0
-    }
-
-    if (events.length === processedIndexRef.current) {
-      return
-    }
-
-    const pending = events.slice(processedIndexRef.current)
-    processedIndexRef.current = events.length
-
-    setGlobalLogs((previous) => {
-      const merged = [...previous]
-      for (const event of pending) {
-        const nodeId = resolveMappedNodeId(event, spanMapping) ?? undefined
-        merged.push(toLogEntry(event, nodeId))
-      }
-      merged.sort(compareLogs)
-      return merged
+    setClearMarker({
+      sessionKey,
+      eventCount: events.length,
     })
+  }, [events.length, sessionKey])
 
-    setNodeLogMap((previous) => {
-      const next = new Map(previous)
+  const startIndex =
+    clearMarker.sessionKey === sessionKey && clearMarker.eventCount <= events.length
+      ? clearMarker.eventCount
+      : 0
 
-      for (const event of pending) {
-        const nodeId = resolveMappedNodeId(event, spanMapping)
-        if (!nodeId) {
-          continue
-        }
+  const visibleEvents = useMemo(() => events.slice(startIndex), [events, startIndex])
 
-        const list = next.get(nodeId) ?? []
-        list.push(toLogEntry(event, nodeId))
-        list.sort(compareLogs)
-        next.set(nodeId, list)
+  const globalLogs = useMemo(() => {
+    const next = visibleEvents.map((event) => {
+      const nodeId = resolveMappedNodeId(event, spanMapping) ?? undefined
+      return toLogEntry(event, nodeId)
+    })
+    next.sort(compareLogs)
+    return next
+  }, [spanMapping, visibleEvents])
+
+  const nodeLogMap = useMemo(() => {
+    const next = new Map<string, LogEntry[]>()
+
+    for (const event of visibleEvents) {
+      const nodeId = resolveMappedNodeId(event, spanMapping)
+      if (!nodeId) {
+        continue
       }
 
-      return next
-    })
-  }, [clearSession, events, spanMapping])
+      const list = next.get(nodeId) ?? []
+      list.push(toLogEntry(event, nodeId))
+      next.set(nodeId, list)
+    }
+
+    for (const list of next.values()) {
+      list.sort(compareLogs)
+    }
+
+    return next
+  }, [spanMapping, visibleEvents])
 
   return {
     globalLogs,

@@ -121,4 +121,45 @@ describe('useLogStream', () => {
     expect(result.current.nodeLogMap.get('send-process')).toHaveLength(1)
     expect(result.current.nodeLogMap.get('extract-worker')).toBeUndefined()
   })
+
+  it('derives summary-first display messages for analyze and send outcomes', async () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:01.000Z',
+        attributes: {
+          run_id: 'run-3',
+          component_id: 'analyze-decision',
+          stage_id: 'analyze.final_result',
+          reply_status: 'needs_review',
+          draft_status: 'needs_review',
+          result_action: 'draft_reply',
+          auto_approved: false,
+        },
+        message: 'analyze finalized reply branch',
+      },
+      {
+        type: 'log',
+        timestamp: '2026-03-03T12:00:02.000Z',
+        attributes: {
+          run_id: 'run-3',
+          component_id: 'send-process',
+          stage_id: 'send.final_result',
+          reply_status: 'send_failed',
+          draft_status: 'send_failed',
+          result_action: 'not_sent',
+        },
+        message: 'send finalized draft outcome',
+      },
+    ]
+
+    const { result } = renderHook(() => useLogStream(events, mailPipelineFlow.spanMapping))
+
+    await waitFor(() => {
+      expect(result.current.globalLogs).toHaveLength(2)
+    })
+
+    expect(result.current.globalLogs[0].displayMessage).toBe('drafted; awaiting manual review')
+    expect(result.current.globalLogs[1].displayMessage).toBe('terminal send failure')
+  })
 })
