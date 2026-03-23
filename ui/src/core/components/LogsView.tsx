@@ -14,6 +14,7 @@ import {
   Toggle,
 } from '@/components/ui'
 
+import { buildLogSearchText } from '../logPresentation'
 import { LogsTable } from './LogsTable'
 import type { FlowConfig, LogEntry } from '../types'
 import type { SourceMode } from '../hooks/useUrlState'
@@ -76,18 +77,7 @@ export function LogsView({
       }
 
       const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId)?.toLowerCase() : ''
-      const nodeId = entry.nodeId?.toLowerCase()
-      const stageName = entry.stageName?.toLowerCase()
-      const componentId = entry.componentId?.toLowerCase()
-      return (
-        entry.message.toLowerCase().includes(query) ||
-        nodeLabel?.includes(query) ||
-        nodeId?.includes(query) ||
-        stageName?.includes(query) ||
-        componentId?.includes(query) ||
-        entry.traceId?.toLowerCase().includes(query) ||
-        entry.runId?.toLowerCase().includes(query)
-      )
+      return buildLogSearchText(entry, nodeLabel).includes(query)
     })
   }, [logs, nodeFilter, nodeLabels, search, selectedTraceId, showAll, statusFilter])
 

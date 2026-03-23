@@ -82,4 +82,30 @@ describe('LogsTable', () => {
     expect(selectedRow).toBeDefined()
     expect(within(selectedRow!).getByText('node-b')).toBeInTheDocument()
   })
+
+  it('shows summary-first messages when a display message is present', () => {
+    render(
+      <LogsTable
+        logs={[
+          {
+            timestamp: '2026-03-17T13:13:00.000Z',
+            level: 'info',
+            nodeId: 'node-a',
+            message: 'analyze finalized reply branch',
+            displayMessage: 'drafted; awaiting manual review',
+            durationMs: 80,
+            signal: 'meaningful',
+            defaultVisible: true,
+            eventType: 'log',
+            traceId: 'run-4',
+            stageId: 'analyze.final_result',
+          },
+        ]}
+        nodeLabels={nodeLabels}
+        onSelectLog={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText('drafted; awaiting manual review')).toBeInTheDocument()
+  })
 })

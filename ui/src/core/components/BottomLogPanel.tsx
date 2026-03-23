@@ -21,6 +21,7 @@ import {
   MIN_BOTTOM_PANEL_HEIGHT,
   useLayoutStore,
 } from '../../stores/layout'
+import { buildLogSearchText } from '../logPresentation'
 import { LogsTable } from './LogsTable'
 import { RunsTable } from './RunsTable'
 
@@ -96,16 +97,7 @@ export function BottomLogPanel({
           return true
         }
         const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) : undefined
-        return (
-          entry.message.toLowerCase().includes(query) ||
-          (nodeLabel ? nodeLabel.toLowerCase().includes(query) : false) ||
-          (entry.nodeId ? entry.nodeId.toLowerCase().includes(query) : false) ||
-          (entry.stageName ? entry.stageName.toLowerCase().includes(query) : false) ||
-          (entry.componentId ? entry.componentId.toLowerCase().includes(query) : false) ||
-          (entry.runId ? entry.runId.toLowerCase().includes(query) : false) ||
-          (entry.traceId ? entry.traceId.toLowerCase().includes(query) : false) ||
-          (entry.stageId ? entry.stageId.toLowerCase().includes(query) : false)
-        )
+        return buildLogSearchText(entry, nodeLabel).includes(query)
       })
   }, [activeNodeFilters, globalLogs, nodeLabels, search, selectedTraceId, showAll])
 

@@ -14,6 +14,7 @@ import {
   TabsTrigger,
 } from '@/components/ui'
 
+import { getLogDisplayMessage } from '../logPresentation'
 import { DurationBadge } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { isDefaultVisibleLogEntry } from '../telemetryClassification'
@@ -342,7 +343,7 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
                         <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
                         <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
                       </div>
-                      <p className="text-sm leading-6 text-[var(--text-primary)]">{entry.stageId ? `${entry.stageId}: ${entry.message}` : entry.message}</p>
+                      <p className="text-sm leading-6 text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
                     </CardContent>
                   </Card>
                 ))

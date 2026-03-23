@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui'
 
+import { buildLogSearchText, getLogDisplayMessage } from '../logPresentation'
 import { formatEasternTime } from '../time'
 import { DurationBadge } from './DurationBadge'
 import type { FlowConfig, LogEntry } from '../types'
@@ -34,12 +35,7 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
   const [nodeFilter, setNodeFilter] = useState<string | 'all'>('all')
   const [liveTail, setLiveTail] = useState(true)
   const listRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    if (selectedNodeId) {
-      setNodeFilter(selectedNodeId)
-    }
-  }, [selectedNodeId])
+  const effectiveNodeFilter = selectedNodeId ?? nodeFilter
 
   const nodeLabels = useMemo(() => {
     const map = new Map<string, string>()
@@ -58,7 +54,7 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
           return false
         }
 
-        if (nodeFilter !== 'all' && entry.nodeId !== nodeFilter) {
+        if (effectiveNodeFilter !== 'all' && entry.nodeId !== effectiveNodeFilter) {
           return false
         }
 
@@ -66,13 +62,10 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
           return true
         }
 
-        return (
-          entry.message.toLowerCase().includes(query) ||
-          (entry.nodeId ? nodeLabels.get(entry.nodeId)?.toLowerCase().includes(query) : false)
-        )
+        return buildLogSearchText(entry, entry.nodeId ? nodeLabels.get(entry.nodeId) : undefined).includes(query)
       })
       .sort((left, right) => Date.parse(right.timestamp) - Date.parse(left.timestamp))
-  }, [globalLogs, levelFilter, nodeFilter, nodeLabels, search])
+  }, [effectiveNodeFilter, globalLogs, levelFilter, nodeLabels, search])
 
   useEffect(() => {
     if (!open || !liveTail) {
@@ -121,7 +114,7 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
           ))}
         </div>
 
-        <Select value={nodeFilter} onValueChange={(value) => setNodeFilter(value as string | 'all')}>
+        <Select value={effectiveNodeFilter} onValueChange={(value) => setNodeFilter(value as string | 'all')}>
           <SelectTrigger>
             <SelectValue placeholder="All nodes" />
           </SelectTrigger>
@@ -163,7 +156,7 @@ export function LogPanel({ flow, globalLogs, selectedNodeId, onSelectNode }: Log
                   <Badge variant={logVariant(entry.level)}>{entry.level === 'error' ? 'Error' : 'OK'}</Badge>
                   <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
                 </div>
-                <p className="truncate text-sm text-[var(--text-primary)]">{entry.message}</p>
+                <p className="truncate text-sm text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
               </button>
             )
           })}
