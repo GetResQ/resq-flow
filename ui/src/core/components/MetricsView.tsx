@@ -166,7 +166,7 @@ export function MetricsView({
         </Card>
       </section>
 
-      <Card className="min-h-0 flex-1 overflow-hidden">
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <CardHeader>
           <CardTitle>Recent runs</CardTitle>
           <CardDescription>Use the same run table interactions without the canvas.</CardDescription>

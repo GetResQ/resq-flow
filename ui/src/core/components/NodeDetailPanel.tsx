@@ -193,15 +193,9 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
     latestSpan ? spanSortTime(latestSpan) : 0,
   )
   const lastSeenLabel = formatRelativeTime(lastSeenTimestamp)
-  const latestExecutionId = latestSpan?.runId ?? latestSpan?.traceId ?? latestLog?.runId ?? latestLog?.traceId
   const recentActivity = useMemo(() => {
-    const runScoped = latestExecutionId
-      ? defaultVisibleLogs.filter((entry) => (entry.runId ?? entry.traceId) === latestExecutionId)
-      : defaultVisibleLogs
-
-    const source = runScoped.length > 0 ? runScoped : defaultVisibleLogs
-    return source.slice(0, 5)
-  }, [defaultVisibleLogs, latestExecutionId])
+    return defaultVisibleLogs.slice(0, 50)
+  }, [defaultVisibleLogs])
 
   const insights = useMemo(() => {
     const items: InsightItem[] = []
@@ -276,9 +270,9 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
         </TabsList>
       </div>
 
-      <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
-        <ScrollArea className="h-full">
-          <div className="space-y-4 px-4 py-3">
+      <TabsContent value="overview" className="mt-0 min-h-0 flex-1 overflow-hidden pt-0">
+        <div className="flex h-full min-h-0 flex-col px-4 py-3">
+          <div className="shrink-0 space-y-4">
             {showRuntimeCards ? (
               <section className="grid grid-cols-2 gap-3">
                 <Card>
@@ -316,41 +310,43 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
                 ))}
               </section>
             ) : null}
-
-            <section className="space-y-2">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Recent Activity</h3>
-                {latestExecutionId ? (
-                  <span className="truncate text-xs text-[var(--text-muted)]">latest run {latestExecutionId.slice(0, 12)}…</span>
-                ) : null}
-              </div>
-              {recentActivity.length === 0 ? (
-                <Card>
-                  <CardContent className="p-3">
-                    <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                      No meaningful activity has been surfaced for this node yet.
-                    </p>
-                  </CardContent>
-                </Card>
-              ) : (
-                recentActivity.map((entry, index) => (
-                  <Card key={`${entry.timestamp}-${entry.message}-${index}`}>
-                    <CardContent className="space-y-2 p-3">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={entry.signal === 'critical' ? 'warning' : 'secondary'}>
-                          {entry.signal}
-                        </Badge>
-                        <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
-                        <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
-                      </div>
-                      <p className="text-sm leading-6 text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
-                    </CardContent>
-                  </Card>
-                ))
-              )}
-            </section>
           </div>
-        </ScrollArea>
+
+          <section className="mt-4 flex min-h-0 flex-1 flex-col gap-2">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Recent Activity</h3>
+              <span className="truncate text-xs text-[var(--text-muted)]">most recent first</span>
+            </div>
+            {recentActivity.length === 0 ? (
+              <Card>
+                <CardContent className="p-3">
+                  <p className="text-sm leading-6 text-[var(--text-secondary)]">
+                    No meaningful activity has been surfaced for this node yet.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <ScrollArea className="min-h-0 flex-1">
+                <div className="space-y-3 pr-3">
+                  {recentActivity.map((entry, index) => (
+                    <Card key={`${entry.timestamp}-${entry.message}-${index}`}>
+                      <CardContent className="space-y-2 p-3">
+                        <div className="flex items-center gap-2">
+                          <Badge variant={entry.signal === 'critical' ? 'warning' : 'secondary'}>
+                            {entry.signal}
+                          </Badge>
+                          <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
+                          <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
+                        </div>
+                        <p className="text-sm leading-6 text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </ScrollArea>
+            )}
+          </section>
+        </div>
       </TabsContent>
 
       <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0" hidden={!showTimingTab}>

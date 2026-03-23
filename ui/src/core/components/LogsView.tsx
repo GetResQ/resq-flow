@@ -92,6 +92,22 @@ export function LogsView({
     }
   }, [filteredLogs, liveTail, sourceMode])
 
+  useEffect(() => {
+    const viewport = getScrollViewport(scrollAreaRef.current)
+    if (!viewport || sourceMode !== 'live') {
+      return
+    }
+
+    const onScroll = () => {
+      setLiveTail(viewport.scrollTop < 12)
+    }
+
+    viewport.addEventListener('scroll', onScroll)
+    onScroll()
+
+    return () => viewport.removeEventListener('scroll', onScroll)
+  }, [sourceMode])
+
   return (
     <div className="flex h-full flex-col gap-4 overflow-hidden px-4 py-4 sm:px-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -145,18 +161,11 @@ export function LogsView({
         </Toggle>
       </div>
 
-      <Card className="min-h-0 flex-1 overflow-hidden">
-        <CardContent className="min-h-0 pt-3">
+      <Card className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <CardContent className="flex min-h-0 flex-1 flex-col pt-3">
           <ScrollArea
             ref={scrollAreaRef}
-            className="h-full"
-            onScrollCapture={() => {
-              const viewport = getScrollViewport(scrollAreaRef.current)
-              if (!viewport || sourceMode !== 'live') {
-                return
-              }
-              setLiveTail(viewport.scrollTop < 12)
-            }}
+            className="min-h-0 flex-1"
           >
             <LogsTable
               logs={filteredLogs}

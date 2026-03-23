@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -141,5 +141,29 @@ describe('LogsView', () => {
     await user.clear(screen.getByPlaceholderText(/search logs/i))
     await user.type(screen.getByPlaceholderText(/search logs/i), 'provider call')
     expect(screen.getByText(/Provider timeout/)).toBeInTheDocument()
+  })
+
+  it('turns live tail off when the user scrolls away from the top', () => {
+    const { container } = render(
+      <LogsView
+        flow={flow}
+        logs={logs}
+        sourceMode="live"
+        onSelectNode={vi.fn()}
+        onSelectTrace={vi.fn()}
+      />,
+    )
+
+    const viewport = container.querySelector('[data-radix-scroll-area-viewport]')
+    expect(viewport).toBeTruthy()
+
+    if (!(viewport instanceof HTMLDivElement)) {
+      throw new Error('Expected logs viewport')
+    }
+
+    viewport.scrollTop = 48
+    fireEvent.scroll(viewport)
+
+    expect(screen.getByRole('button', { name: /live tail off/i })).toBeInTheDocument()
   })
 })
