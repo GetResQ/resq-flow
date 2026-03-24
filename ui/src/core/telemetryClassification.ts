@@ -107,6 +107,12 @@ export function isDefaultVisibleSignal(signal: TelemetrySignal): boolean {
   return signal === 'critical' || signal === 'meaningful'
 }
 
-export function isDefaultVisibleLogEntry(entry: Pick<LogEntry, 'signal' | 'defaultVisible'>): boolean {
+export function isDefaultVisibleLogEntry(
+  entry: Pick<LogEntry, 'signal' | 'defaultVisible' | 'eventType'>,
+): boolean {
+  if ('eventType' in entry && entry.eventType !== 'log') {
+    return false
+  }
+
   return typeof entry.defaultVisible === 'boolean' ? entry.defaultVisible : isDefaultVisibleSignal(entry.signal)
 }

@@ -16,6 +16,7 @@ import {
 
 import type { FlowConfig, LogEntry, TraceJourney } from '../types'
 import { isDefaultVisibleLogEntry } from '../telemetryClassification'
+import { formatRunLabel, formatStepDisplayLabel, isDefaultVisibleJourney } from '../runPresentation'
 import {
   DEFAULT_BOTTOM_PANEL_HEIGHT,
   MIN_BOTTOM_PANEL_HEIGHT,
@@ -113,19 +114,22 @@ export function BottomLogPanel({
     })
 
     if (!query) {
-      return ordered
+      return showAll ? ordered : ordered.filter((journey) => isDefaultVisibleJourney(journey))
     }
 
     return ordered.filter((journey) => {
+      if (!showAll && !isDefaultVisibleJourney(journey)) {
+        return false
+      }
       const stage = journey.stages.at(-1)
       return (
         journey.traceId.toLowerCase().includes(query) ||
-        (journey.rootEntity?.toLowerCase().includes(query) ?? false) ||
-        (stage?.label.toLowerCase().includes(query) ?? false) ||
+        formatRunLabel(journey).toLowerCase().includes(query) ||
+        (stage ? formatStepDisplayLabel(stage).toLowerCase().includes(query) : false) ||
         (journey.errorSummary?.toLowerCase().includes(query) ?? false)
       )
     })
-  }, [journeys, pinnedTraceIds, search])
+  }, [journeys, pinnedTraceIds, search, showAll])
 
 
   useEffect(() => {
@@ -311,7 +315,7 @@ export function BottomLogPanel({
           ) : null}
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
-            {tab === 'logs' ? (
+            {tab === 'logs' || tab === 'traces' ? (
               <Toggle pressed={showAll} size="sm" onPressedChange={setShowAll} aria-label="Show all telemetry">
                 Show all
               </Toggle>

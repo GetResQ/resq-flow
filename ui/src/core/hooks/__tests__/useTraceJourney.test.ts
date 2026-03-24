@@ -194,4 +194,81 @@ describe('useTraceJourney', () => {
       'send-worker:worker.pickup',
     ])
   })
+
+  it('ignores placeholder identifiers when building journeys', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        seq: 1,
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-placeholder',
+        attributes: {
+          event: 'flow_event',
+          run_id: 0,
+          reply_draft_id: 0,
+          mailbox_owner: 'jrojas@getresq.com',
+          component_id: 'incoming-worker',
+          stage_id: 'worker.result',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    const journey = result.current.journeys[0]
+
+    expect(journey.traceId).toBe('trace-placeholder')
+    expect(journey.identifiers.runId).toBeUndefined()
+    expect(journey.identifiers.replyDraftId).toBeUndefined()
+    expect(journey.rootEntity).toBe('jrojas@getresq.com')
+  })
+
+  it('keeps repeated entries of the same stage as separate stage instances', () => {
+    const events: FlowEvent[] = [
+      {
+        type: 'log',
+        seq: 1,
+        timestamp: '2026-03-05T12:00:00.000Z',
+        trace_id: 'trace-repeat',
+        attributes: {
+          event: 'flow_event',
+          run_id: 'run-repeat',
+          component_id: 'extract-queue',
+          stage_id: 'queue.enqueue',
+        },
+      },
+      {
+        type: 'log',
+        seq: 2,
+        timestamp: '2026-03-05T12:00:00.100Z',
+        trace_id: 'trace-repeat',
+        attributes: {
+          event: 'flow_event',
+          run_id: 'run-repeat',
+          component_id: 'extract-worker',
+          stage_id: 'worker.pickup',
+        },
+      },
+      {
+        type: 'log',
+        seq: 3,
+        timestamp: '2026-03-05T12:00:00.200Z',
+        trace_id: 'trace-repeat',
+        attributes: {
+          event: 'flow_event',
+          run_id: 'run-repeat',
+          component_id: 'extract-queue',
+          stage_id: 'queue.enqueue',
+        },
+      },
+    ]
+
+    const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
+    const journey = result.current.journeys[0]
+
+    expect(journey.stages.map((stage) => `${stage.instanceId}:${stage.stageId}`)).toEqual([
+      'extract-queue::queue.enqueue:queue.enqueue',
+      'extract-worker::worker.pickup:worker.pickup',
+      'extract-queue::queue.enqueue#2:queue.enqueue',
+    ])
+  })
 })

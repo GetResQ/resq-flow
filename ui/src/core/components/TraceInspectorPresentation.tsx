@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui'
 
 import { formatEasternTime } from '../time'
 import type { TraceJourney, TraceStatus } from '../types'
+import { formatRunLabel } from '../runPresentation'
 import { DurationBadge } from './DurationBadge'
 
 function journeyStatusVariant(status: TraceStatus): 'default' | 'destructive' | 'success' | 'warning' {
@@ -43,7 +44,7 @@ export function getTraceInspectorPresentation(journey: TraceJourney): {
         <div className="mb-3 flex flex-wrap items-center gap-2">
           <Badge variant={journeyStatusVariant(journey.status)}>{journey.status}</Badge>
           <DurationBadge durationMs={journey.durationMs} />
-          {journey.rootEntity ? <Badge variant="secondary">{journey.rootEntity}</Badge> : null}
+          <Badge variant="secondary">{formatRunLabel(journey)}</Badge>
         </div>
 
         <div className="flex flex-wrap gap-2">

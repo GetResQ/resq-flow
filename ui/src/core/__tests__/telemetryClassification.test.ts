@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { classifyFlowEvent, isDefaultVisibleSignal } from '../telemetryClassification'
-import type { FlowEvent } from '../types'
+import { classifyFlowEvent, isDefaultVisibleLogEntry, isDefaultVisibleSignal } from '../telemetryClassification'
+import type { FlowEvent, LogEntry } from '../types'
 
 describe('telemetryClassification', () => {
   it('classifies generic lifecycle spans as raw', () => {
@@ -69,5 +69,18 @@ describe('telemetryClassification', () => {
 
     expect(classifyFlowEvent(event)).toBe('critical')
     expect(isDefaultVisibleSignal(classifyFlowEvent(event))).toBe(true)
+  })
+
+  it('hides span-derived rows from the default logs view', () => {
+    const entry: LogEntry = {
+      timestamp: '2026-03-24T12:00:00.000Z',
+      level: 'info',
+      signal: 'meaningful',
+      defaultVisible: true,
+      message: 'span completed: mail.analyze_decision',
+      eventType: 'span_end',
+    }
+
+    expect(isDefaultVisibleLogEntry(entry)).toBe(false)
   })
 })

@@ -16,7 +16,8 @@ import {
 
 import { formatEasternTime } from '../time'
 import type { SpanEntry, TraceJourney, TraceStage, TraceStatus } from '../types'
-import { DurationBadge } from './DurationBadge'
+import { formatStepDisplayLabel, formatStepLabel, getJourneySummaryStage, getOverviewStages } from '../runPresentation'
+import { DurationBadge, formatDurationLabel } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { WaterfallChart } from './WaterfallChart'
 
@@ -67,20 +68,12 @@ function insightIcon(tone: InsightTone) {
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-function formatDurationText(durationMs?: number): string | null {
-  if (typeof durationMs !== 'number') {
-    return null
-  }
-
-  if (durationMs < 1_000) {
-    return `${Math.round(durationMs)}ms`
-  }
-
-  return `${(durationMs / 1_000).toFixed(1)}s`
+function stepLabel(step: TraceStage): string {
+  return formatStepLabel(step)
 }
 
-function stepLabel(step: TraceStage): string {
-  return step.label || step.nodeId || step.stageId
+function stepDisplayLabel(step: TraceStage): string {
+  return formatStepDisplayLabel(step)
 }
 
 function stageErrorSummary(stage: TraceStage): string | undefined {
@@ -106,7 +99,15 @@ function stageErrorSummary(stage: TraceStage): string | undefined {
 }
 
 function defaultSelectedStepId(journey: TraceJourney): string | undefined {
-  return journey.stages.find((stage) => stage.status === 'error')?.stageId ?? journey.stages.at(-1)?.stageId
+  const summaryStage = getJourneySummaryStage(journey)
+  return (
+    summaryStage?.instanceId ??
+    summaryStage?.stageId ??
+    journey.stages.find((stage) => stage.status === 'error')?.instanceId ??
+    journey.stages.find((stage) => stage.status === 'error')?.stageId ??
+    journey.stages.at(-1)?.instanceId ??
+    journey.stages.at(-1)?.stageId
+  )
 }
 
 export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceDetailContentProps) {
@@ -114,9 +115,14 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
   const [selectedStageId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
 
   const selectedStage = useMemo(
-    () => journey.stages.find((stage) => stage.stageId === selectedStageId) ?? journey.stages.at(-1) ?? journey.stages[0],
+    () =>
+      journey.stages.find((stage) => (stage.instanceId ?? stage.stageId) === selectedStageId) ??
+      journey.stages.at(-1) ??
+      journey.stages[0],
     [journey.stages, selectedStageId],
   )
+
+  const overviewStages = useMemo(() => getOverviewStages(journey.stages), [journey.stages])
 
   const failedStep = useMemo(
     () => journey.stages.find((stage) => stage.status === 'error'),
@@ -137,18 +143,18 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
     if (journey.status === 'error' && failedStep) {
       items.push({
         tone: 'error',
-        text: `This run failed in ${stepLabel(failedStep)}.`,
+        text: `This run failed in ${stepDisplayLabel(failedStep)}.`,
       })
     } else if (journey.status === 'running' || journey.status === 'partial') {
-      const currentStep = journey.stages.at(-1)
+      const currentStep = getJourneySummaryStage(journey) ?? journey.stages.at(-1)
       items.push({
         tone: 'warning',
-        text: currentStep ? `This run is still active in ${stepLabel(currentStep)}.` : 'This run is still active.',
+        text: currentStep ? `This run is still active in ${stepDisplayLabel(currentStep)}.` : 'This run is still active.',
       })
     }
 
     if (slowestStep && slowestStep.durationMs && journey.stages.length > 1) {
-      const slowestDuration = formatDurationText(slowestStep.durationMs)
+      const slowestDuration = formatDurationLabel(slowestStep.durationMs)
       if (slowestDuration) {
         items.push({
           tone: journey.status === 'error' ? 'neutral' : 'warning',
@@ -165,11 +171,11 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
     }
 
     return items.slice(0, 3)
-  }, [failedStep, journey.stages, journey.status, slowestStep])
+  }, [failedStep, journey, slowestStep])
 
   const focusLabel = failedStep ? 'Failed In' : 'Slowest Step'
-  const focusValue = failedStep ? stepLabel(failedStep) : slowestStep ? stepLabel(slowestStep) : 'None yet'
-  const focusMeta = !failedStep && slowestStep?.durationMs ? formatDurationText(slowestStep.durationMs) : null
+  const focusValue = failedStep ? stepDisplayLabel(failedStep) : slowestStep ? stepLabel(slowestStep) : 'None yet'
+  const focusMeta = !failedStep && slowestStep?.durationMs ? formatDurationLabel(slowestStep.durationMs) : null
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)} className="flex min-h-0 flex-1 flex-col">
@@ -184,38 +190,38 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
       <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
         <ScrollArea className="h-full">
           <div className="space-y-4 px-4 py-3">
-            <section className="grid grid-cols-2 gap-3">
-              <Card>
+            <section className="grid grid-cols-1 gap-3">
+              <Card className="min-w-0">
                 <CardHeader className="pb-2">
                   <CardDescription>Status</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
+                <CardContent className="min-w-0">
+                  <p className="truncate text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader className="pb-2">
                   <CardDescription>Duration</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                    {formatDurationText(journey.durationMs) ?? 'Running'}
+                <CardContent className="min-w-0">
+                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">
+                    {typeof journey.durationMs === 'number' ? formatDurationLabel(journey.durationMs) : 'Running'}
                   </p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader className="pb-2">
                   <CardDescription>Last Updated</CardDescription>
                 </CardHeader>
-                <CardContent>
-                  <p className="text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
+                <CardContent className="min-w-0">
+                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
                 </CardContent>
               </Card>
-              <Card>
+              <Card className="min-w-0">
                 <CardHeader className="pb-2">
                   <CardDescription>{focusLabel}</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="min-w-0">
                   <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{focusValue}</p>
                   {focusMeta ? <p className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</p> : null}
                 </CardContent>
@@ -239,7 +245,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
 
             <section className="space-y-2">
               <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
-              {journey.stages.length === 0 ? (
+              {overviewStages.length === 0 ? (
                 <PanelSkeleton lines={2} />
               ) : (
                 <div className="relative ml-3">
@@ -249,7 +255,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                     style={{ height: `calc(100% - 24px)` }}
                   />
 
-                  {journey.stages.map((stage, index) => {
+                  {overviewStages.map((stage, index) => {
                     const errorSummary = stageErrorSummary(stage)
                     const isError = stage.status === 'error'
                     const isActive = stage.status === 'running' || stage.status === 'partial'
@@ -279,7 +285,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                         <Card className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}>
                           <CardContent className="p-3">
                             <div className="mb-2 flex items-center gap-2">
-                              <span className="text-sm font-medium text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                              <span className="text-sm font-medium text-[var(--text-primary)]">{stepDisplayLabel(stage)}</span>
                               <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
                               <DurationBadge durationMs={stage.durationMs} />
                             </div>
@@ -346,12 +352,13 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
               <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
               <div className="space-y-2">
                 {journey.stages.map((stage, index) => {
-                  const selected = selectedStage?.stageId === stage.stageId
+                  const stageSelectionId = stage.instanceId ?? stage.stageId
+                  const selected = (selectedStage?.instanceId ?? selectedStage?.stageId) === stageSelectionId
                   return (
                     <button
-                      key={`${stage.stageId}-${index}`}
+                      key={stage.instanceId ?? `${stage.stageId}-${index}`}
                       type="button"
-                      onClick={() => setSelectedStageId(stage.stageId)}
+                      onClick={() => setSelectedStageId(stageSelectionId)}
                       className={`w-full rounded-lg border p-3 text-left ${
                         selected
                           ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
@@ -359,7 +366,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                       }`}
                     >
                       <div className="mb-2 flex items-center gap-2">
-                        <span className="text-sm text-[var(--text-primary)]">{stepLabel(stage)}</span>
+                        <span className="text-sm text-[var(--text-primary)]">{stepDisplayLabel(stage)}</span>
                         <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
                         <DurationBadge durationMs={stage.durationMs} />
                       </div>

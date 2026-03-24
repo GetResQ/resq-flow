@@ -18,6 +18,7 @@ import { TraceDetailContent } from './TraceDetailPanel'
 import { useFlowAnimations } from '../hooks/useFlowAnimations'
 import { useLogStream } from '../hooks/useLogStream'
 import { DEFAULT_RELAY_WS_URL, useRelayConnection } from '../hooks/useRelayConnection'
+import { formatRunLabel } from '../runPresentation'
 import { formatEasternTime } from '../time'
 import { useTraceJourney } from '../hooks/useTraceJourney'
 import { useTraceTimeline } from '../hooks/useTraceTimeline'
@@ -396,7 +397,7 @@ export function FlowView() {
     () =>
       traceJourney.journeys.slice(0, 12).map((journey) => ({
         traceId: journey.traceId,
-        label: journey.rootEntity ?? journey.traceId,
+        label: formatRunLabel(journey),
       })),
     [traceJourney.journeys],
   )
