@@ -36,8 +36,6 @@ interface BottomLogPanelProps {
 
 type PanelTab = 'logs' | 'traces'
 
-const MAX_HEIGHT_RATIO = 0.7
-
 function getScrollViewport(root: HTMLDivElement | null) {
   return root?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null
 }
@@ -69,7 +67,6 @@ export function BottomLogPanel({
   const previousExpandedHeightRef = useRef(Math.max(panelHeight, DEFAULT_BOTTOM_PANEL_HEIGHT))
 
   const collapsed = panelHeight <= MIN_BOTTOM_PANEL_HEIGHT
-  const maximized = typeof window !== 'undefined' && panelHeight >= window.innerHeight * MAX_HEIGHT_RATIO - 4
 
   const flowLogs = useMemo(
     () => globalLogs.filter((entry) => entry.eventType === 'log'),
@@ -217,7 +214,7 @@ export function BottomLogPanel({
         if (!dragRef.current) {
           return
         }
-        const maxHeight = window.innerHeight * MAX_HEIGHT_RATIO
+        const maxHeight = window.innerHeight * 0.7
         const delta = dragRef.current.startY - moveEvent.clientY
         const nextHeight = Math.min(
           Math.max(dragRef.current.startHeight + delta, MIN_BOTTOM_PANEL_HEIGHT),
@@ -276,19 +273,6 @@ export function BottomLogPanel({
     previousExpandedHeightRef.current = panelHeight
     setPanelHeight(MIN_BOTTOM_PANEL_HEIGHT)
   }, [collapsed, panelHeight, setPanelHeight])
-
-  const toggleMaximized = useCallback(() => {
-    const targetHeight = Math.round(window.innerHeight * MAX_HEIGHT_RATIO)
-    if (maximized) {
-      setPanelHeight(previousExpandedHeightRef.current || DEFAULT_BOTTOM_PANEL_HEIGHT)
-      return
-    }
-
-    if (panelHeight > MIN_BOTTOM_PANEL_HEIGHT) {
-      previousExpandedHeightRef.current = panelHeight
-    }
-    setPanelHeight(targetHeight)
-  }, [maximized, panelHeight, setPanelHeight])
 
   return (
     <motion.div
@@ -373,9 +357,6 @@ export function BottomLogPanel({
               onChange={(event) => setSearch(event.target.value)}
               className="h-9 w-48"
             />
-            <Button type="button" variant="ghost" size="sm" onClick={toggleMaximized}>
-              {maximized ? 'Restore' : 'Maximize'}
-            </Button>
             <Button type="button" variant="ghost" size="sm" onClick={toggleCollapsed}>
               {collapsed ? 'Expand' : 'Collapse'}
             </Button>
