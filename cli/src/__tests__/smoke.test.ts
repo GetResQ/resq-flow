@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 
-import { readCliVersion, runCli } from "../index.js";
+import { isCliEntrypoint, readCliVersion, runCli } from "../index.js";
+import { realpathSync } from "node:fs";
 
 function createBufferedIo() {
   let stdout = "";
@@ -73,5 +74,13 @@ describe("CLI smoke", () => {
 
     expect(exitCode).toBe(0);
     expect(buffered.readStdout()).toContain("resq-flow status [options]");
+  });
+
+  it("treats symlinked executable paths as the same entrypoint", () => {
+    const moduleUrl = new URL("../index.ts", import.meta.url).toString();
+    const modulePath = new URL("../index.ts", import.meta.url).pathname;
+
+    expect(isCliEntrypoint(modulePath, moduleUrl)).toBe(true);
+    expect(isCliEntrypoint(realpathSync(modulePath), moduleUrl)).toBe(true);
   });
 });

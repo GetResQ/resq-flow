@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 import { runLogsCommand, LOGS_HELP } from "./commands/logs.js";
@@ -100,8 +100,21 @@ async function main(): Promise<void> {
   process.exitCode = exitCode;
 }
 
-const entryPath = fileURLToPath(import.meta.url);
-if (process.argv[1] && process.argv[1] === entryPath) {
+export function isCliEntrypoint(argvPath: string | undefined, moduleUrl: string): boolean {
+  if (!argvPath) {
+    return false;
+  }
+
+  const entryPath = fileURLToPath(moduleUrl);
+
+  try {
+    return realpathSync(argvPath) === realpathSync(entryPath);
+  } catch {
+    return argvPath === entryPath;
+  }
+}
+
+if (isCliEntrypoint(process.argv[1], import.meta.url)) {
   void main();
 }
 
