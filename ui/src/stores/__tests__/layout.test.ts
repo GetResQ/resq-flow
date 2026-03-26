@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import {
-  DEFAULT_BOTTOM_PANEL_HEIGHT,
   THEME_STORAGE_KEY,
   useLayoutStore,
 } from '../layout'
@@ -13,7 +12,7 @@ describe('useLayoutStore', () => {
       sidebarOpen: true,
       focusMode: false,
       commandPaletteOpen: false,
-      bottomPanelHeight: DEFAULT_BOTTOM_PANEL_HEIGHT,
+      bottomPanelSnap: 'partial',
       bottomPanelTab: 'logs',
       theme: 'dark',
     })
@@ -25,7 +24,7 @@ describe('useLayoutStore', () => {
     expect(state.sidebarOpen).toBe(true)
     expect(state.focusMode).toBe(false)
     expect(state.theme).toBe('dark')
-    expect(state.bottomPanelHeight).toBe(DEFAULT_BOTTOM_PANEL_HEIGHT)
+    expect(state.bottomPanelSnap).toBe('partial')
     expect(state.bottomPanelTab).toBe('logs')
   })
 
@@ -44,10 +43,10 @@ describe('useLayoutStore', () => {
     expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe('light')
   })
 
-  it('stores the bottom panel height', () => {
-    useLayoutStore.getState().setBottomPanelHeight(320)
+  it('stores the bottom panel snap state', () => {
+    useLayoutStore.getState().setBottomPanelSnap('full')
 
-    expect(useLayoutStore.getState().bottomPanelHeight).toBe(320)
+    expect(useLayoutStore.getState().bottomPanelSnap).toBe('full')
   })
 
   it('stores the bottom panel tab', () => {

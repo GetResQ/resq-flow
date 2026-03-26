@@ -25,14 +25,10 @@ import { formatEasternTime } from '../time'
 import { useTraceJourney } from '../hooks/useTraceJourney'
 import { useTraceTimeline } from '../hooks/useTraceTimeline'
 import { useUrlState } from '../hooks/useUrlState'
-import type { FlowEvent, FlowViewMode } from '../types'
+import type { FlowEvent } from '../types'
 import { flows } from '../../flows'
 import { useCommandPaletteStore } from '../../stores/commandPalette'
-import {
-  DEFAULT_BOTTOM_PANEL_HEIGHT,
-  MIN_BOTTOM_PANEL_HEIGHT,
-  useLayoutStore,
-} from '../../stores/layout'
+import { useLayoutStore } from '../../stores/layout'
 
 const DEFAULT_HISTORY_WINDOW = '30m'
 
@@ -101,8 +97,8 @@ export function FlowView() {
   const setTheme = useLayoutStore((state) => state.setTheme)
   const focusMode = useLayoutStore((state) => state.focusMode)
   const toggleFocusMode = useLayoutStore((state) => state.toggleFocusMode)
-  const bottomPanelHeight = useLayoutStore((state) => state.bottomPanelHeight)
-  const setBottomPanelHeight = useLayoutStore((state) => state.setBottomPanelHeight)
+  const bottomPanelSnap = useLayoutStore((state) => state.bottomPanelSnap)
+  const setBottomPanelSnap = useLayoutStore((state) => state.setBottomPanelSnap)
   const registerCommandContext = useCommandPaletteStore((state) => state.registerContext)
   const clearCommandContext = useCommandPaletteStore((state) => state.clearContext)
 
@@ -138,19 +134,10 @@ export function FlowView() {
     () => flows.find((flow) => flow.id === flowIdParam) ?? flows[0],
     [flowIdParam],
   )
-  const availableViewModes = useMemo<FlowViewMode[]>(
-    () => (currentFlow.hasGraph ? ['canvas', 'logs'] : ['logs']),
-    [currentFlow.hasGraph],
-  )
-  const activeViewMode = viewMode && availableViewModes.includes(viewMode)
-    ? viewMode
-    : currentFlow.hasGraph
-      ? 'canvas'
-      : 'logs'
 
+  const previousSnapBeforeFocusRef = useRef(bottomPanelSnap)
   const previousFlowIdRef = useRef(currentFlow.id)
   const previousSessionKeyRef = useRef<string | undefined>(undefined)
-  const previousExpandedPanelHeightRef = useRef(DEFAULT_BOTTOM_PANEL_HEIGHT)
 
   useEffect(() => {
     if (!flowIdParam && currentFlow) {
@@ -170,10 +157,32 @@ export function FlowView() {
   }, [hasModeParam, setSourceMode])
 
   useEffect(() => {
-    if (!hasViewParam || !availableViewModes.includes(viewMode ?? activeViewMode)) {
-      setViewMode(activeViewMode, { replace: true })
+    if (!hasViewParam) {
+      setViewMode(currentFlow.hasGraph ? 'canvas' : 'logs', { replace: true })
     }
-  }, [activeViewMode, availableViewModes, hasViewParam, setViewMode, viewMode])
+  }, [currentFlow.hasGraph, hasViewParam, setViewMode])
+
+  // Sync URL view param with card snap state (graph flows only)
+  useEffect(() => {
+    if (!currentFlow.hasGraph) return
+
+    if (bottomPanelSnap === 'full' && viewMode !== 'logs') {
+      setViewMode('logs', { replace: true })
+    } else if (bottomPanelSnap !== 'full' && viewMode === 'logs') {
+      setViewMode('canvas', { replace: true })
+    }
+  }, [bottomPanelSnap, currentFlow.hasGraph, setViewMode, viewMode])
+
+  // When URL navigates to view=logs on graph flows, expand panel to full.
+  // Intentionally excludes bottomPanelSnap from deps — this should only
+  // react to URL changes, not fight back when the user collapses the panel.
+  useEffect(() => {
+    if (!currentFlow.hasGraph) return
+    if (viewMode === 'logs') {
+      setBottomPanelSnap('full')
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentFlow.hasGraph, setBottomPanelSnap, viewMode])
 
   const liveEvents = useMemo(
     () => relayEvents.filter((event) => eventMatchesFlow(event, currentFlow.id)),
@@ -329,28 +338,29 @@ export function FlowView() {
   const toggleFocusModeWithLayout = useCallback(() => {
     if (focusMode) {
       toggleFocusMode()
-      setBottomPanelHeight(Math.max(previousExpandedPanelHeightRef.current, DEFAULT_BOTTOM_PANEL_HEIGHT))
+      setBottomPanelSnap(previousSnapBeforeFocusRef.current === 'whisper' ? 'partial' : previousSnapBeforeFocusRef.current)
       return
     }
 
-    if (bottomPanelHeight > MIN_BOTTOM_PANEL_HEIGHT) {
-      previousExpandedPanelHeightRef.current = bottomPanelHeight
-    }
+    previousSnapBeforeFocusRef.current = bottomPanelSnap
     toggleFocusMode()
-    setBottomPanelHeight(MIN_BOTTOM_PANEL_HEIGHT)
-  }, [bottomPanelHeight, focusMode, setBottomPanelHeight, toggleFocusMode])
+    setBottomPanelSnap('whisper')
+  }, [bottomPanelSnap, focusMode, setBottomPanelSnap, toggleFocusMode])
 
-  const setActiveFlowViewMode = useCallback(
-    (nextViewMode: 'canvas' | 'metrics' | 'logs') => {
-      const resolvedViewMode = !currentFlow.hasGraph && nextViewMode === 'canvas' ? 'logs' : nextViewMode
+  const handleSelectViewMode = useCallback(
+    (mode: 'canvas' | 'metrics' | 'logs') => {
+      if (!currentFlow.hasGraph) return
 
-      if (focusMode && resolvedViewMode !== 'canvas') {
-        toggleFocusModeWithLayout()
+      if (mode === 'logs') {
+        if (focusMode) toggleFocusModeWithLayout()
+        setBottomPanelSnap('full')
+      } else {
+        if (bottomPanelSnap === 'full') {
+          setBottomPanelSnap('partial')
+        }
       }
-
-      setViewMode(resolvedViewMode, { replace: true })
     },
-    [currentFlow.hasGraph, focusMode, setViewMode, toggleFocusModeWithLayout],
+    [bottomPanelSnap, currentFlow.hasGraph, focusMode, setBottomPanelSnap, toggleFocusModeWithLayout],
   )
 
   const handleSelectNode = useCallback(
@@ -422,15 +432,9 @@ export function FlowView() {
   ])
 
   useEffect(() => {
-    if (focusMode && activeViewMode !== 'canvas') {
-      toggleFocusModeWithLayout()
-    }
-  }, [activeViewMode, focusMode, toggleFocusModeWithLayout])
-
-  useEffect(() => {
     registerCommandContext({
       runOptions: commandRunOptions,
-      onSelectViewMode: setActiveFlowViewMode,
+      onSelectViewMode: handleSelectViewMode,
       onToggleFocusMode: toggleFocusModeWithLayout,
       onClearSession: clearAll,
       onLoadHistory: handleCommandPaletteLoadHistory,
@@ -444,10 +448,57 @@ export function FlowView() {
     commandRunOptions,
     handleCommandPaletteEscape,
     handleCommandPaletteLoadHistory,
+    handleSelectViewMode,
     registerCommandContext,
-    setActiveFlowViewMode,
     toggleFocusModeWithLayout,
   ])
+
+  // Headless flows (no graph) get the full-page LogsView directly
+  if (!currentFlow.hasGraph) {
+    return (
+      <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
+        <FlowSelector
+          currentFlowId={currentFlow.id}
+          currentFlowName={currentFlow.name}
+          connected={relayConnected}
+          reconnecting={relayReconnecting}
+          relayWsUrl={relayWsUrl}
+          showCanvasControls={false}
+          focusActivePath={false}
+          theme={theme}
+          historyMode={sourceMode === 'history'}
+          historyLoading={historyLoading}
+          historyWindow={historyWindow}
+          historyQuery={historyQuery}
+          historySummary={
+            historySummary
+              ? `${formatWindowSummary(historySummary.from, historySummary.to)} · ${historySummary.logCount} logs · ${historySummary.spanCount} spans${historySummary.truncated ? ' · truncated' : ''}${historySummary.warnings[0] ? ` · ${historySummary.warnings[0]}` : ''}`
+              : undefined
+          }
+          historyError={historyError}
+          onNavigateBack={handleNavigateBack}
+          onToggleFocusActivePath={() => setFocusActivePath((previous) => !previous)}
+          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          onResetLayout={() => setResetLayoutKey((k) => k + 1)}
+          onHistoryWindowChange={setHistoryWindow}
+          onHistoryQueryChange={setHistoryQuery}
+          onLoadHistory={() => { void loadHistory() }}
+          onExitHistory={exitHistoryMode}
+          onClearSession={clearAll}
+        />
+        <div className="relative min-h-0 flex-1">
+          <LogsView
+            flow={currentFlow}
+            logs={logStream.globalLogs}
+            selectedTraceId={selectedTraceId}
+            sourceMode={sourceMode}
+            onSelectNode={handleSelectNode}
+            onSelectTrace={handleSelectTrace}
+          />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
@@ -466,9 +517,7 @@ export function FlowView() {
               connected={relayConnected}
               reconnecting={relayReconnecting}
               relayWsUrl={relayWsUrl}
-              viewMode={activeViewMode}
-              availableViewModes={[...availableViewModes]}
-              focusMode={focusMode}
+              showCanvasControls
               focusActivePath={focusActivePath}
               theme={theme}
               historyMode={sourceMode === 'history'}
@@ -482,16 +531,12 @@ export function FlowView() {
               }
               historyError={historyError}
               onNavigateBack={handleNavigateBack}
-              onViewModeChange={setActiveFlowViewMode}
-              onToggleFocusMode={toggleFocusModeWithLayout}
               onToggleFocusActivePath={() => setFocusActivePath((previous) => !previous)}
               onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
               onResetLayout={() => setResetLayoutKey((k) => k + 1)}
               onHistoryWindowChange={setHistoryWindow}
               onHistoryQueryChange={setHistoryQuery}
-              onLoadHistory={() => {
-                void loadHistory()
-              }}
+              onLoadHistory={() => { void loadHistory() }}
               onExitHistory={exitHistoryMode}
               onClearSession={clearAll}
             />
@@ -500,37 +545,24 @@ export function FlowView() {
       </AnimatePresence>
 
       <div className="relative min-h-0 flex-1">
-        {activeViewMode === 'canvas' ? (
-          <FlowCanvas
-            flow={currentFlow}
-            nodeStatuses={animations.nodeStatuses}
-            activeEdges={animations.activeEdges}
-            focusActivePath={focusActivePath}
-            traceFocusNodeIds={traceFocus.nodeIds}
-            traceFocusEdgeIds={traceFocus.edgeIds}
-            theme={theme}
-            nodeLogMap={logStream.nodeLogMap}
-            nodeSpans={traceTimeline.nodeSpans}
-            selectedNodeId={selectedNodeId}
-            resetLayoutKey={resetLayoutKey}
-            onSelectNode={handleSelectNode}
-          />
-        ) : null}
-
-        {activeViewMode === 'logs' ? (
-          <LogsView
-            flow={currentFlow}
-            logs={logStream.globalLogs}
-            selectedTraceId={selectedTraceId}
-            sourceMode={sourceMode}
-            onSelectNode={handleSelectNode}
-            onSelectTrace={handleSelectTrace}
-          />
-        ) : null}
+        <FlowCanvas
+          flow={currentFlow}
+          nodeStatuses={animations.nodeStatuses}
+          activeEdges={animations.activeEdges}
+          focusActivePath={focusActivePath}
+          traceFocusNodeIds={traceFocus.nodeIds}
+          traceFocusEdgeIds={traceFocus.edgeIds}
+          theme={theme}
+          nodeLogMap={logStream.nodeLogMap}
+          nodeSpans={traceTimeline.nodeSpans}
+          selectedNodeId={selectedNodeId}
+          resetLayoutKey={resetLayoutKey}
+          onSelectNode={handleSelectNode}
+        />
       </div>
 
       <AnimatePresence initial={false}>
-        {focusMode && activeViewMode === 'canvas' ? (
+        {focusMode ? (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -559,16 +591,14 @@ export function FlowView() {
         ) : null}
       </AnimatePresence>
 
-      {activeViewMode === 'canvas' ? (
-        <BottomLogPanel
-          flow={currentFlow}
-          globalLogs={logStream.globalLogs}
-          journeys={traceJourney.journeys}
-          selectedTraceId={selectedTraceId}
-          onSelectNode={handleSelectNode}
-          onSelectTrace={handleSelectTrace}
-        />
-      ) : null}
+      <BottomLogPanel
+        flow={currentFlow}
+        globalLogs={logStream.globalLogs}
+        journeys={traceJourney.journeys}
+        selectedTraceId={selectedTraceId}
+        onSelectNode={handleSelectNode}
+        onSelectTrace={handleSelectTrace}
+      />
 
       {(() => {
         if (selectedJourney) {

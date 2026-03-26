@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronLeft, Maximize2, MoonStar, RotateCcw, Settings2, SunMedium } from 'lucide-react'
+import { ChevronLeft, MoonStar, RotateCcw, Settings2, SunMedium } from 'lucide-react'
 
 import {
   Button,
@@ -13,16 +13,13 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Tabs,
-  TabsList,
-  TabsTrigger,
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui'
 
-import type { FlowViewMode, ThemeMode } from '../types'
+import type { ThemeMode } from '../types'
 
 interface FlowSelectorProps {
   currentFlowId: string
@@ -30,9 +27,7 @@ interface FlowSelectorProps {
   connected: boolean
   reconnecting: boolean
   relayWsUrl: string
-  viewMode: FlowViewMode
-  availableViewModes: FlowViewMode[]
-  focusMode: boolean
+  showCanvasControls: boolean
   focusActivePath: boolean
   theme: ThemeMode
   historyMode: boolean
@@ -42,8 +37,6 @@ interface FlowSelectorProps {
   historySummary?: string
   historyError?: string
   onNavigateBack: () => void
-  onViewModeChange: (viewMode: FlowViewMode) => void
-  onToggleFocusMode: () => void
   onToggleFocusActivePath: () => void
   onToggleTheme: () => void
   onResetLayout: () => void
@@ -67,9 +60,7 @@ export function FlowSelector({
   connected,
   reconnecting,
   relayWsUrl,
-  viewMode,
-  availableViewModes,
-  focusMode,
+  showCanvasControls,
   focusActivePath,
   theme,
   historyMode,
@@ -79,8 +70,6 @@ export function FlowSelector({
   historySummary,
   historyError,
   onNavigateBack,
-  onViewModeChange,
-  onToggleFocusMode,
   onToggleFocusActivePath,
   onToggleTheme,
   onResetLayout,
@@ -102,7 +91,6 @@ export function FlowSelector({
     : reconnecting
       ? `Reconnecting to relay server at ${relayWsUrl}`
       : `Disconnected from relay server at ${relayWsUrl}`
-  const showCanvasControls = viewMode === 'canvas' && availableViewModes.includes('canvas')
 
   return (
     <TooltipProvider>
@@ -143,41 +131,9 @@ export function FlowSelector({
 
         </div>
 
-        <div className="flex items-center justify-center gap-2">
-          <Tabs value={viewMode} onValueChange={(value) => onViewModeChange(value as FlowViewMode)}>
-            <TabsList className="min-h-0 gap-0 rounded-lg border-0 bg-[var(--surface-inset)] px-1 py-1">
-              {availableViewModes.map((mode) => (
-                <TabsTrigger
-                  key={mode}
-                  value={mode}
-                  className="h-7 rounded-md border-0 px-3 text-xs transition-all duration-150 active:scale-[0.94] data-[state=active]:border-0 data-[state=active]:bg-[var(--surface-raised)] data-[state=active]:text-[var(--text-primary)] data-[state=active]:shadow-sm"
-                >
-                  {mode === 'canvas' ? 'Flow' : mode === 'metrics' ? 'Metrics' : 'Logs'}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
-        </div>
+        <div />
 
         <div className="flex items-center justify-end gap-2">
-          {showCanvasControls ? (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={onToggleFocusMode}
-                  aria-label="Toggle focus mode"
-                  className={focusMode ? 'bg-[var(--surface-inset)]' : ''}
-                >
-                  <Maximize2 className="size-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Focus mode</TooltipContent>
-            </Tooltip>
-          ) : null}
-
           <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="icon" aria-label="Open settings">
