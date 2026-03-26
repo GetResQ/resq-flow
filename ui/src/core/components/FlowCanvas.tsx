@@ -14,6 +14,8 @@ import {
 } from '@xyflow/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 
+import { Button, Toggle } from '@/components/ui'
+
 import { edgeTypes } from '../edges'
 import { applyBranchTemplatePositions } from '../layout/branchPlacement'
 import { applyLaneTemplatePositions } from '../layout/lanePlacement'
@@ -695,11 +697,13 @@ export function FlowCanvas({
 
   return (
     <div className="relative h-full w-full">
-      <div className="absolute left-3 top-3 z-20 flex gap-2">
-        <button
+      <div className="absolute left-3 top-3 z-20 flex items-center gap-2">
+        <Button
           type="button"
           title="Reset the canvas to the authored flow layout"
-          className="rounded border border-slate-700 bg-slate-900/95 px-2 py-1 text-[10px] text-slate-200"
+          variant="outline"
+          size="sm"
+          className="bg-[var(--surface-raised)]/95 shadow-sm backdrop-blur-sm"
           onClick={() => {
             clearPersistedLayout(flow)
             setRuntimePositions(new Map())
@@ -717,41 +721,31 @@ export function FlowCanvas({
           }}
         >
           Reset layout
-        </button>
+        </Button>
 
-        <div className="ml-1 flex items-center rounded border border-slate-700 bg-slate-900/95 p-0.5">
-          <button
+        <div className="ml-1 flex items-center gap-1 rounded-md border border-[var(--border-default)] bg-[var(--surface-raised)]/95 p-1 shadow-sm backdrop-blur-sm">
+          <Toggle
             type="button"
             title="Pointer mode (V)"
             aria-label="Pointer mode (V)"
-            className={`group relative rounded px-2 py-1 text-[10px] ${
-              interactionMode === 'pointer'
-                ? 'bg-sky-500/25 text-sky-200'
-                : 'text-slate-300 hover:text-slate-100'
-            }`}
+            size="sm"
+            pressed={interactionMode === 'pointer'}
+            className="data-[state=off]:bg-transparent data-[state=off]:text-[var(--text-secondary)]"
             onClick={() => setInteractionMode('pointer')}
           >
             Pointer
-            <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 -translate-x-1/2 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[9px] font-medium text-slate-200 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-              V
-            </span>
-          </button>
-          <button
+          </Toggle>
+          <Toggle
             type="button"
             title="Pan mode (H)"
             aria-label="Pan mode (H)"
-            className={`group relative rounded px-2 py-1 text-[10px] ${
-              interactionMode === 'pan'
-                ? 'bg-sky-500/25 text-sky-200'
-                : 'text-slate-300 hover:text-slate-100'
-            }`}
+            size="sm"
+            pressed={interactionMode === 'pan'}
+            className="data-[state=off]:bg-transparent data-[state=off]:text-[var(--text-secondary)]"
             onClick={() => setInteractionMode('pan')}
           >
             Pan
-            <span className="pointer-events-none absolute left-1/2 top-full z-30 mt-1 -translate-x-1/2 rounded border border-slate-700 bg-slate-900 px-1.5 py-0.5 text-[9px] font-medium text-slate-200 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
-              H
-            </span>
-          </button>
+          </Toggle>
         </div>
       </div>
 

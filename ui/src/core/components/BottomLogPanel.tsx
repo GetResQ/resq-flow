@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { Inbox, Radio } from 'lucide-react'
+import { ChevronDown, Inbox, Radio, Search } from 'lucide-react'
 
 import {
   Button,
   Input,
   ScrollArea,
-  Separator,
   Tabs,
   TabsContent,
   TabsList,
@@ -40,9 +39,10 @@ function getScrollViewport(root: HTMLDivElement | null) {
   return root?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null
 }
 
-function resolveNodeDisplayLabel(nodeId: string, nodeLabels: Map<string, string>): string {
-  const label = nodeLabels.get(nodeId)?.trim()
-  return label || nodeId
+function resolveSemanticFamily(semanticRole: string | undefined): string | undefined {
+  if (!semanticRole) return undefined
+  if (semanticRole === 'scheduler') return 'cron'
+  return semanticRole
 }
 
 export function BottomLogPanel({
@@ -58,7 +58,7 @@ export function BottomLogPanel({
   const tab = useLayoutStore((state) => state.bottomPanelTab)
   const setTab = useLayoutStore((state) => state.setBottomPanelTab)
   const [search, setSearch] = useState('')
-  const [activeNodeFilters, setActiveNodeFilters] = useState<Set<string>>(new Set())
+  const [statusFilter, setStatusFilter] = useState<'all' | 'error'>('all')
   const [pinnedTraceIds, setPinnedTraceIds] = useState<Set<string>>(new Set())
   const [liveTail, setLiveTail] = useState(true)
   const [showAllRuns, setShowAllRuns] = useState(false)
@@ -81,10 +81,14 @@ export function BottomLogPanel({
     return map
   }, [flow.nodes])
 
-  const activeNodeIds = useMemo(
-    () => new Set(flowLogs.map((entry) => entry.nodeId).filter(Boolean) as string[]),
-    [flowLogs],
-  )
+  const nodeFamilies = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const node of flow.nodes) {
+      const family = resolveSemanticFamily(node.semanticRole)
+      if (family) map.set(node.id, family)
+    }
+    return map
+  }, [flow.nodes])
 
   const filteredLogs = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -94,7 +98,7 @@ export function BottomLogPanel({
         if (selectedTraceId && executionId !== selectedTraceId) {
           return false
         }
-        if (activeNodeFilters.size > 0 && (!entry.nodeId || !activeNodeFilters.has(entry.nodeId))) {
+        if (statusFilter !== 'all' && entry.level !== statusFilter) {
           return false
         }
         if (!query) {
@@ -103,7 +107,7 @@ export function BottomLogPanel({
         const nodeLabel = entry.nodeId ? nodeLabels.get(entry.nodeId) : undefined
         return buildLogSearchText(entry, nodeLabel).includes(query)
       })
-  }, [activeNodeFilters, flowLogs, nodeLabels, search, selectedTraceId])
+  }, [flowLogs, nodeLabels, search, selectedTraceId, statusFilter])
 
   const filteredJourneys = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -144,7 +148,7 @@ export function BottomLogPanel({
 
     return {
       title: 'No logs match the current filters',
-      body: 'Try clearing node filters or search to see more flow activity.',
+      body: 'Try clearing search to see more flow activity.',
     }
   }, [flowLogs.length])
 
@@ -233,18 +237,6 @@ export function BottomLogPanel({
     [panelHeight, setPanelHeight],
   )
 
-  const toggleNodeFilter = useCallback((nodeId: string) => {
-    setActiveNodeFilters((previous) => {
-      const next = new Set(previous)
-      if (next.has(nodeId)) {
-        next.delete(nodeId)
-      } else {
-        next.add(nodeId)
-      }
-      return next
-    })
-  }, [])
-
   const togglePinnedTrace = useCallback((traceId: string) => {
     setPinnedTraceIds((previous) => {
       const next = new Set(previous)
@@ -256,11 +248,6 @@ export function BottomLogPanel({
       return next
     })
   }, [])
-
-  const clearFilters = useCallback(() => {
-    setActiveNodeFilters(new Set())
-    onSelectTrace(undefined)
-  }, [onSelectTrace])
 
   const displayHeight = collapsed ? MIN_BOTTOM_PANEL_HEIGHT : panelHeight
 
@@ -283,9 +270,11 @@ export function BottomLogPanel({
       style={{ minHeight: MIN_BOTTOM_PANEL_HEIGHT }}
     >
       <div
-        className="flex h-1 cursor-row-resize items-center justify-center bg-[var(--border-subtle)] hover:bg-[var(--border-accent)]"
+        className="flex h-5 cursor-row-resize items-center justify-center"
         onMouseDown={onDragStart}
-      />
+      >
+        <div className="h-[3px] w-8 rounded-full bg-[var(--text-muted)] opacity-30" />
+      </div>
 
       <Tabs
         value={tab}
@@ -296,54 +285,17 @@ export function BottomLogPanel({
           <TabsList className="shrink-0 border-0">
             <TabsTrigger value="logs" className="whitespace-nowrap">
               Logs
-              <span className="ml-1.5 text-[var(--text-secondary)]">· {filteredLogs.length}</span>
+              <span className="ml-1.5 rounded-[5px] bg-[var(--surface-inset)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
+                {filteredLogs.length}
+              </span>
             </TabsTrigger>
             <TabsTrigger value="traces" className="whitespace-nowrap">
               Runs
-              <span className="ml-1.5 text-[var(--text-secondary)]">· {filteredJourneys.length}</span>
+              <span className="ml-1.5 rounded-[5px] bg-[var(--surface-inset)] px-1.5 py-0.5 text-[10px] font-medium text-[var(--text-muted)]">
+                {filteredJourneys.length}
+              </span>
             </TabsTrigger>
           </TabsList>
-
-          {tab === 'logs' ? (
-            <>
-              <Separator orientation="vertical" className="h-4 shrink-0" />
-              <div
-                className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto"
-                style={{ maskImage: 'linear-gradient(to right, black calc(100% - 24px), transparent)' }}
-              >
-                <Button
-                  type="button"
-                  variant={activeNodeFilters.size === 0 ? 'default' : 'outline'}
-                  size="sm"
-                  className="rounded-full"
-                  onClick={clearFilters}
-                >
-                  All
-                </Button>
-                {[...activeNodeIds]
-                  .sort((left, right) =>
-                    resolveNodeDisplayLabel(left, nodeLabels).localeCompare(
-                      resolveNodeDisplayLabel(right, nodeLabels),
-                    ),
-                  )
-                  .map((nodeId) => {
-                  const active = activeNodeFilters.has(nodeId)
-                  return (
-                    <Button
-                      key={nodeId}
-                      type="button"
-                      variant={active ? 'default' : 'outline'}
-                      size="sm"
-                      className="rounded-full"
-                      onClick={() => toggleNodeFilter(nodeId)}
-                    >
-                      {resolveNodeDisplayLabel(nodeId, nodeLabels)}
-                    </Button>
-                  )
-                })}
-              </div>
-            </>
-          ) : null}
 
           <div className="ml-auto flex shrink-0 items-center gap-2">
             {tab === 'traces' ? (
@@ -351,14 +303,57 @@ export function BottomLogPanel({
                 Show all
               </Toggle>
             ) : null}
-            <Input
-              placeholder={tab === 'logs' ? 'Search logs…' : 'Search runs…'}
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="h-9 w-48"
-            />
-            <Button type="button" variant="ghost" size="sm" onClick={toggleCollapsed}>
-              {collapsed ? 'Expand' : 'Collapse'}
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+              <Input
+                placeholder={tab === 'logs' ? 'Search logs…' : 'Search runs…'}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="h-9 w-48 border-0 bg-[var(--surface-inset)] pl-8 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
+            </div>
+            {tab === 'logs' ? (
+              <div className="flex items-center overflow-hidden rounded-lg bg-[var(--surface-inset)]">
+                {(['all', 'error'] as const).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    className={`px-3 py-1 text-[10px] font-medium capitalize ${
+                      statusFilter === status
+                        ? 'rounded-lg bg-[var(--text-primary)] text-[var(--surface-primary)]'
+                        : 'bg-transparent text-[var(--text-muted)]'
+                    }`}
+                    onClick={() => setStatusFilter(status)}
+                  >
+                    {status}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {tab === 'logs' ? (
+              <button
+                type="button"
+                className={`flex items-center gap-1.5 rounded-lg px-3 py-1 text-[10px] font-medium ${
+                  liveTail
+                    ? 'bg-[color-mix(in_srgb,var(--status-success)_12%,transparent)] text-[var(--status-success)]'
+                    : 'bg-[var(--surface-inset)] text-[var(--text-muted)]'
+                }`}
+                onClick={() => setLiveTail((prev) => !prev)}
+              >
+                {liveTail ? (
+                  <span className="inline-block h-1.5 w-1.5 animate-flow-pulse rounded-full bg-[var(--status-success)]" />
+                ) : null}
+                Live
+              </button>
+            ) : null}
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              onClick={toggleCollapsed}
+              aria-label={collapsed ? 'Expand panel' : 'Collapse panel'}
+            >
+              <ChevronDown className={`size-4 transition-transform ${collapsed ? 'rotate-180' : ''}`} />
             </Button>
           </div>
         </div>
@@ -377,6 +372,7 @@ export function BottomLogPanel({
                   <LogsTable
                     logs={filteredLogs}
                     nodeLabels={nodeLabels}
+                    nodeFamilies={nodeFamilies}
                     selectedTraceId={selectedTraceId}
                     onSelectLog={(entry) => {
                       const executionId = entry.runId ?? entry.traceId

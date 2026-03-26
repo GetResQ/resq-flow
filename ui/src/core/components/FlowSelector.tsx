@@ -109,12 +109,6 @@ export function FlowSelector({
       <header className="relative z-50 grid h-12 grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 bg-[var(--surface-raised)]/95 px-4 backdrop-blur-sm">
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex min-w-0 items-center gap-2">
-            <label
-              className="shrink-0 text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]"
-              htmlFor="flow-select"
-            >
-              Flow
-            </label>
             <Select value={currentFlowId} onValueChange={onSelectFlow}>
               <SelectTrigger id="flow-select" className="h-9 w-[220px] min-w-0">
                 <SelectValue />
@@ -174,11 +168,6 @@ export function FlowSelector({
             </Toggle>
           ) : null}
 
-          <Button type="button" variant="ghost" size="sm" onClick={onToggleTheme}>
-            {theme === 'dark' ? <SunMedium className="size-4" /> : <MoonStar className="size-4" />}
-            {theme === 'dark' ? 'Light' : 'Dark'}
-          </Button>
-
           <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
             <DropdownMenuTrigger asChild>
               <Button type="button" variant="ghost" size="icon" aria-label="Open settings">
@@ -187,6 +176,27 @@ export function FlowSelector({
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               <div className="space-y-3 p-2">
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                    Appearance
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      onToggleTheme()
+                      setSettingsOpen(false)
+                    }}
+                  >
+                    {theme === 'dark' ? <SunMedium className="mr-2 size-4" /> : <MoonStar className="mr-2 size-4" />}
+                    Switch to {theme === 'dark' ? 'light' : 'dark'} mode
+                  </Button>
+                </div>
+
+                <DropdownMenuSeparator />
+
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                     Session

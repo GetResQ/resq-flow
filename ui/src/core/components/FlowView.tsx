@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Badge, Button } from '@/components/ui'
+import { Button } from '@/components/ui'
 
 import { BottomLogPanel } from './BottomLogPanel'
 import { eventMatchesFlow } from '../events'
@@ -540,17 +540,17 @@ export function FlowView() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="pointer-events-none absolute left-4 top-4 z-40"
+            className="pointer-events-none absolute right-4 top-4 z-40"
           >
-            <div className="pointer-events-auto flex items-center gap-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-raised)]/95 px-3 py-2 shadow-lg backdrop-blur-sm">
-              <Badge variant="secondary">{currentFlow.name}</Badge>
-              <span className="text-xs text-[var(--text-secondary)]">
-                {sourceMode === 'history' ? 'History focus' : 'Canvas focus'}
-              </span>
-              <Button type="button" variant="ghost" size="sm" onClick={toggleFocusModeWithLayout}>
-                Exit
-              </Button>
-            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="pointer-events-auto bg-[var(--surface-raised)]/95 shadow-lg backdrop-blur-sm"
+              onClick={toggleFocusModeWithLayout}
+            >
+              Exit focus
+            </Button>
           </motion.div>
         ) : null}
       </AnimatePresence>

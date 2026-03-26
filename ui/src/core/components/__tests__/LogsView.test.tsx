@@ -130,6 +130,7 @@ describe('LogsView', () => {
     expect(screen.getByText(/Provider timeout/)).toBeInTheDocument()
     expect(screen.getByText(/mail_send worker picked up job/)).toBeInTheDocument()
     expect(screen.queryByText('span completed: rrq.job')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'info' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'error' }))
 
@@ -195,7 +196,8 @@ describe('LogsView', () => {
     viewport.scrollTop = 48
     fireEvent.scroll(viewport)
 
-    expect(screen.getByRole('button', { name: /live tail off/i })).toBeInTheDocument()
+    // Live button loses its pulsing dot when scrolled away from top, but is still visible
+    expect(screen.getByRole('button', { name: /^live$/i })).toBeInTheDocument()
   })
 
   it('only lists nodes with current log activity and falls back to node ids for blank labels', async () => {
