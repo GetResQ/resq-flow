@@ -58,55 +58,55 @@
   /* Queue — Pure warm amber */
   --node-queue-border: rgba(255, 168, 0, 0.40);
   --node-queue-border-selected: #FFA800;
-  --node-queue-bg: #150c00;
+  --node-queue-bg: rgba(255, 168, 0, 0.04);
   --node-queue-text: #fde68a;
   --node-queue-accent: #FFA800;
 
   /* Worker — Ocean blue, dominant execution hue */
   --node-worker-border: rgba(56, 182, 255, 0.40);
   --node-worker-border-selected: #38B6FF;
-  --node-worker-bg: #000d18;
+  --node-worker-bg: rgba(56, 182, 255, 0.04);
   --node-worker-text: #bfdbfe;
   --node-worker-accent: #38B6FF;
 
   /* Cron / Scheduler — neutral slate, temporal boundary */
   --node-cron-border: rgba(148, 163, 184, 0.35);
   --node-cron-border-selected: #94A3B8;
-  --node-cron-bg: #0b1320;
+  --node-cron-bg: rgba(148, 163, 184, 0.04);
   --node-cron-text: #cbd5e1;
   --node-cron-accent: #94A3B8;
 
   /* Process — Same hue as worker, but more prominent than detail */
   --node-process-border: rgba(96, 165, 250, 0.28);
   --node-process-border-selected: #60A5FA;
-  --node-process-bg: #011120;
+  --node-process-bg: rgba(96, 165, 250, 0.04);
   --node-process-text: #bfdbfe;
   --node-process-accent: #60A5FA;
 
   /* Decision — Violet / purple, ~260° hue */
   --node-decision-border: rgba(160, 100, 255, 0.40);
   --node-decision-border-selected: #A064FF;
-  --node-decision-bg: #0d0018;
+  --node-decision-bg: rgba(160, 100, 255, 0.04);
   --node-decision-text: #d8b4fe;
   --node-decision-accent: #A064FF;
 
   /* Resource — Slate-teal, infrastructural */
   --node-resource-border: rgba(0, 180, 180, 0.35);
   --node-resource-border-selected: #00B4B4;
-  --node-resource-bg: #001414;
+  --node-resource-bg: rgba(0, 180, 180, 0.04);
   --node-resource-text: #67e8f9;
   --node-resource-accent: #00B4B4;
 
   /* Trigger / External — Green */
   --node-trigger-border: rgba(34, 197, 94, 0.40);
   --node-trigger-border-selected: #22C55E;
-  --node-trigger-bg: #04150b;
+  --node-trigger-bg: rgba(34, 197, 94, 0.04);
   --node-trigger-text: #bbf7d0;
   --node-trigger-accent: #22C55E;
 
   /* Detail — Muted, non-first-class */
   --node-detail-border: rgba(148, 163, 184, 0.14);
-  --node-detail-bg: #070d16;
+  --node-detail-bg: rgba(148, 163, 184, 0.03);
   --node-detail-text: #64748b;
   --node-detail-accent: #475569;
 
@@ -223,55 +223,55 @@
   /* Queue — Amber */
   --node-queue-border: rgba(220, 130, 0, 0.45);
   --node-queue-border-selected: #DC8200;
-  --node-queue-bg: #ffffff;
+  --node-queue-bg: rgba(255, 149, 0, 0.03);
   --node-queue-text: #92400e;
   --node-queue-accent: #DC8200;
 
   /* Worker — Ocean blue */
   --node-worker-border: rgba(0, 140, 240, 0.45);
   --node-worker-border-selected: #008CF0;
-  --node-worker-bg: #ffffff;
+  --node-worker-bg: rgba(0, 122, 255, 0.03);
   --node-worker-text: #1e3a5f;
   --node-worker-accent: #008CF0;
 
   /* Cron / Scheduler — neutral slate */
   --node-cron-border: rgba(100, 116, 139, 0.35);
   --node-cron-border-selected: #64748B;
-  --node-cron-bg: #ffffff;
+  --node-cron-bg: rgba(142, 142, 147, 0.03);
   --node-cron-text: #475569;
   --node-cron-accent: #64748B;
 
   /* Process — Quiet blue */
   --node-process-border: rgba(59, 130, 246, 0.24);
   --node-process-border-selected: #3B82F6;
-  --node-process-bg: #ffffff;
+  --node-process-bg: rgba(88, 86, 214, 0.03);
   --node-process-text: #1e3a8a;
   --node-process-accent: #60A5FA;
 
   /* Decision — Violet */
   --node-decision-border: rgba(130, 70, 220, 0.45);
   --node-decision-border-selected: #8246DC;
-  --node-decision-bg: #ffffff;
+  --node-decision-bg: rgba(130, 70, 220, 0.03);
   --node-decision-text: #4c1d95;
   --node-decision-accent: #8246DC;
 
   /* Resource — Slate-teal */
   --node-resource-border: rgba(0, 150, 150, 0.40);
   --node-resource-border-selected: #009696;
-  --node-resource-bg: #ffffff;
+  --node-resource-bg: rgba(0, 150, 150, 0.03);
   --node-resource-text: #155e75;
   --node-resource-accent: #009696;
 
   /* Trigger — Green */
   --node-trigger-border: rgba(22, 163, 74, 0.35);
   --node-trigger-border-selected: #16A34A;
-  --node-trigger-bg: #ffffff;
+  --node-trigger-bg: rgba(34, 197, 94, 0.03);
   --node-trigger-text: #166534;
   --node-trigger-accent: #16A34A;
 
   /* Detail — Muted */
   --node-detail-border: rgba(148, 163, 184, 0.22);
-  --node-detail-bg: #ffffff;
+  --node-detail-bg: rgba(0, 0, 0, 0.02);
   --node-detail-text: #64748b;
   --node-detail-accent: #94A3B8;
 

@@ -141,7 +141,7 @@ function resolveFocusState(
 
 function nodeDimensions(node: FlowConfig['nodes'][number]) {
   return {
-    width: node.size?.width ?? 200,
+    width: node.size?.width ?? 158,
     height: node.size?.height ?? (node.type === 'diamond' ? 144 : node.type === 'pill' ? 44 : 64),
   }
 }
