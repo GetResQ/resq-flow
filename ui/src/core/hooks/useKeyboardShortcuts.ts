@@ -22,7 +22,6 @@ export function useKeyboardShortcuts() {
   const commandPaletteOpen = useLayoutStore((state) => state.commandPaletteOpen)
   const setCommandPaletteOpen = useLayoutStore((state) => state.setCommandPaletteOpen)
   const onSelectViewMode = useCommandPaletteStore((state) => state.onSelectViewMode)
-  const onToggleFocusMode = useCommandPaletteStore((state) => state.onToggleFocusMode)
   const onEscape = useCommandPaletteStore((state) => state.onEscape)
 
   useEffect(() => {
@@ -50,12 +49,6 @@ export function useKeyboardShortcuts() {
         return
       }
 
-      if (key === 'f') {
-        event.preventDefault()
-        onToggleFocusMode?.()
-        return
-      }
-
       if (!location.pathname.startsWith('/flows/')) {
         return
       }
@@ -78,5 +71,5 @@ export function useKeyboardShortcuts() {
 
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [commandPaletteOpen, location.pathname, onEscape, onSelectViewMode, onToggleFocusMode, setCommandPaletteOpen])
+  }, [commandPaletteOpen, location.pathname, onEscape, onSelectViewMode, setCommandPaletteOpen])
 }

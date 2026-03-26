@@ -10,7 +10,6 @@ describe('useLayoutStore', () => {
     window.localStorage.clear()
     useLayoutStore.setState({
       sidebarOpen: true,
-      focusMode: false,
       commandPaletteOpen: false,
       bottomPanelSnap: 'partial',
       bottomPanelTab: 'logs',
@@ -22,18 +21,9 @@ describe('useLayoutStore', () => {
     const state = useLayoutStore.getState()
 
     expect(state.sidebarOpen).toBe(true)
-    expect(state.focusMode).toBe(false)
     expect(state.theme).toBe('dark')
     expect(state.bottomPanelSnap).toBe('partial')
     expect(state.bottomPanelTab).toBe('logs')
-  })
-
-  it('toggles focus mode', () => {
-    useLayoutStore.getState().toggleFocusMode()
-    expect(useLayoutStore.getState().focusMode).toBe(true)
-
-    useLayoutStore.getState().toggleFocusMode()
-    expect(useLayoutStore.getState().focusMode).toBe(false)
   })
 
   it('updates theme state and localStorage', () => {

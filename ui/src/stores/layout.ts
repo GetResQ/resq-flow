@@ -16,13 +16,11 @@ export type SnapPoint = (typeof SNAP_POINTS)[number]
 
 export interface LayoutState {
   sidebarOpen: boolean
-  focusMode: boolean
   commandPaletteOpen: boolean
   bottomPanelSnap: BottomPanelSnap
   bottomPanelTab: BottomPanelTab
   theme: ThemeMode
   setSidebarOpen: (open: boolean) => void
-  toggleFocusMode: () => void
   setCommandPaletteOpen: (open: boolean) => void
   setBottomPanelSnap: (snap: BottomPanelSnap) => void
   setBottomPanelTab: (tab: BottomPanelTab) => void
@@ -52,13 +50,11 @@ function resolveInitialTheme(): ThemeMode {
 
 export const useLayoutStore = create<LayoutState>((set) => ({
   sidebarOpen: true,
-  focusMode: false,
   commandPaletteOpen: false,
   bottomPanelSnap: 'partial',
   bottomPanelTab: 'logs',
   theme: resolveInitialTheme(),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  toggleFocusMode: () => set((state) => ({ focusMode: !state.focusMode })),
   setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
   setBottomPanelSnap: (snap) => set({ bottomPanelSnap: snap }),
   setBottomPanelTab: (tab) => set({ bottomPanelTab: tab }),

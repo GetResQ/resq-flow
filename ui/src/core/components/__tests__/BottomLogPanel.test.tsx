@@ -82,7 +82,6 @@ describe('BottomLogPanel', () => {
   beforeEach(() => {
     useLayoutStore.setState({
       sidebarOpen: true,
-      focusMode: false,
       commandPaletteOpen: false,
       bottomPanelSnap: 'partial',
       bottomPanelTab: 'logs',

@@ -1,18 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence } from 'motion/react'
 import { useNavigate, useParams } from 'react-router-dom'
 
-import { Minimize2 } from 'lucide-react'
-
-import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui'
-
 import { BottomLogPanel } from './BottomLogPanel'
+import { CanvasHud } from './CanvasHud'
 import { eventMatchesFlow } from '../events'
 import { FlowCanvas } from './FlowCanvas'
 import { InspectorPanel } from './InspectorPanel'
 import { LogsView } from './LogsView'
 import { getNodeInspectorPresentation } from './NodeInspectorPresentation'
-import { FlowSelector } from './FlowSelector'
 import { getTraceInspectorPresentation } from './TraceInspectorPresentation'
 import { useEventPlayback } from '../hooks/useEventPlayback'
 import { NodeDetailContent } from './NodeDetailPanel'
@@ -95,14 +91,13 @@ export function FlowView() {
   } = useUrlState()
   const theme = useLayoutStore((state) => state.theme)
   const setTheme = useLayoutStore((state) => state.setTheme)
-  const focusMode = useLayoutStore((state) => state.focusMode)
-  const toggleFocusMode = useLayoutStore((state) => state.toggleFocusMode)
   const bottomPanelSnap = useLayoutStore((state) => state.bottomPanelSnap)
   const setBottomPanelSnap = useLayoutStore((state) => state.setBottomPanelSnap)
   const registerCommandContext = useCommandPaletteStore((state) => state.registerContext)
   const clearCommandContext = useCommandPaletteStore((state) => state.clearContext)
 
   const [focusActivePath, setFocusActivePath] = useState(false)
+  const [resetLayoutKey, setResetLayoutKey] = useState(0)
   const [historyState, setHistoryState] = useState<{ events: FlowEvent[]; resetKey: number }>({
     events: [],
     resetKey: 0,
@@ -111,7 +106,6 @@ export function FlowView() {
   const [historyQuery, setHistoryQuery] = useState('')
   const [historyLoading, setHistoryLoading] = useState(false)
   const [historyError, setHistoryError] = useState<string | undefined>()
-  const [resetLayoutKey, setResetLayoutKey] = useState(0)
   const [historySummary, setHistorySummary] = useState<{
     from: string
     to: string
@@ -135,7 +129,6 @@ export function FlowView() {
     [flowIdParam],
   )
 
-  const previousSnapBeforeFocusRef = useRef(bottomPanelSnap)
   const previousFlowIdRef = useRef(currentFlow.id)
   const previousSessionKeyRef = useRef<string | undefined>(undefined)
 
@@ -335,24 +328,11 @@ export function FlowView() {
     setHistorySummary(undefined)
   }, [setSourceMode])
 
-  const toggleFocusModeWithLayout = useCallback(() => {
-    if (focusMode) {
-      toggleFocusMode()
-      setBottomPanelSnap(previousSnapBeforeFocusRef.current === 'whisper' ? 'partial' : previousSnapBeforeFocusRef.current)
-      return
-    }
-
-    previousSnapBeforeFocusRef.current = bottomPanelSnap
-    toggleFocusMode()
-    setBottomPanelSnap('whisper')
-  }, [bottomPanelSnap, focusMode, setBottomPanelSnap, toggleFocusMode])
-
   const handleSelectViewMode = useCallback(
     (mode: 'canvas' | 'metrics' | 'logs') => {
       if (!currentFlow.hasGraph) return
 
       if (mode === 'logs') {
-        if (focusMode) toggleFocusModeWithLayout()
         setBottomPanelSnap('full')
       } else {
         if (bottomPanelSnap === 'full') {
@@ -360,7 +340,7 @@ export function FlowView() {
         }
       }
     },
-    [bottomPanelSnap, currentFlow.hasGraph, focusMode, setBottomPanelSnap, toggleFocusModeWithLayout],
+    [bottomPanelSnap, currentFlow.hasGraph, setBottomPanelSnap],
   )
 
   const handleSelectNode = useCallback(
@@ -416,26 +396,18 @@ export function FlowView() {
 
     if (selectedNode) {
       setSelectedNodeId(undefined, { replace: true })
-      return
-    }
-
-    if (focusMode) {
-      toggleFocusModeWithLayout()
     }
   }, [
-    focusMode,
     selectedJourney,
     selectedNode,
     setSelectedNodeId,
     setSelectedTraceId,
-    toggleFocusModeWithLayout,
   ])
 
   useEffect(() => {
     registerCommandContext({
       runOptions: commandRunOptions,
       onSelectViewMode: handleSelectViewMode,
-      onToggleFocusMode: toggleFocusModeWithLayout,
       onClearSession: clearAll,
       onLoadHistory: handleCommandPaletteLoadHistory,
       onEscape: handleCommandPaletteEscape,
@@ -450,41 +422,43 @@ export function FlowView() {
     handleCommandPaletteLoadHistory,
     handleSelectViewMode,
     registerCommandContext,
-    toggleFocusModeWithLayout,
   ])
 
-  // Headless flows (no graph) get the full-page LogsView directly
+  const hudHistorySummary = historySummary
+    ? `${formatWindowSummary(historySummary.from, historySummary.to)} · ${historySummary.logCount} logs · ${historySummary.spanCount} spans${historySummary.truncated ? ' · truncated' : ''}${historySummary.warnings[0] ? ` · ${historySummary.warnings[0]}` : ''}`
+    : undefined
+
+  const hudSharedProps = {
+    flowName: currentFlow.name,
+    connected: relayConnected,
+    reconnecting: relayReconnecting,
+    relayWsUrl,
+    theme,
+    historyMode: sourceMode === 'history',
+    historyLoading,
+    historyWindow,
+    historyQuery,
+    historySummary: hudHistorySummary,
+    historyError,
+    onNavigateBack: handleNavigateBack,
+    onToggleFocusActivePath: () => setFocusActivePath((previous) => !previous),
+    onToggleTheme: () => setTheme(theme === 'dark' ? 'light' : 'dark'),
+    onResetLayout: () => setResetLayoutKey((k) => k + 1),
+    onHistoryWindowChange: setHistoryWindow,
+    onHistoryQueryChange: setHistoryQuery,
+    onLoadHistory: () => { void loadHistory() },
+    onExitHistory: exitHistoryMode,
+    onClearSession: clearAll,
+  } as const
+
   if (!currentFlow.hasGraph) {
     return (
       <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
-        <FlowSelector
-          currentFlowId={currentFlow.id}
-          currentFlowName={currentFlow.name}
-          connected={relayConnected}
-          reconnecting={relayReconnecting}
-          relayWsUrl={relayWsUrl}
+        <CanvasHud
+          variant="inline"
           showCanvasControls={false}
           focusActivePath={false}
-          theme={theme}
-          historyMode={sourceMode === 'history'}
-          historyLoading={historyLoading}
-          historyWindow={historyWindow}
-          historyQuery={historyQuery}
-          historySummary={
-            historySummary
-              ? `${formatWindowSummary(historySummary.from, historySummary.to)} · ${historySummary.logCount} logs · ${historySummary.spanCount} spans${historySummary.truncated ? ' · truncated' : ''}${historySummary.warnings[0] ? ` · ${historySummary.warnings[0]}` : ''}`
-              : undefined
-          }
-          historyError={historyError}
-          onNavigateBack={handleNavigateBack}
-          onToggleFocusActivePath={() => setFocusActivePath((previous) => !previous)}
-          onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-          onResetLayout={() => setResetLayoutKey((k) => k + 1)}
-          onHistoryWindowChange={setHistoryWindow}
-          onHistoryQueryChange={setHistoryQuery}
-          onLoadHistory={() => { void loadHistory() }}
-          onExitHistory={exitHistoryMode}
-          onClearSession={clearAll}
+          {...hudSharedProps}
         />
         <div className="relative min-h-0 flex-1">
           <LogsView
@@ -500,49 +474,18 @@ export function FlowView() {
     )
   }
 
+  const isFullPanel = bottomPanelSnap === 'full'
+
   return (
     <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
-      <AnimatePresence initial={false}>
-        {!focusMode ? (
-          <motion.div
-            key="flow-selector"
-            initial={{ y: -18, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -18, opacity: 0 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-          >
-            <FlowSelector
-              currentFlowId={currentFlow.id}
-              currentFlowName={currentFlow.name}
-              connected={relayConnected}
-              reconnecting={relayReconnecting}
-              relayWsUrl={relayWsUrl}
-              showCanvasControls
-              focusActivePath={focusActivePath}
-              theme={theme}
-              historyMode={sourceMode === 'history'}
-              historyLoading={historyLoading}
-              historyWindow={historyWindow}
-              historyQuery={historyQuery}
-              historySummary={
-                historySummary
-                  ? `${formatWindowSummary(historySummary.from, historySummary.to)} · ${historySummary.logCount} logs · ${historySummary.spanCount} spans${historySummary.truncated ? ' · truncated' : ''}${historySummary.warnings[0] ? ` · ${historySummary.warnings[0]}` : ''}`
-                  : undefined
-              }
-              historyError={historyError}
-              onNavigateBack={handleNavigateBack}
-              onToggleFocusActivePath={() => setFocusActivePath((previous) => !previous)}
-              onToggleTheme={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              onResetLayout={() => setResetLayoutKey((k) => k + 1)}
-              onHistoryWindowChange={setHistoryWindow}
-              onHistoryQueryChange={setHistoryQuery}
-              onLoadHistory={() => { void loadHistory() }}
-              onExitHistory={exitHistoryMode}
-              onClearSession={clearAll}
-            />
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      {isFullPanel ? (
+        <CanvasHud
+          variant="inline"
+          showCanvasControls
+          focusActivePath={focusActivePath}
+          {...hudSharedProps}
+        />
+      ) : null}
 
       <div className="relative min-h-0 flex-1">
         <FlowCanvas
@@ -559,37 +502,16 @@ export function FlowView() {
           resetLayoutKey={resetLayoutKey}
           onSelectNode={handleSelectNode}
         />
-      </div>
 
-      <AnimatePresence initial={false}>
-        {focusMode ? (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="pointer-events-none absolute right-4 top-4 z-40"
-          >
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="pointer-events-auto bg-[var(--surface-raised)]/80 shadow-lg backdrop-blur-md transition-all duration-100 active:scale-[0.88]"
-                    onClick={toggleFocusModeWithLayout}
-                    aria-label="Exit focus mode"
-                  >
-                    <Minimize2 className="size-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Exit focus</TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </motion.div>
+        {!isFullPanel ? (
+          <CanvasHud
+            variant="floating"
+            showCanvasControls
+            focusActivePath={focusActivePath}
+            {...hudSharedProps}
+          />
         ) : null}
-      </AnimatePresence>
+      </div>
 
       <BottomLogPanel
         flow={currentFlow}
