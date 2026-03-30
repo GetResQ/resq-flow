@@ -11,14 +11,14 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* ── Palette: GitHub Dark Neutral (dark) ── */
+  /* ── Palette: Neutral Dark (no blue tint) ── */
 
   /* Surfaces */
-  --surface-primary: #020617;
-  --surface-raised: #0d1117;
-  --surface-overlay: #161b22;
-  --surface-inset: #0a0f1a;
-  --flow-surface-bg: #141414;
+  --surface-primary: #0a0a0c;
+  --surface-raised: #111114;
+  --surface-overlay: #1a1a1e;
+  --surface-inset: #08080a;
+  --flow-surface-bg: #0e0e10;
 
   /* Borders */
   --border-default: rgba(255, 255, 255, 0.08);
@@ -52,7 +52,7 @@
 
   /* Canvas */
   --canvas-bg: var(--flow-surface-bg);
-  --canvas-dot: rgba(130, 160, 200, 0.07);
+  --canvas-dot: rgba(255, 255, 255, 0.05);
 
   /* ── Node semantic color roles — Design Contract v1.0 ── */
 
@@ -147,7 +147,7 @@
   --glow-trigger-selected: 0 0 36px rgba(34, 197, 94, 0.45);
 
   --node-handle-border: rgba(255, 255, 255, 0.3);
-  --node-handle-bg: #334155;
+  --node-handle-bg: #2a2a30;
 
   /* Typography */
   --font-sans: 'Inter', 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
@@ -172,8 +172,8 @@
 
   /* Compatibility aliases for the current canvas implementation */
   --color-active: var(--status-active);
-  --color-edge: #30363d;
-  --color-edge-dimmed: #21262d;
+  --color-edge: #2a2a2e;
+  --color-edge-dimmed: #1e1e22;
   --color-edge-dashed: var(--status-warning);
   --color-marker: var(--text-muted);
   --color-marker-dashed: var(--text-secondary);

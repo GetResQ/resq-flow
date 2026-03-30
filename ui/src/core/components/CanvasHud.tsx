@@ -92,7 +92,7 @@ export function CanvasHud({
   if (variant === 'inline') {
     return (
       <TooltipProvider>
-        <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-primary)] px-4">
+        <header className="relative z-30 flex h-12 shrink-0 items-center justify-between border-b border-[var(--border-subtle)] bg-[var(--surface-raised)] px-4">
           {identityPill}
           {controlsPill}
         </header>

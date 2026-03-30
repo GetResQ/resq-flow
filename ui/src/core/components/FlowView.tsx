@@ -453,7 +453,7 @@ export function FlowView() {
 
   if (!currentFlow.hasGraph) {
     return (
-      <div className="relative flex h-full w-full flex-col bg-[var(--surface-primary)] text-[var(--text-primary)]">
+      <div className="relative flex h-full w-full flex-col bg-[var(--surface-raised)] text-[var(--text-primary)]">
         <CanvasHud
           variant="inline"
           showCanvasControls={false}
