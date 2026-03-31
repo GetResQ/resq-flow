@@ -1,6 +1,6 @@
 ---
 name: flow-cli-write
-description: Use this skill when the user wants to write logs into the resq-flow world, either by adding runtime logs in application code that should show up in resq-flow or by manually emitting one explicit debug log with the resq-flow CLI. It helps developers find the right existing flow, reuse the normal flow telemetry path, keep scope explicit, and validate the result with the resq-flow CLI. Do not use it for raw infrastructure logs.
+description: Use this skill when the user wants to add or change flow-visible logs for an existing flow, either by adding runtime logs in application code that should show up in resq-flow or by manually emitting one explicit debug log with the resq-flow CLI. It helps developers find the right existing flow, choose between canonical typed telemetry and ad hoc breadcrumbs, reuse the normal flow telemetry path, keep scope explicit, and validate the result with the resq-flow CLI. Do not use it for raw infrastructure logs or brand-new flow scaffolding.
 ---
 
 # resq-flow Runtime Logs
@@ -18,9 +18,11 @@ This is the producer-side companion to `flow-cli-read`.
 
 Use it to:
 
-- add flow-visible runtime logs in existing code
+- add flow-visible runtime logs in existing code for an existing flow
+- change existing flow-visible runtime logs
 - emit one manual debug log with the CLI
 - identify the right existing flow and flow context
+- choose the right log style for the change
 - keep flow scope explicit
 - validate the result with `resq-flow`
 
@@ -29,6 +31,7 @@ Do not use it for:
 - raw Docker or service logs
 - Datadog or Victoria-only log searches
 - inventing a second telemetry pipeline
+- scaffolding a brand-new flow from scratch; use `flow-cli-create` for that
 
 ## Default rule
 
@@ -51,12 +54,37 @@ If the user names a flow, use it.
 
 If the user does not name a flow, infer it from repo context when it is obvious. If not obvious, ask one short question.
 
+## Canonical vs ad hoc
+
+This skill should choose between two producer-side patterns:
+
+- canonical typed telemetry
+- ad hoc breadcrumbs
+
+Use canonical typed telemetry when the event is part of the flow's stable backbone:
+
+- queue enqueue
+- worker pickup or result
+- core stage outcomes such as `final_result`
+- stable business or lifecycle events the flow will rely on long-term
+
+Use ad hoc breadcrumbs when the event is a small local visibility point:
+
+- one extra branch or decision log
+- one extra save or write breadcrumb
+- a useful incremental log that should stay flow-attached but does not need to expand the typed contract
+
+The user usually should not have to choose. Infer the right path from the request.
+
 ## Runtime instrumentation workflow
 
 1. Find the existing flow contract and the nearest producer-side telemetry seam.
 2. Reuse the normal flow telemetry path already used by that flow.
 3. Keep flow scope explicit with the existing flow identity and run identity.
-4. Add a clear stage id, status, message, and a few useful attrs.
+4. Choose the right log style:
+   - use canonical typed telemetry for stable lifecycle events
+   - use the ad hoc helper for incremental breadcrumbs
+5. Add a clear stage id and message. Let flow and node identity come from the bound context.
 5. Validate the result with `resq-flow`.
 
 ## Rules
@@ -66,26 +94,26 @@ If the user does not name a flow, infer it from repo context when it is obvious.
 - Do not shell out to `resq-flow logs emit` from runtime code.
 - Do not create a second CLI-specific telemetry path.
 - Prefer existing bound flow or node contexts over ad hoc logging.
-- Keep added attrs small, flat, and useful for filtering.
+- Do not pass `flow_id`, `run_id`, or `component_id` manually when the bound context already knows them.
+- Prefer the smallest callsite that still preserves correct scope.
+- Keep manual CLI attrs small, flat, and useful for filtering.
 - Do not overwrite reserved flow fields such as `flow_id`, `run_id`, `component_id`, `status`, `stage_id`, or `message` with extra attrs.
 
 ## Good runtime log shape
 
-Aim for a small, useful record:
+For runtime code, aim for a small, useful record:
 
 - flow
 - run
 - stage
 - message
-- a few attrs that help inspection later
 
-Typical attrs:
+For ad hoc breadcrumbs, prefer the tiny helper shape:
 
-- `thread_id`
-- `job_id`
-- `reason_code`
-- `customers_identified`
-- `queue_name`
+- `ad_hoc_ok(stage_id, message)`
+- `ad_hoc_err(stage_id, message, error_message)`
+
+Use the existing typed telemetry pattern instead when the log is a canonical lifecycle event.
 
 ## Validation workflow
 
@@ -126,6 +154,11 @@ Rules for manual emits:
 For `resq-mail`, prefer the existing mail telemetry path and node context helpers. The normal path is already flow-scoped and is what should power mail runtime logs in `resq-flow`.
 
 If a change is mail-specific, default to `mail-pipeline` unless the code clearly belongs to another flow.
+
+For existing mail flow work:
+
+- use typed telemetry for queue, worker, and core stage lifecycle events
+- use the ad hoc helper for local breadcrumbs such as `resolve_identity`
 
 ## Manual debug fallback
 
