@@ -66,10 +66,16 @@ The user should not have to split that request up manually. Do the decomposition
 
 1. Find the nearest existing runtime and telemetry patterns in the producer repo.
 2. Choose a simple flow name and stable node names that match existing naming patterns.
-3. Add the producer-side flow context and core node logs.
-4. Add one or more initial stage logs only when they were clearly requested or obviously useful.
-5. Create the matching `resq-flow` contract.
-6. Validate the new flow with `resq-flow`.
+3. Add the producer-side telemetry scaffold using the standard base shape:
+   - `definition.rs`
+   - `node_context.rs`
+   - `schema.rs`
+   - `tracing_emit.rs`
+   - optional `touchpoints.rs`
+4. Add the producer-side flow context and core node logs.
+5. Add one or more initial stage logs only when they were clearly requested or obviously useful.
+6. Create the matching `resq-flow` contract.
+7. Validate the new flow with `resq-flow`.
 
 ## Rules
 

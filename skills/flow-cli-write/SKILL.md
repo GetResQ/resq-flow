@@ -116,8 +116,8 @@ For runtime code, aim for a small, useful record:
 
 For simple stage-log additions, prefer the tiny helper shape:
 
-- `ad_hoc_ok(stage_id, message)`
-- `ad_hoc_err(stage_id, message, error_message)`
+- `stage_ok(stage_id, message)`
+- `stage_err(stage_id, message, error_message)`
 
 Use the existing typed telemetry pattern instead when the log is a primary node event or an already-established typed stage event.
 
