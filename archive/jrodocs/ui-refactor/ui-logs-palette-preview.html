@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ResQ-Flow · Logs View Theme Preview</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #111; color: #fff; }
+
+  .page { max-width: 1320px; margin: 0 auto; padding: 40px 24px 80px; }
+  h1 { font-size: 20px; font-weight: 600; color: #f1f5f9; margin-bottom: 4px; }
+  .subtitle { font-size: 13px; color: #475569; margin-bottom: 36px; }
+
+  /* ── Controls ── */
+  .controls { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; flex-wrap: wrap; }
+  .mode-toggle { display: flex; background: #1e293b; border-radius: 8px; padding: 3px; gap: 3px; }
+  .mode-btn { border: none; cursor: pointer; padding: 6px 18px; border-radius: 6px; font-size: 12px; font-weight: 500; transition: all 120ms; font-family: inherit; }
+  .mode-btn.active { background: #334155; color: #f1f5f9; }
+  .mode-btn:not(.active) { background: transparent; color: #64748b; }
+  .ctrl-label { font-size: 12px; color: #475569; }
+
+  /* ── Section labels ── */
+  .section { margin-bottom: 48px; }
+  .section-label { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #475569; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: #1e293b; }
+  .tag { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 99px; }
+  .tag-current { background: rgba(251,191,36,0.12); color: #fbbf24; border: 1px solid rgba(251,191,36,0.25); }
+  .tag-new { background: rgba(34,197,94,0.12); color: #4ade80; border: 1px solid rgba(34,197,94,0.25); }
+
+  /* ── Sim frame ── */
+  .sim-frame { border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,0.07); }
+
+  /* ════════════════════════════════════════
+     CURRENT THEME — for reference
+     ════════════════════════════════════════ */
+  .cur { display: flex; flex-direction: column; height: 460px; font-size: 12px; }
+  .cur.light { background: #f8fafc; color: #0a1929; }
+  .cur.dark  { background: #020617; color: #f1f5f9; }
+
+  .cur .hdr { display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 44px; flex-shrink: 0; border-bottom: 1px solid; }
+  .cur.light .hdr { background: #fff; border-color: #90caf9; }
+  .cur.dark  .hdr { background: #06101f; border-color: rgba(30,58,95,0.7); }
+  .cur .hdr-l { display: flex; align-items: center; gap: 8px; }
+  .cur .logo  { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.45; }
+  .cur .flow-sel { display: flex; align-items: center; gap: 5px; border: 1px solid; border-radius: 6px; padding: 3px 8px; font-size: 11px; }
+  .cur.light .flow-sel { border-color: #90caf9; background: #fff; }
+  .cur.dark  .flow-sel { border-color: #1e3a5f; background: #0a1e38; }
+  .cur .dot { width: 6px; height: 6px; border-radius: 50%; background: #34d399; flex-shrink: 0; }
+  .cur .conn { font-size: 10px; opacity: 0.5; }
+  .cur .hdr-r { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .cur .tab { font-size: 11px; font-weight: 500; padding-bottom: 2px; opacity: 0.45; border-bottom: 2px solid transparent; }
+  .cur .tab.on { opacity: 1; border-bottom: 2px solid; }
+  .cur.light .tab.on { color: #1565c0; border-color: #1565c0; }
+  .cur.dark  .tab.on { color: #42a5f5; border-color: #42a5f5; }
+  .cur .icon-btn { width: 26px; height: 26px; border-radius: 6px; border: 1px solid; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0.6; }
+  .cur.light .icon-btn { border-color: #90caf9; color: #1565c0; }
+  .cur.dark  .icon-btn { border-color: rgba(30,58,95,0.9); color: #4d7fa8; }
+  .cur .toolbar { display: flex; align-items: center; gap: 8px; padding: 10px 16px; flex-shrink: 0; }
+  .cur.light .toolbar { background: #f8fafc; }
+  .cur.dark  .toolbar { background: #020617; }
+  .cur .search { border: 1px solid; border-radius: 6px; padding: 5px 10px; font-size: 11px; width: 190px; font-family: inherit; outline: none; }
+  .cur.light .search { background: #fff; border-color: #90caf9; color: #0a1929; }
+  .cur.light .search::placeholder { color: #90caf9; }
+  .cur.dark  .search { background: #0a1e38; border-color: #1e3a5f; color: #f1f5f9; }
+  .cur.dark  .search::placeholder { color: #2d5986; }
+  .cur .node-sel { border: 1px solid; border-radius: 6px; padding: 4px 8px; font-size: 11px; font-family: inherit; outline: none; }
+  .cur.light .node-sel { background: #fff; border-color: #90caf9; color: #0a1929; }
+  .cur.dark  .node-sel { background: #0a1e38; border-color: #1e3a5f; color: #f1f5f9; }
+  .cur .fbtn { border: 1px solid; border-radius: 6px; padding: 3px 10px; font-size: 10px; font-weight: 600; font-family: inherit; cursor: pointer; }
+  .cur.light .fbtn { background: transparent; border-color: #90caf9; color: #4d7fa8; }
+  .cur.dark  .fbtn { background: transparent; border-color: #1e3a5f; color: #4d7fa8; }
+  .cur.light .fbtn.on { background: #1565c0; border-color: #1565c0; color: #fff; }
+  .cur.dark  .fbtn.on { background: #42a5f5; border-color: #42a5f5; color: #fff; }
+  .cur .tbtn { border: 1px solid; border-radius: 6px; padding: 3px 10px; font-size: 10px; font-weight: 500; font-family: inherit; cursor: pointer; }
+  .cur.light .tbtn { background: #e3f2fd; border-color: #bbdefb; color: #1565c0; }
+  .cur.dark  .tbtn { background: rgba(66,165,245,0.08); border-color: rgba(66,165,245,0.25); color: #42a5f5; }
+  .cur .twrap { flex: 1; overflow: hidden; padding: 0 16px 16px; }
+  .cur .card { border: 1px solid; border-radius: 8px; overflow: hidden; height: 100%; }
+  .cur.light .card { background: #fff; border-color: #bbdefb; }
+  .cur.dark  .card { background: #06101f; border-color: rgba(30,58,95,0.5); }
+  .cur table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .cur thead th { text-align: left; font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.09em; padding: 7px 12px; border-bottom: 1px solid; }
+  .cur.light thead th { color: #4d7fa8; border-color: #e3f2fd; background: #f8fafc; }
+  .cur.dark  thead th { color: #4d7fa8; border-color: rgba(30,58,95,0.5); }
+  .cur tbody td { padding: 6px 12px; border-bottom: 1px solid; vertical-align: middle; }
+  .cur.light tbody td { border-color: #f0f7ff; }
+  .cur.dark  tbody td { border-color: rgba(30,58,95,0.22); }
+  .cur tbody tr:last-child td { border-bottom: none; }
+  .cur.light tbody tr:hover { background: #f0f7ff; cursor: pointer; }
+  .cur.dark  tbody tr:hover { background: rgba(66,165,245,0.04); cursor: pointer; }
+  .cur .t-time { font-family: 'SF Mono','Fira Code',monospace; font-size: 10px; }
+  .cur.light .t-time { color: #90caf9; }
+  .cur.dark  .t-time { color: #2d5986; }
+  .cur.light .t-node { color: #1565c0; }
+  .cur.dark  .t-node { color: #4d7fa8; }
+  .cur.light .t-msg  { color: #0a1929; }
+  .cur.dark  .t-msg  { color: #f1f5f9; }
+  .cur .badge { display: inline-flex; align-items: center; justify-content: center; padding: 1px 8px; border-radius: 99px; font-size: 9.5px; font-weight: 600; min-width: 34px; }
+  .cur.light .badge.ok  { background: rgba(46,125,50,0.08); color: #2e7d32; }
+  .cur.light .badge.err { background: rgba(198,40,40,0.08); color: #c62828; }
+  .cur.dark  .badge.ok  { background: rgba(52,211,153,0.12); color: #34d399; }
+  .cur.dark  .badge.err { background: rgba(248,113,113,0.12); color: #f87171; }
+  .cur .dur { display: inline-flex; align-items: center; justify-content: center; padding: 1px 7px; border-radius: 99px; font-size: 9.5px; font-weight: 500; font-family: 'SF Mono','Fira Code',monospace; }
+  .cur.light .dur      { background: rgba(21,101,192,0.06); color: #1565c0; }
+  .cur.light .dur.slow { background: rgba(245,124,0,0.08); color: #e65100; }
+  .cur.dark  .dur      { background: rgba(66,165,245,0.08); color: #42a5f5; }
+  .cur.dark  .dur.slow { background: rgba(251,191,36,0.1); color: #fbbf24; }
+
+
+  /* ════════════════════════════════════════
+     APPLE-MINIMAL THEME — refined
+     ════════════════════════════════════════ */
+  .apl { display: flex; flex-direction: column; height: 460px; font-size: 12px; }
+  .apl.light { background: #ffffff; color: #1d1d1f; }
+  .apl.dark  { background: #141414; color: #f5f5f7; }
+
+  /* header */
+  .apl .hdr { display: flex; align-items: center; padding: 0 20px; height: 46px; flex-shrink: 0; border-bottom: 1px solid; }
+  .apl.light .hdr { background: #fff; border-color: #f0f0f0; }
+  .apl.dark  .hdr { background: #1c1c1e; border-color: rgba(255,255,255,0.08); }
+  .apl .hdr-l { display: flex; align-items: center; gap: 10px; }
+  .apl .logo { font-size: 9px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; }
+  .apl.light .logo { color: #c7c7cc; }
+  .apl.dark  .logo { color: #48484a; }
+  .apl .sep { width: 1px; height: 14px; }
+  .apl.light .sep { background: #e5e5ea; }
+  .apl.dark  .sep { background: rgba(255,255,255,0.1); }
+  .apl .flow-name { font-size: 12px; font-weight: 500; }
+  .apl.light .flow-name { color: #1d1d1f; }
+  .apl.dark  .flow-name { color: #f5f5f7; }
+  .apl .dot { width: 5px; height: 5px; border-radius: 50%; background: #30d158; flex-shrink: 0; }
+  .apl .conn { font-size: 10px; font-weight: 400; }
+  .apl.light .conn { color: #8e8e93; }
+  .apl.dark  .conn { color: #636366; }
+  .apl .hdr-r { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+  .apl .tab { font-size: 12px; font-weight: 400; padding-bottom: 2px; border-bottom: 1.5px solid transparent; }
+  .apl.light .tab     { color: #8e8e93; }
+  .apl.dark  .tab     { color: #636366; }
+  .apl.light .tab.on  { color: #1d1d1f; border-bottom-color: #1d1d1f; }
+  .apl.dark  .tab.on  { color: #f5f5f7; border-bottom-color: #f5f5f7; }
+  .apl .icon-btn { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 13px; }
+  .apl.light .icon-btn { background: #f5f5f7; color: #8e8e93; }
+  .apl.dark  .icon-btn { background: #2c2c2e; color: #636366; }
+
+  /* toolbar */
+  .apl .toolbar { display: flex; align-items: center; gap: 10px; padding: 10px 20px; flex-shrink: 0; border-bottom: 1px solid; }
+  .apl.light .toolbar { background: #fff; border-color: #f0f0f0; }
+  .apl.dark  .toolbar { background: #1c1c1e; border-color: rgba(255,255,255,0.06); }
+  .apl .search-wrap { position: relative; }
+  .apl .search-icon { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); font-size: 11px; }
+  .apl.light .search-icon { color: #c7c7cc; }
+  .apl.dark  .search-icon { color: #48484a; }
+  .apl .search { border: none; border-radius: 8px; padding: 6px 10px 6px 28px; font-size: 11px; width: 210px; font-family: inherit; outline: none; }
+  .apl.light .search { background: #f5f5f7; color: #1d1d1f; }
+  .apl.light .search::placeholder { color: #aeaeb2; }
+  .apl.dark  .search { background: #2c2c2e; color: #f5f5f7; }
+  .apl.dark  .search::placeholder { color: #48484a; }
+  .apl .node-sel { border: none; border-radius: 8px; padding: 6px 10px; font-size: 11px; font-family: inherit; outline: none; cursor: pointer; font-weight: 500; }
+  .apl.light .node-sel { background: #f5f5f7; color: #3a3a3c; }
+  .apl.dark  .node-sel { background: #2c2c2e; color: #e5e5ea; }
+  .apl .filter-group { display: flex; align-items: center; border-radius: 8px; overflow: hidden; }
+  .apl.light .filter-group { background: #f5f5f7; }
+  .apl.dark  .filter-group { background: #2c2c2e; }
+  .apl .fbtn { border: none; padding: 5px 12px; font-size: 10px; font-weight: 500; font-family: inherit; cursor: pointer; }
+  .apl.light .fbtn     { background: transparent; color: #8e8e93; }
+  .apl.light .fbtn.on  { background: #1d1d1f; color: #fff; border-radius: 8px; }
+  .apl.dark  .fbtn     { background: transparent; color: #636366; }
+  .apl.dark  .fbtn.on  { background: #f5f5f7; color: #1d1d1f; border-radius: 8px; }
+
+  /* live tail button with pulse */
+  .apl .tbtn { border: none; border-radius: 8px; padding: 5px 12px; font-size: 10px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .apl.light .tbtn { background: #f5f5f7; color: #3a3a3c; }
+  .apl.light .tbtn.live { background: rgba(48,209,88,0.1); color: #1a8c3a; }
+  .apl.dark  .tbtn { background: #2c2c2e; color: #aeaeb2; }
+  .apl.dark  .tbtn.live { background: rgba(48,209,88,0.12); color: #30d158; }
+  .live-dot { width: 5px; height: 5px; border-radius: 50%; background: #30d158; animation: livePulse 2s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes livePulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.75); }
+  }
+
+  /* table */
+  .apl .twrap { flex: 1; overflow: hidden; }
+  .apl table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .apl thead th { text-align: left; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; padding: 8px 20px 6px; border-bottom: 1px solid; }
+  .apl.light thead th { color: #aeaeb2; border-color: #f0f0f0; }
+  .apl.dark  thead th { color: #48484a; border-color: rgba(255,255,255,0.06); }
+
+  /* rows — generous padding, near-invisible separators */
+  .apl tbody td { padding: 11px 20px; vertical-align: middle; }
+  .apl tbody tr { cursor: pointer; transition: background 100ms; }
+  .apl tbody tr + tr td { border-top: 1px solid; }
+  .apl.light tbody tr + tr td { border-color: #f5f5f7; }
+  .apl.dark  tbody tr + tr td { border-color: rgba(255,255,255,0.04); }
+  .apl.light tbody tr:hover { background: #fafafa; }
+  .apl.dark  tbody tr:hover { background: rgba(255,255,255,0.03); }
+
+  /* error row accent — surgical left border */
+  .apl tbody tr.row-err td:first-child { border-left: 2px solid #ff453a; padding-left: 18px; }
+  .apl.dark tbody tr.row-err td:first-child { border-left-color: #ff453a; }
+
+  /* timestamp — tiny, recedes */
+  .apl .t-time { font-family: 'SF Mono','Fira Code',monospace; font-size: 9.5px; font-weight: 400; }
+  .apl.light .t-time { color: #c7c7cc; }
+  .apl.dark  .t-time { color: #48484a; }
+
+  /* ── Node chips — color-coded by family ── */
+  .node-chip { display: inline-block; border-radius: 5px; padding: 2px 7px; font-size: 10px; font-weight: 500; }
+  /* Worker — blue */
+  .chip-worker.light { background: rgba(0,122,255,0.07); color: #0055cc; }
+  .chip-worker.dark  { background: rgba(10,132,255,0.12); color: #64aff5; }
+  /* Queue — amber */
+  .chip-queue.light  { background: rgba(255,149,0,0.08); color: #995800; }
+  .chip-queue.dark   { background: rgba(255,159,10,0.12); color: #f5a623; }
+  /* Cron / scheduler — slate */
+  .chip-cron.light   { background: rgba(142,142,147,0.1); color: #48484a; }
+  .chip-cron.dark    { background: rgba(142,142,147,0.1); color: #8e8e93; }
+  /* Process / generic */
+  .chip-process.light { background: rgba(88,86,214,0.07); color: #3634a3; }
+  .chip-process.dark  { background: rgba(94,92,230,0.12); color: #9997f5; }
+
+  /* ── Message — prefix split ── */
+  .msg-prefix { font-family: 'SF Mono','Fira Code',monospace; font-size: 10px; font-weight: 400; margin-right: 4px; }
+  .apl.light .msg-prefix { color: #aeaeb2; }
+  .apl.dark  .msg-prefix { color: #48484a; }
+  .msg-body { font-size: 11.5px; font-weight: 400; }
+  .apl.light .msg-body { color: #1d1d1f; }
+  .apl.dark  .msg-body  { color: #f5f5f7; }
+
+  /* status dot */
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+  .status-dot.ok  { background: #30d158; }
+  .status-dot.err { background: #ff453a; }
+  td.t-status { text-align: center; }
+
+  /* duration — plain text */
+  .dur { font-family: 'SF Mono','Fira Code',monospace; font-size: 10px; font-weight: 400; }
+  .apl.light .dur      { color: #aeaeb2; }
+  .apl.light .dur.slow { color: #ff9500; font-weight: 500; }
+  .apl.dark  .dur      { color: #48484a; }
+  .apl.dark  .dur.slow { color: #ff9f0a; font-weight: 500; }
+
+  /* ── Layout ── */
+  .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 860px) { .compare-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <h1>ResQ-Flow · Logs View — Theme Direction</h1>
+  <p class="subtitle">Before vs. new direction. Toggle light/dark. Goal: calm, purposeful, Apple-level restraint.</p>
+
+  <div class="controls">
+    <span class="ctrl-label">Mode:</span>
+    <div class="mode-toggle">
+      <button class="mode-btn active" onclick="setMode('light')">Light</button>
+      <button class="mode-btn" onclick="setMode('dark')">Dark</button>
+    </div>
+  </div>
+
+  <!-- ── SIDE BY SIDE ── -->
+  <div class="section">
+    <div class="section-label">Side-by-side comparison</div>
+    <div class="compare-grid">
+
+      <!-- BEFORE -->
+      <div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+          <span class="tag tag-current">before</span> Current · Slate Refined
+        </div>
+        <div class="sim-frame">
+          <div class="cur light" id="cur-sim">
+            <div class="hdr">
+              <div class="hdr-l">
+                <span class="logo">Flow</span>
+                <div class="flow-sel">Mail Pipeline <svg width="9" height="6" viewBox="0 0 9 6" fill="none" style="margin-left:4px;opacity:.5"><path d="M1 1l3.5 3.5L8 1" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+                <span class="dot"></span><span class="conn">Connected</span>
+              </div>
+              <div class="hdr-r">
+                <span class="tab">Flow</span><span class="tab on">Logs</span>
+                <span class="icon-btn">◑</span><span class="icon-btn">⚙</span>
+              </div>
+            </div>
+            <div class="toolbar">
+              <input class="search" placeholder="Search logs, nodes, or run IDs…" readonly>
+              <select class="node-sel"><option>All nodes</option></select>
+              <button class="fbtn on">all</button>
+              <button class="fbtn">error</button>
+              <button class="tbtn">Live tail on</button>
+            </div>
+            <div class="twrap">
+              <div class="card">
+                <table>
+                  <thead><tr>
+                    <th style="width:105px">Time ↓</th>
+                    <th style="width:130px">Node</th>
+                    <th>Message</th>
+                    <th style="width:56px">Status</th>
+                    <th style="width:64px">Duration</th>
+                  </tr></thead>
+                  <tbody>
+                    <tr><td class="t-time">11:01:58.491</td><td class="t-node">Incoming Worker</td><td class="t-msg">worker.result: mail_incoming worker completed job (success)</td><td><span class="badge ok">OK</span></td><td><span class="dur slow">433ms</span></td></tr>
+                    <tr><td class="t-time">11:01:58.490</td><td class="t-node">Incoming Worker</td><td class="t-msg">incoming.cursor_update: mail_cursors.incoming_history_id updated</td><td><span class="badge ok">OK</span></td><td><span class="dur">0ms</span></td></tr>
+                    <tr><td class="t-time">11:01:58.482</td><td class="t-node">Incoming Worker</td><td class="t-msg">incoming.write_metadata: email metadata written to Postgres</td><td><span class="badge ok">OK</span></td><td><span class="dur">0ms</span></td></tr>
+                    <tr><td class="t-time">11:01:57.995</td><td class="t-node">Schedule Checks</td><td class="t-msg">scheduler.cursor_update: incoming_check_scheduled_at updated</td><td><span class="badge ok">OK</span></td><td><span class="dur">0ms</span></td></tr>
+                    <tr><td class="t-time">11:01:57.995</td><td class="t-node">Cron Scheduler</td><td class="t-msg">worker.result: mail_incoming worker completed job (success)</td><td><span class="badge ok">OK</span></td><td><span class="dur">11ms</span></td></tr>
+                    <tr><td class="t-time">11:01:57.991</td><td class="t-node">Incoming Queue</td><td class="t-msg">queue.enqueue: rrq:queue:mail-incoming: job enqueued</td><td><span class="badge ok">OK</span></td><td><span class="dur">0ms</span></td></tr>
+                    <tr><td class="t-time">11:01:27.512</td><td class="t-node">Cron Scheduler</td><td class="t-msg">worker.result: mail_incoming worker completed job (success)</td><td><span class="badge ok">OK</span></td><td><span class="dur">6ms</span></td></tr>
+                    <tr><td class="t-time">11:00:57.432</td><td class="t-node">Incoming Worker</td><td class="t-msg">worker.result: mail_incoming worker completed job (success)</td><td><span class="badge err">ERR</span></td><td><span class="dur slow">397ms</span></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AFTER -->
+      <div>
+        <div style="font-size:11px;color:#64748b;margin-bottom:8px;display:flex;align-items:center;gap:8px;">
+          <span class="tag tag-new">new direction</span> Minimal · Apple-esque
+        </div>
+        <div class="sim-frame">
+          <div class="apl light" id="apl-sim">
+            <div class="hdr">
+              <div class="hdr-l">
+                <span class="logo">ResQ</span>
+                <span class="sep"></span>
+                <span class="flow-name">Mail Pipeline</span>
+                <span class="dot"></span>
+                <span class="conn">Connected</span>
+              </div>
+              <div class="hdr-r">
+                <span class="tab">Flow</span><span class="tab on">Logs</span>
+                <span class="icon-btn">◑</span><span class="icon-btn">⚙</span>
+              </div>
+            </div>
+            <div class="toolbar">
+              <div class="search-wrap">
+                <span class="search-icon">⌕</span>
+                <input class="search" placeholder="Search logs, nodes, or run IDs…" readonly>
+              </div>
+              <select class="node-sel"><option>All nodes</option></select>
+              <div class="filter-group">
+                <button class="fbtn on">All</button>
+                <button class="fbtn">Error</button>
+              </div>
+              <button class="tbtn live"><span class="live-dot"></span>Live</button>
+            </div>
+            <div class="twrap">
+              <table>
+                <thead><tr>
+                  <th style="width:90px">Time</th>
+                  <th style="width:126px">Node</th>
+                  <th>Message</th>
+                  <th style="width:28px"></th>
+                  <th style="width:56px">Duration</th>
+                </tr></thead>
+                <tbody id="apl-sim-body"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── FULL WIDTH SHOWCASE ── -->
+  <div class="section">
+    <div class="section-label">Full-width showcase — Minimal · Apple-esque</div>
+    <div class="sim-frame">
+      <div class="apl light" id="apl-full" style="height:520px;">
+        <div class="hdr">
+          <div class="hdr-l">
+            <span class="logo">ResQ</span>
+            <span class="sep"></span>
+            <span class="flow-name">Mail Pipeline</span>
+            <span class="dot"></span>
+            <span class="conn">Connected</span>
+          </div>
+          <div class="hdr-r">
+            <span class="tab">Flow</span><span class="tab on">Logs</span>
+            <span class="icon-btn">◑</span><span class="icon-btn">⚙</span>
+          </div>
+        </div>
+        <div class="toolbar">
+          <div class="search-wrap">
+            <span class="search-icon">⌕</span>
+            <input class="search" placeholder="Search logs, nodes, or run IDs…" readonly style="width:260px;">
+          </div>
+          <select class="node-sel"><option>All nodes</option></select>
+          <div class="filter-group">
+            <button class="fbtn on">All</button>
+            <button class="fbtn">Error</button>
+          </div>
+          <button class="tbtn live"><span class="live-dot"></span>Live</button>
+        </div>
+        <div class="twrap">
+          <table>
+            <thead><tr>
+              <th style="width:108px">Time</th>
+              <th style="width:156px">Node</th>
+              <th>Message</th>
+              <th style="width:28px"></th>
+              <th style="width:72px">Duration</th>
+            </tr></thead>
+            <tbody id="apl-full-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Log data ──
+  const logs = [
+    { time: '11:01:58.491 ET', node: 'Incoming Worker', family: 'worker', prefix: 'worker.result', msg: 'mail_incoming worker completed job (success)', ok: true,  dur: '433ms', slow: true  },
+    { time: '11:01:58.490 ET', node: 'Incoming Worker', family: 'worker', prefix: 'incoming.cursor_update', msg: 'mail_cursors.incoming_history_id updated', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:58.482 ET', node: 'Incoming Worker', family: 'worker', prefix: 'incoming.write_metadata', msg: 'email metadata written to Postgres (mail_threads)', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:58.481 ET', node: 'Incoming Worker', family: 'worker', prefix: 'incoming.write_threads', msg: 'email threads written to S3', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:58.058 ET', node: 'Incoming Worker', family: 'worker', prefix: 'worker.pickup', msg: 'mail_incoming worker picked up job', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:57.995 ET', node: 'Schedule Checks', family: 'process', prefix: 'scheduler.cursor_update', msg: 'mail_cursors.incoming_check_scheduled_at updated', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:57.995 ET', node: 'Cron Scheduler',  family: 'cron',   prefix: 'worker.result', msg: 'mail_incoming worker completed job (success)', ok: true,  dur: '11ms',  slow: false },
+    { time: '11:01:57.991 ET', node: 'Incoming Queue',  family: 'queue',  prefix: 'queue.enqueue', msg: 'rrq:queue:mail-incoming: job enqueued (handle_mail_incoming_check)', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:57.984 ET', node: 'Cron Scheduler',  family: 'cron',   prefix: 'worker.pickup', msg: 'mail_incoming worker picked up job', ok: true,  dur: '0ms',   slow: false },
+    { time: '11:01:27.512 ET', node: 'Cron Scheduler',  family: 'cron',   prefix: 'worker.result', msg: 'mail_incoming worker completed job (success)', ok: true,  dur: '6ms',   slow: false },
+    { time: '11:00:57.432 ET', node: 'Incoming Worker', family: 'worker', prefix: 'worker.result', msg: 'mail_incoming worker completed job — connection timeout', ok: false, dur: '397ms', slow: true  },
+  ];
+
+  function buildRow(log, mode) {
+    const tr = document.createElement('tr');
+    if (!log.ok) tr.classList.add('row-err');
+
+    const chipClass = `node-chip chip-${log.family} ${mode}`;
+    const dotClass  = `status-dot ${log.ok ? 'ok' : 'err'}`;
+    const durClass  = `dur${log.slow ? ' slow' : ''}`;
+
+    tr.innerHTML = `
+      <td class="t-time">${log.time}</td>
+      <td><span class="${chipClass}">${log.node}</span></td>
+      <td><span class="msg-prefix">${log.prefix}:</span><span class="msg-body">${log.msg}</span></td>
+      <td class="t-status"><span class="${dotClass}"></span></td>
+      <td><span class="${durClass}">${log.dur}</span></td>`;
+    return tr;
+  }
+
+  function renderBodies(mode) {
+    ['apl-sim-body','apl-full-body'].forEach(id => {
+      const tbody = document.getElementById(id);
+      tbody.innerHTML = '';
+      logs.forEach(log => tbody.appendChild(buildRow(log, mode)));
+    });
+  }
+
+  // ── Mode switching ──
+  let mode = 'light';
+  renderBodies(mode);
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.cur, .apl').forEach(el => {
+      el.classList.remove('light','dark');
+      el.classList.add(m);
+    });
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent.trim().toLowerCase() === m);
+    });
+    renderBodies(m);
+  }
+</script>
+</body>
+</html>
