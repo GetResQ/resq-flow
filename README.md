@@ -142,7 +142,7 @@ Key references in this repo:
 - `docs/shared-flow-event-contract.md`
 - `docs/adding-a-flow.md`
 - `docs/cli.md`
-- `skills/`
+- `skills/README.md`
 - `ui/DESIGN-SYSTEM.md`
 - `examples/vector/resq-flow-fanout.yaml`
 

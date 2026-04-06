@@ -7,6 +7,7 @@ Quick local doc map:
 - `docs/shared-flow-event-contract.md`
 - `docs/adding-a-flow.md`
 - `docs/cli.md`
+- `skills/README.md`
 
 ## Current Design
 
