@@ -1,4 +1,4 @@
-# Obsv Architecture
+# resq-flow Architecture
 
 ## One True Topology
 
@@ -164,6 +164,19 @@ That means:
 - headless flows remain first-class
 - future adapters like Datadog-backed history or imported traces/logs should be able to target the same normalized journey/detail layer
 
+## Non-goals
+
+The architecture is intentionally not trying to make `resq-flow` into:
+
+- the primary storage layer
+- a second telemetry pipeline
+- an exact flow-membership engine at the Vector layer
+- a graph that mirrors every architecture box 1:1
+
+The relay owns exact matching and flow-aware presentation.
+Vector stays coarse and cheap.
+Victoria remains the durable system of record.
+
 ## Operational Rule Of Thumb
 
 If telemetry is emitted once, routed cleanly, stored in Victoria, and then visualized in `resq-flow`, the architecture is doing the right thing.
@@ -172,7 +185,5 @@ If telemetry is emitted once, routed cleanly, stored in Victoria, and then visua
 
 For contributor-facing details that build on this architecture, see:
 
-- `resq-flow.md`
-- `docs/shared-flow-event-contract.md`
-- `docs/adding-a-flow.md`
+- `docs/flow-event-contract.md`
 - `docs/cli.md`

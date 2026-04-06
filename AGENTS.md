@@ -1,71 +1,98 @@
-## Cursor Cloud specific instructions
+# resq-flow agent guide
 
-### Overview
+Use this file as the first-stop operating guide for agents working in this repo.
 
-resq-flow is a local dev-only real-time flow visualization tool with two services:
+## What this repo is
 
-- **Relay** (`relay/`): Rust (Axum) WebSocket server on port 4200 — receives OTLP traces/logs, broadcasts FlowEvents.
-- **UI** (`ui/`): Vite + React 19 + TypeScript app on port 5173 — renders interactive flow diagrams.
+`resq-flow` is a local flow visualizer and log viewer for ResQ telemetry.
 
-### Prerequisites
+It has three main surfaces:
 
-- **Rust** ≥ 1.85 (edition 2024). The default rustup toolchain must be set to `stable` (`rustup default stable`).
-- **Bun** (`~/.bun/bin/bun`). Ensure `~/.bun/bin` is on PATH.
+- `relay/`
+  Rust relay that ingests OTLP traces/logs and serves WebSocket + history APIs
+- `ui/`
+  React app that renders flows, runs, logs, and drill-down views
+- `cli/`
+  Headless interface for status checks, log inspection, `runs explain`, and manual debug emits
 
-### Running, testing, linting
+## Read order
 
-See `Makefile` for all standard commands (`make dev`, `make test`, `make replay`).
+Open these in roughly this order:
 
-- `cd relay && cargo test` — 4 integration tests (OTLP→WS, logs, broadcast).
-- `cd ui && bun test` — 15 Vitest tests (hooks, components, span mapping).
-- `cd ui && bun run lint` — ESLint. Pre-existing React Compiler warnings exist (not blocking).
-- `cd ui && bun run build` — TypeScript check + Vite build.
+1. `README.md`
+2. `ARCHITECTURE.md`
+3. `docs/flow-event-contract.md`
+4. `docs/cli.md`
+5. `skills/README.md`
 
-### Non-obvious caveats
+## Core product model
 
-- The Rust relay must be compiled before `make dev` will work; first run takes ~15s to compile dependencies.
-- `make replay` requires both the relay and UI to be running first — it sends fixture data through the relay WebSocket.
-- No Docker, databases, or external services are required.
+- `component_id` is the first-class node identity
+- `step_id` is attached detail under that node
+- node logs define the sparse flow structure
+- step logs provide richer drill-down without turning every detail into a graph node
+- keep the graph sparse and the drill-down rich
 
----
+Do not model every architecture box as a first-class node.
 
-## Design System
+## Skills
 
-**Full reference**: `ui/DESIGN-SYSTEM.md`
+Use the local skills as the front door for agent work:
 
-### Palette: Slate Refined · Ocean Blue
+- `flow-cli-create`
+  create a brand-new flow
+- `flow-cli-write`
+  add or change logs for an existing flow
+- `flow-cli-read`
+  inspect logs, tail live activity, or explain why a run stopped, failed, or completed
 
-| Token | Dark | Light |
-|-------|------|-------|
-| `--surface-primary` | `#020617` | `#f0f7ff` |
-| `--surface-raised` | `#06101f` | `#dbeafe` |
-| `--surface-overlay` | `#0a1e38` | `#bfdbfe` |
-| `--accent-primary` | `#42a5f5` (hue 210°) | `#1565c0` |
-| `--text-primary` | `#f1f5f9` | `#0a1929` |
-| `--text-secondary` | `#4d7fa8` | `#1e3a5f` |
-| `--border-default` | `rgba(30,58,95,0.7)` | `#90caf9` |
+If you are adding a new flow, start with `skills/flow-cli-create/SKILL.md`.
 
-Status colors (universal):
-- Success: `#34d399` dark / `#2e7d32` light
-- Warning: `#fbbf24` dark / `#f57c00` light
-- Error: `#f87171` dark / `#c62828` light
+## Repo map
 
-### UI Component Rules
+- `docs/`
+  durable local docs for the shared flow contract and CLI usage
+- `skills/`
+  agent workflows for create, write, and read
+- `ui/src/flow-contracts/`
+  shared JSON flow contracts
+- `ui/src/flows/`
+  optional TypeScript graph and view configs
+- `examples/vector/`
+  example Vector fanout snippet
+- `ui/DESIGN-SYSTEM.md`
+  UI and language rules
 
-- **Always use shadcn components** from `@/components/ui/` — never hand-roll buttons, inputs, tabs, selects, badges, tooltips, dropdowns, scroll areas, or separators.
-- **Never use inline `sky-*` or `blue-*` Tailwind utilities** for accent colors — use CSS variables or the typed tokens from `ui/src/lib/theme.ts`.
-- **Monospace only for data** — trace IDs, attribute values, log messages, timestamps. Use `font-mono`. Everything else: `font-sans` (Inter).
-- **Generous spacing** — panel padding minimum `px-4 py-3`. Row padding minimum `py-2`. No `text-[9px]` or `text-[10px]`.
-- **Node canvas labels** may stay at `text-xs` / `text-[11px]` — they're in a zoomed visual context.
+## Validation commands
 
-### Language Rules (from language spec)
+Use the `Makefile` first:
 
-Say: `Flow`, `Run`, `Node`, `Logs`, `Status`, `Timing`
-Avoid in primary UI: `trace`, `span`, `event`, `telemetry` (reserve for Advanced tab)
+- `make dev`
+- `make test`
+- `make build-cli`
+- `make test-cli`
+- `make replay`
 
-### File Conventions
+Useful focused checks:
 
-- New UI components: `ui/src/core/components/PascalCase.tsx`
-- New shadcn components: `ui/src/components/ui/kebab-case.tsx`
-- New hooks: `ui/src/core/hooks/useCamelCase.ts`
-- Theme token file (runtime JS values): `ui/src/lib/theme.ts`
+- `cd relay && cargo test`
+- `cd ui && bun test`
+- `cd ui && bun run build`
+- `cd cli && bun test`
+- `cd cli && bun run build`
+
+## Guardrails
+
+- Do not invent a second telemetry pipeline.
+- Keep flow scope explicit.
+- Do not silently treat global logs as flow logs.
+- Keep CLI behavior deterministic; do not add LLM requirements for basic explain or inspection.
+- Prefer repo-local docs over assumptions about private external docs.
+- Do not invent graph nodes that are not backed by real runtime boundaries.
+
+## UI rules worth keeping in mind
+
+- Use shadcn components from `@/components/ui/` for standard UI primitives.
+- Use `ui/DESIGN-SYSTEM.md` for palette, spacing, and language rules.
+- Prefer `Flow`, `Run`, `Node`, `Logs`, `Status`, and `Timing` in the main UI.
+- Reserve lower-level telemetry words like `trace`, `span`, and `event` for advanced views.

@@ -22,8 +22,7 @@ Use each `SKILL.md` for the full instructions.
 ## Related local docs
 
 - `../README.md`
+- `../AGENTS.md`
 - `../ARCHITECTURE.md`
-- `../resq-flow.md`
-- `../docs/shared-flow-event-contract.md`
-- `../docs/adding-a-flow.md`
+- `../docs/flow-event-contract.md`
 - `../docs/cli.md`

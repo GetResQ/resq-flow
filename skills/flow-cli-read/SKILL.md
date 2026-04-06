@@ -20,11 +20,10 @@ Do not use this skill when the main task is to add durable runtime instrumentati
 Start with the local docs and contract:
 
 - `README.md` for the repo doc map and command examples
+- `AGENTS.md` for repo guardrails and the agent read order
 - `ARCHITECTURE.md` for topology and ownership
-- `resq-flow.md` for contributor mental model and scope rules
 - `docs/cli.md` for command usage and examples
-- `docs/shared-flow-event-contract.md` for flow/run/node/step semantics
-- `docs/adding-a-flow.md` if the question touches flow authoring
+- `docs/flow-event-contract.md` for flow/run/node/step semantics
 - `ui/src/flow-contracts/*.json` for valid flow IDs and telemetry matching rules
 - `cli/src/commands/logs.ts` and `cli/src/commands/runs.ts` if behavior needs confirmation
 

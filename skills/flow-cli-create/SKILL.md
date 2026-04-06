@@ -33,11 +33,10 @@ Do not use it for:
 
 Start with the local repo docs:
 
+- `AGENTS.md`
 - `README.md`
 - `ARCHITECTURE.md`
-- `resq-flow.md`
-- `docs/shared-flow-event-contract.md`
-- `docs/adding-a-flow.md`
+- `docs/flow-event-contract.md`
 - `docs/cli.md`
 - `ui/src/flow-contracts/*.json`
 

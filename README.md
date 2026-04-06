@@ -11,6 +11,20 @@ It sits on top of the shared observability stack and turns raw traces and logs i
 
 `Victoria` remains the durable storage and query source of truth. `resq-flow` is the flow-aware consumer and presentation layer.
 
+## If you're new
+
+Start with these three files:
+
+1. `AGENTS.md`
+2. `README.md`
+3. `ARCHITECTURE.md`
+
+Then use:
+
+- `docs/flow-event-contract.md` for contract semantics
+- `docs/cli.md` for CLI behavior
+- `skills/README.md` for the create/write/read workflows
+
 ## Topology
 
 ```text
@@ -42,6 +56,22 @@ Traditional observability tools are still necessary, but they often make a busin
 - which details matter, and which ones are just exhaust
 
 `resq-flow` makes the execution spine visible and keeps the underlying detail accessible.
+
+## What resq-flow is not
+
+`resq-flow` is not:
+
+- a second observability database
+- the primary storage or query layer
+- a second control plane for producer logging
+- a place to mirror every architecture box as a graph node
+
+The normal model is still:
+
+- producers emit once
+- Vector fans out
+- Victoria stores and serves history
+- `resq-flow` consumes and presents the flow-shaped view
 
 ## Core principles
 
@@ -138,13 +168,15 @@ These endpoints are for sending traces and logs to the relay, not for viewing st
 Key references in this repo:
 
 - `ARCHITECTURE.md`
-- `resq-flow.md`
-- `docs/shared-flow-event-contract.md`
-- `docs/adding-a-flow.md`
+- `docs/flow-event-contract.md`
 - `docs/cli.md`
 - `skills/README.md`
 - `ui/DESIGN-SYSTEM.md`
 - `examples/vector/resq-flow-fanout.yaml`
+
+If you are adding a new flow, start with:
+
+- `skills/flow-cli-create/SKILL.md`
 
 If you change product direction, naming rules, filtering rules, or graph behavior, keep the surrounding docs and design references in sync with the code.
 
