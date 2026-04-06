@@ -1,4 +1,5 @@
 import { readStringAttribute } from './mapping'
+import { combinedStepRef, stepLeaf } from './stepRefs'
 
 export interface StepOutcomeInput {
   stepId?: string
@@ -12,28 +13,27 @@ export interface StepOutcomeInput {
 export type StepPresentationTier = 'outcome' | 'transition' | 'plumbing' | 'fallback'
 
 const TRANSITION_SUMMARIES: Record<string, string> = {
-  'actions.send_enqueue': 'send queued',
-  'analyze.draft_insert': 'draft created',
-  'extract.recompute_enqueue': 'recompute queued',
-  'recompute.started': 'recompute started',
+  'autosend-decision.send-enqueue': 'send queued',
+  'draft-reply.draft-insert': 'draft created',
+  'draft-reply.draft-status-write': 'draft created',
+  'extract-worker.recompute-enqueue': 'recompute queued',
+  'extract-worker.started': 'recompute started',
 }
 
-const PLUMBING_STEP_IDS = new Set([
-  'analyze.reply_status_write',
-  'analyze.draft_status_write',
-  'extract.state_write',
-  'extract.upsert_contacts',
-  'incoming.write_metadata',
-  'incoming.write_threads',
-  'incoming.cursor_update',
-  'scheduler.cursor_update',
-  'queue.enqueue',
-  'worker.pickup',
-  'worker.result',
-  'send.precheck',
-  'send.provider_call',
-  'send.finalize',
+const PLUMBING_STEP_REFS = new Set([
+  'analyze-decision.reply-status-write',
+  'draft-reply.draft-status-write',
+  'extract-worker.state-write',
+  'extract-worker.upsert-contacts',
+  'extract-worker.upsert-insights',
+  'incoming-worker.write-metadata',
+  'incoming-worker.write-threads',
+  'incoming-worker.cursor-update',
+  'incoming-schedule-process.cursor-update',
+  'send-process.precheck',
 ])
+
+const GENERIC_PLUMBING_STEP_LEAVES = new Set(['enqueue', 'pickup', 'result'])
 
 function normalize(value?: string | null): string | undefined {
   const trimmed = value?.trim().toLowerCase()
@@ -45,6 +45,10 @@ function readNormalizedAttribute(
   key: string,
 ): string | undefined {
   return normalize(readStringAttribute(attributes, key))
+}
+
+function normalizedStepRef(input: Pick<StepOutcomeInput, 'stepId' | 'nodeId'>): string | undefined {
+  return normalize(combinedStepRef(input.nodeId, input.stepId))
 }
 
 function summarizeAnalyzeFinalResult(input: StepOutcomeInput): string | undefined {
@@ -119,38 +123,34 @@ function summarizeSendFinalResult(input: StepOutcomeInput): string | undefined {
 }
 
 function summarizeLifecycleOutcome(input: StepOutcomeInput): string | undefined {
-  const stepId = normalize(input.stepId)
+  const stepRef = normalizedStepRef(input)
 
-  if (!stepId) {
+  if (!stepRef) {
     return undefined
   }
 
-  if (stepId === 'analyze.final_result') {
+  if (stepRef === 'analyze-decision.final-result') {
     return summarizeAnalyzeFinalResult(input)
   }
 
-  if (stepId === 'send.final_result') {
+  if (stepRef === 'send-process.final-result') {
     return summarizeSendFinalResult(input)
   }
 
-  if (stepId === 'extract.final_result') {
+  if (stepRef === 'extract-worker.final-result') {
     return 'extract completed'
-  }
-
-  if (stepId === 'recompute.final_result') {
-    return 'recompute finished'
   }
 
   return undefined
 }
 
 function summarizeLifecycleTransition(input: StepOutcomeInput): string | undefined {
-  const stepId = normalize(input.stepId)
-  if (!stepId) {
+  const stepRef = normalizedStepRef(input)
+  if (!stepRef) {
     return undefined
   }
 
-  return TRANSITION_SUMMARIES[stepId]
+  return TRANSITION_SUMMARIES[stepRef]
 }
 
 function isNodeWrapperStep(input: StepOutcomeInput): boolean {
@@ -169,9 +169,9 @@ function isNodeWrapperStep(input: StepOutcomeInput): boolean {
     return true
   }
 
-  const stepLeaf = stepId.split('.').at(-1)
+  const stepLeafValue = stepLeaf(stepId)
   const nodeLeaf = nodeId.split('.').at(-1)
-  return Boolean(stepLeaf && nodeLeaf && stepLeaf === nodeLeaf)
+  return Boolean(stepLeafValue && nodeLeaf && stepLeafValue === nodeLeaf)
 }
 
 export function summarizeStepOutcome(input: StepOutcomeInput): string | undefined {
@@ -187,8 +187,13 @@ export function getStepPresentationTier(input: StepOutcomeInput): StepPresentati
     return 'transition'
   }
 
-  const stepId = normalize(input.stepId)
-  if ((stepId && PLUMBING_STEP_IDS.has(stepId)) || isNodeWrapperStep(input)) {
+  const stepRef = normalizedStepRef(input)
+  const stepLeafValue = stepLeaf(input.stepId)
+  if (
+    (stepRef && PLUMBING_STEP_REFS.has(stepRef)) ||
+    (stepLeafValue && GENERIC_PLUMBING_STEP_LEAVES.has(stepLeafValue)) ||
+    isNodeWrapperStep(input)
+  ) {
     return 'plumbing'
   }
 
@@ -196,8 +201,7 @@ export function getStepPresentationTier(input: StepOutcomeInput): StepPresentati
 }
 
 export function isLifecycleTerminalStep(stepId?: string): boolean {
-  const normalized = normalize(stepId)
-  return Boolean(normalized?.endsWith('final_result'))
+  return stepLeaf(stepId) === 'final-result'
 }
 
 export function isGenericOperationalStep(input: Pick<StepOutcomeInput, 'stepId' | 'nodeId'>): boolean {

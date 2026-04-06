@@ -31,7 +31,7 @@ describe("websocket helpers", () => {
           attributes: {
             flow_id: "mail-pipeline",
             run_id: "thread-201",
-            step_id: "incoming.fetch_threads",
+            step_id: "fetch-threads",
           },
         },
       ],

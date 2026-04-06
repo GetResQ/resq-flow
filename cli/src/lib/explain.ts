@@ -1,11 +1,13 @@
 import { EmptyResultError } from "./errors.js";
 import {
+  combinedStepRef,
   executionKeyForRow,
   groupRowsByExecutionKey,
   normalizeIdentifierValue,
   preferredStepLabel,
   rowAttribute,
   sortLogRows,
+  stepLeaf,
 } from "./history.js";
 import type {
   CliLogRow,
@@ -16,7 +18,7 @@ import type {
 } from "../types.js";
 
 const TERMINAL_STEP_LEAVES = new Set([
-  "final_result",
+  "final-result",
   "result",
   "complete",
   "completed",
@@ -38,7 +40,7 @@ const PICKUP_STEP_LEAVES = new Set([
 
 const RESULT_STEP_LEAVES = new Set([
   "result",
-  "final_result",
+  "final-result",
 ]);
 
 export function selectTargetRun(
@@ -466,29 +468,14 @@ function isResultRow(row: CliLogRow): boolean {
   return Boolean(leaf && RESULT_STEP_LEAVES.has(leaf));
 }
 
-function stepLeaf(stepId: string | undefined): string | undefined {
-  const normalized = normalizeIdentifierValue(stepId);
-  if (!normalized) {
-    return undefined;
-  }
-
-  const withoutNamespace = normalized.split("::").at(-1) ?? normalized;
-  return withoutNamespace.split(".").at(-1);
-}
-
 function formatIdentity(row: CliLogRow): string {
-  const componentId = normalizeIdentifierValue(row.componentId);
-  const stepLabel = preferredStepLabel(row);
+  const stepLabel =
+    combinedStepRef(row.componentId, row.stepId) ??
+    preferredStepLabel(row);
   const status = normalizeIdentifierValue(row.status);
 
-  if (componentId && stepLabel && stepLabel !== componentId) {
-    return status
-      ? `${componentId} · ${stepLabel} [${status}]`
-      : `${componentId} · ${stepLabel}`;
-  }
-
-  if (componentId) {
-    return status ? `${componentId} [${status}]` : componentId;
+  if (!stepLabel) {
+    return status ?? "-";
   }
 
   return status ? `${stepLabel} [${status}]` : stepLabel;
@@ -506,11 +493,11 @@ function formatSignal(row: CliLogRow | undefined): string | undefined {
 function formatEvidenceRow(row: RunExplainEvidenceRow): string {
   const parts = [row.timestamp];
 
-  const identityParts = [row.componentId, row.stepId]
-    .map((value) => normalizeIdentifierValue(value))
-    .filter((value): value is string => Boolean(value));
-  if (identityParts.length > 0) {
-    parts.push(identityParts.join(" · "));
+  const identity = combinedStepRef(row.componentId, row.stepId)
+    ?? normalizeIdentifierValue(row.componentId)
+    ?? normalizeIdentifierValue(row.stepId);
+  if (identity) {
+    parts.push(identity);
   }
 
   if (row.status) {

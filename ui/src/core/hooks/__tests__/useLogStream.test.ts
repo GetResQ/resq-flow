@@ -130,7 +130,7 @@ describe('useLogStream', () => {
         attributes: {
           run_id: 'run-3',
           component_id: 'analyze-decision',
-          step_id: 'analyze.final_result',
+          step_id: 'final-result',
           reply_status: 'needs_review',
           draft_status: 'needs_review',
           result_action: 'draft_reply',
@@ -144,7 +144,7 @@ describe('useLogStream', () => {
         attributes: {
           run_id: 'run-3',
           component_id: 'send-process',
-          step_id: 'send.final_result',
+          step_id: 'final-result',
           reply_status: 'send_failed',
           draft_status: 'send_failed',
           result_action: 'not_sent',

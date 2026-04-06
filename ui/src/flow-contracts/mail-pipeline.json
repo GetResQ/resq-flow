@@ -7,7 +7,16 @@
     "queue_prefixes": ["rrq:queue:mail-"],
     "function_prefixes": ["handle_mail_"],
     "worker_prefixes": ["mail_"],
-    "step_prefixes": ["backfill.", "scheduler.", "incoming.", "analyze.", "approval.", "actions.", "extract.", "recompute.", "send."],
+    "step_prefixes": [
+      "backfill-worker.",
+      "incoming-schedule-process.",
+      "incoming-worker.",
+      "analyze-decision.",
+      "draft-reply.",
+      "autosend-decision.",
+      "extract-worker.",
+      "send-process."
+    ],
     "span_prefixes": ["handle_mail_"],
     "span_names": ["insert_reply_draft"]
   },

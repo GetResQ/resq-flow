@@ -38,7 +38,7 @@ const journeys: TraceJourney[] = [
     status: 'error',
     steps: [
       {
-        stepId: 'send.final_result',
+        stepId: 'final-result',
         label: 'Send',
         nodeId: 'send-process',
         startSeq: 3,
@@ -64,8 +64,8 @@ const journeys: TraceJourney[] = [
     status: 'running',
     steps: [
       {
-        stepId: 'worker.pickup',
-        label: 'worker.pickup',
+        stepId: 'pickup',
+        label: 'pickup',
         nodeId: 'incoming-worker',
         startSeq: 5,
         endSeq: 5,
@@ -74,8 +74,8 @@ const journeys: TraceJourney[] = [
         status: 'success',
       },
       {
-        stepId: 'send.final_result',
-        label: 'send.final_result',
+        stepId: 'final-result',
+        label: 'final-result',
         nodeId: 'send-process',
         startSeq: 6,
         endSeq: 6,

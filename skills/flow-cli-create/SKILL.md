@@ -60,7 +60,7 @@ That means the stable backbone of the flow should exist from the start:
 - queue enqueue
 - worker pickup
 - worker result
-- core step outcomes such as `final_result`
+- core step outcomes such as `final-result`
 
 If the user also wants smaller local visibility points, add those as step logs after the backbone exists.
 
@@ -105,6 +105,7 @@ Prefer:
 - simple stable `flow_id`
 - explicit node or component names
 - child-step `step_id` values
+- human-facing references in the form `component_id.step_id`
 
 Do not encode the whole node path into `step_id` when the node identity already exists separately.
 

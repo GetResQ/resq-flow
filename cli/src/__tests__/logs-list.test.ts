@@ -49,7 +49,8 @@ function createHistoryFetchMock(): typeof fetch {
             flow_id: "mail-pipeline",
             run_id: "thread-201",
             thread_id: "thread-201",
-            step_id: "incoming.fetch_threads",
+            component_id: "incoming-worker",
+            step_id: "fetch-threads",
             status: "ok",
           },
         },
@@ -62,7 +63,8 @@ function createHistoryFetchMock(): typeof fetch {
             flow_id: "mail-pipeline",
             run_id: "thread-201",
             thread_id: "thread-201",
-            step_id: "send.provider_call",
+            component_id: "send-process",
+            step_id: "provider-call",
             status: "error",
             worker_name: "send-worker",
           },
@@ -112,7 +114,7 @@ function createAllHistoryFetchMock(): typeof fetch {
             flow_id: "mail-pipeline",
             run_id: "thread-201",
             thread_id: "thread-201",
-            step_id: "send.provider_call",
+            step_id: "provider-call",
             status: "error",
           },
         },
@@ -138,7 +140,7 @@ describe("resq-flow logs list", () => {
     expect(buffered.readStdout()).toContain("2026-03-23T18:41:02.110Z");
     expect(buffered.readStdout()).toContain("mail-pipeline");
     expect(buffered.readStdout()).toContain("thread-201");
-    expect(buffered.readStdout()).toContain("incoming.fetch_threads");
+    expect(buffered.readStdout()).toContain("incoming-worker.fetch-threads");
     expect(buffered.readStdout()).toContain("Gmail API timeout");
     expect(buffered.readStderr()).toBe("");
   });
@@ -158,7 +160,7 @@ describe("resq-flow logs list", () => {
     expect(parsed[1]).toMatchObject({
       flowId: "mail-pipeline",
       runId: "thread-201",
-      stepId: "send.provider_call",
+      stepId: "provider-call",
       status: "error",
       message: "Gmail API timeout",
     });

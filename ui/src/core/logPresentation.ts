@@ -1,5 +1,6 @@
 import type { LogEntry } from './types'
 import { summarizeStepOutcome } from './stepOutcomePresentation'
+import { combinedStepRef } from './stepRefs'
 
 interface FlowLogPresentationInput {
   stepId?: string
@@ -19,23 +20,36 @@ function defaultDisplayMessage(stageLabel: string | undefined, message: string):
   return `${stageLabel}: ${message}`
 }
 
+function preferredLogStepLabel(
+  input: Pick<FlowLogPresentationInput, 'nodeId' | 'stepId' | 'stepName'>,
+): string | undefined {
+  return input.stepName ?? combinedStepRef(input.nodeId, input.stepId) ?? input.stepId
+}
+
 export function buildFlowLogDisplayMessage(input: FlowLogPresentationInput): string {
   const summary = summarizeStepOutcome(input)
   if (summary) {
     return summary
   }
 
-  return defaultDisplayMessage(input.stepName ?? input.stepId, input.message)
+  return defaultDisplayMessage(preferredLogStepLabel(input), input.message)
 }
 
 export function getLogDisplayMessage(
-  entry: Pick<LogEntry, 'displayMessage' | 'message' | 'stepId' | 'stepName'>,
+  entry: Pick<LogEntry, 'displayMessage' | 'message' | 'stepId' | 'stepName' | 'componentId' | 'nodeId'>,
 ): string {
   if (entry.displayMessage) {
     return entry.displayMessage
   }
 
-  return defaultDisplayMessage(entry.stepName ?? entry.stepId, entry.message)
+  return defaultDisplayMessage(
+    preferredLogStepLabel({
+      stepName: entry.stepName,
+      stepId: entry.stepId,
+      nodeId: entry.nodeId ?? entry.componentId,
+    }),
+    entry.message,
+  )
 }
 
 export function buildLogSearchText(

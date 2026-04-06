@@ -66,7 +66,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    step_id: "analyze.decision",
+                    step_id: "final-result",
                     status: "ok",
                   },
                 },
@@ -78,7 +78,7 @@ describe("resq-flow logs tail", () => {
 
     expect(exitCode).toBe(0);
     expect(buffered.readStdout()).toContain("[18:45:02]");
-    expect(buffered.readStdout()).toContain("analyze.decision");
+    expect(buffered.readStdout()).toContain("final-result");
     expect(buffered.readStdout()).toContain("thread-201");
     expect(buffered.readStdout()).toContain("classified thread as needs-reply");
     expect(buffered.readStderr()).toBe("");
@@ -112,7 +112,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
                     thread_id: "thread-201",
-                    step_id: "analyze.decision",
+                    step_id: "final-result",
                     status: "ok",
                   },
                 },
@@ -125,7 +125,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "mail-pipeline",
                     run_id: "thread-202",
                     thread_id: "thread-202",
-                    step_id: "send.provider_call",
+                    step_id: "provider-call",
                     status: "ok",
                   },
                 },
@@ -138,7 +138,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "other-flow",
                     run_id: "thread-999",
                     thread_id: "thread-201",
-                    step_id: "send.provider_call",
+                    step_id: "provider-call",
                     status: "ok",
                   },
                 },
@@ -174,7 +174,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    step_id: "analyze.decision",
+                    step_id: "final-result",
                     status: "ok",
                   },
                 },
@@ -191,7 +191,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    step_id: "send.provider_call",
+                    step_id: "provider-call",
                     status: "ok",
                   },
                 },
@@ -211,10 +211,10 @@ describe("resq-flow logs tail", () => {
     expect(lines[0]).toMatchObject({
       flowId: "mail-pipeline",
       runId: "thread-201",
-      stepId: "analyze.decision",
+      stepId: "final-result",
     });
     expect(lines[1]).toMatchObject({
-      stepId: "send.provider_call",
+      stepId: "provider-call",
       message: "sent Gmail reply",
     });
   });

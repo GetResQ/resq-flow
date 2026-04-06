@@ -88,7 +88,7 @@ describe('useFlowAnimations', () => {
       span_id: 'span-store-1',
       attributes: {
         component_id: 'incoming-worker',
-        step_id: 'incoming.write_threads',
+        step_id: 'write-threads',
         status: 'ok',
       },
     }
@@ -102,7 +102,7 @@ describe('useFlowAnimations', () => {
       duration_ms: 250,
       attributes: {
         component_id: 'incoming-worker',
-        step_id: 'incoming.write_threads',
+        step_id: 'write-threads',
         status: 'ok',
       },
     }
@@ -190,7 +190,7 @@ describe('useFlowAnimations', () => {
       attributes: {
         component_id: 'recompute-worker',
         function_name: 'handle_mail_recompute_opportunities',
-        step_id: 'recompute.started',
+        step_id: 'started',
       },
     }
 
@@ -203,7 +203,7 @@ describe('useFlowAnimations', () => {
       attributes: {
         component_id: 'recompute-worker',
         function_name: 'handle_mail_recompute_opportunities',
-        step_id: 'recompute.final_result',
+        step_id: 'final-result',
         status: 'ok',
       },
     }
@@ -300,7 +300,7 @@ describe('useFlowAnimations', () => {
     })
   })
 
-  it('animates the autosend -> actions -> send handoff when replay events use exact stage and component ids', async () => {
+  it('animates the autosend -> send handoff when replay events use exact component ids', async () => {
     const draftInserted: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -308,7 +308,7 @@ describe('useFlowAnimations', () => {
       span_id: 'log-a',
       attributes: {
         action: 'step',
-        step_id: 'analyze.draft_insert',
+        step_id: 'draft-status-write',
         component_id: 'draft-reply',
       },
     }
@@ -319,7 +319,7 @@ describe('useFlowAnimations', () => {
       span_id: 'log-b',
       attributes: {
         action: 'step',
-        step_id: 'analyze.action_batch_auto_approve',
+        step_id: 'action-batch-auto-approve',
         component_id: 'autosend-decision',
       },
     }
@@ -330,8 +330,8 @@ describe('useFlowAnimations', () => {
       span_id: 'log-c',
       attributes: {
         action: 'step',
-        step_id: 'analyze.execute_enqueue',
-        component_id: 'actions-queue',
+        step_id: 'execute-enqueue',
+        component_id: 'autosend-decision',
       },
     }
     const sendHandoffDetail: FlowEvent = {
@@ -341,9 +341,8 @@ describe('useFlowAnimations', () => {
       span_id: 'log-c2',
       attributes: {
         action: 'step',
-        step_id: 'actions.send_enqueue',
-        queue_name: 'rrq:queue:mail-send',
-        function_name: 'handle_mail_send_reply',
+        step_id: 'send-enqueue',
+        component_id: 'autosend-decision',
       },
     }
     const sendQueueEnqueued: FlowEvent = {
@@ -375,7 +374,7 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('draft-reply')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
-      expect(result.current.nodeStatuses.get('actions-queue')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('actions-queue')?.status).toBeUndefined()
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
@@ -384,7 +383,7 @@ describe('useFlowAnimations', () => {
     })
 
     await waitFor(() => {
-      expect(result.current.nodeStatuses.get('actions-worker')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 

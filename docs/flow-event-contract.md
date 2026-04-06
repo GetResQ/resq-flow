@@ -60,6 +60,12 @@ The child step under the owning `component_id`.
 
 This is detail about what happened inside or under that node.
 
+Use kebab-case child-only values such as:
+
+- `final-result`
+- `cursor-update`
+- `write-metadata`
+
 ## Node logs vs step logs
 
 Use this simple distinction when designing or reviewing flow logs:
@@ -111,7 +117,7 @@ flow_id=mail-pipeline
 run_id=run_123
 component_id=send-process
 component_kind=process
-step_id=final_result
+step_id=final-result
 ```
 
 This says:
@@ -120,4 +126,4 @@ This says:
 - it belongs to the mail pipeline
 - it belongs to one specific run
 - the first-class node is `send-process`
-- the child step is `final_result`
+- the child step is `final-result`

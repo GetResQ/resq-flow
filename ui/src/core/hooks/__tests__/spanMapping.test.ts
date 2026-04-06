@@ -24,7 +24,7 @@ describe('span mapping resolution', () => {
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         component_id: 'incoming-schedule-process',
-        step_id: 'scheduler.cursor_update',
+        step_id: 'cursor-update',
       },
     }
 
@@ -55,24 +55,24 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('backfill-worker')
   })
 
-  it('preserves legacy batchfill aliases for older replay fixtures', () => {
+  it('maps standardized backfill component ids directly', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        component_id: 'batchfill-worker',
+        component_id: 'backfill-worker',
       },
     }
 
     expect(resolveMappedNodeId(event, spanMapping)).toBe('backfill-worker')
   })
 
-  it('preserves legacy check-process alias for older replay fixtures', () => {
+  it('maps standardized incoming-schedule-process component ids directly', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        component_id: 'check-process',
+        component_id: 'incoming-schedule-process',
       },
     }
 
@@ -91,12 +91,13 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('analyze-queue')
   })
 
-  it('maps demoted store step_id to its owning first-class node', () => {
+  it('keeps explicit owning component ids for demoted store steps', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'incoming.write_metadata',
+        component_id: 'incoming-worker',
+        step_id: 'write-metadata',
       },
     }
 
@@ -127,24 +128,26 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('analyze-queue')
   })
 
-  it('maps extract upsert detail to extract-worker', () => {
+  it('keeps explicit extract-worker ownership on extract detail steps', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'extract.upsert_contacts',
+        component_id: 'extract-worker',
+        step_id: 'upsert-contacts',
       },
     }
 
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('maps recompute stage detail onto the shared extract-worker lane', () => {
+  it('keeps explicit extract-worker ownership on recompute detail steps', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'recompute.started',
+        component_id: 'extract-worker',
+        step_id: 'started',
       },
     }
 
@@ -176,51 +179,52 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('maps autosend decision step_id to decision node', () => {
+  it('keeps explicit autosend decision ownership on decision detail steps', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'analyze.autosend_decision',
+        component_id: 'autosend-decision',
+        step_id: 'action-batch-auto-approve',
       },
     }
 
     expect(resolveMappedNodeId(event, spanMapping)).toBe('autosend-decision')
   })
 
-  it('maps autosend execute enqueue detail to actions-queue', () => {
+  it('maps autosend execute enqueue detail to the actions queue when the queue boundary is explicit', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'analyze.execute_enqueue',
+        component_id: 'actions-queue',
+        step_id: 'execute-enqueue',
       },
     }
 
     expect(resolveMappedNodeId(event, spanMapping)).toBe('actions-queue')
   })
 
-  it('maps actions.send_enqueue stage detail onto actions-worker', () => {
+  it('maps send-enqueue stage detail onto autosend-decision', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'actions.send_enqueue',
-        queue_name: 'rrq:queue:mail-send',
-        function_name: 'handle_mail_send_reply',
+        component_id: 'autosend-decision',
+        step_id: 'send-enqueue',
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('actions-worker')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('autosend-decision')
   })
 
-  it('still honors explicit component_id when actions.send_enqueue is mis-emitted as a node', () => {
+  it('still honors explicit component_id when send-enqueue is mis-emitted as a node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         component_id: 'send-queue',
-        step_id: 'actions.send_enqueue',
+        step_id: 'send-enqueue',
         queue_name: 'rrq:queue:mail-send',
       },
     }
@@ -228,12 +232,13 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('send-queue')
   })
 
-  it('maps send precheck detail onto send-process', () => {
+  it('keeps explicit send-process ownership on send precheck detail', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        step_id: 'send.precheck',
+        component_id: 'send-process',
+        step_id: 'precheck',
       },
     }
 

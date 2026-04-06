@@ -12,7 +12,7 @@ const row: CliLogRow = {
   flowId: "mail-pipeline",
   runId: "thread-201",
   traceId: "trace-send-201",
-  stepId: "send.provider_call",
+  stepId: "provider-call",
   componentId: "send-worker",
   status: "error",
   message: "Gmail API timeout",
@@ -20,7 +20,7 @@ const row: CliLogRow = {
     flow_id: "mail-pipeline",
     run_id: "thread-201",
     thread_id: "thread-201",
-    step_id: "send.provider_call",
+    step_id: "provider-call",
     retryable: true,
   },
 };

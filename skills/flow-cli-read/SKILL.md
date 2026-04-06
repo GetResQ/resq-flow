@@ -69,5 +69,8 @@ resq-flow logs tail --all --jsonl
 - Prefer `logs list` for "did it show up in history?"
 - Prefer `runs explain` for "why did this stop, fail, or complete?"
 - When checking a specific execution, filter with `thread_id`, `run_id`, `step_id`, or `status` when available.
+- Keep the distinction clear:
+  - raw attrs use child-only `step_id` values such as `final-result`
+  - human-facing references use `component_id.step_id` such as `analyze-decision.final-result`
 - If a log does not appear in a flow, check whether the wrong scope was used before assuming relay or UI bugs.
 - Remember that ordinary unmatched runtime logs are not the main thing `resq-flow` surfaces today; flow logs are the normal path.

@@ -86,7 +86,7 @@ Use `logs emit` only for manual debugging.
 Flow-scoped example:
 
 ```bash
-resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr step_id=analyze.decision
+resq-flow logs emit --flow mail-pipeline --message "analyze finalized reply branch" --attr run_id=thread-301 --attr component_id=analyze-decision --attr step_id=final-result
 ```
 
 Global example:

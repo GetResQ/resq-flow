@@ -4,6 +4,7 @@ import {
   fetchHistoryRows,
   groupRowsByExecutionKey,
   normalizeIdentifierValue,
+  preferredStepLabel,
   selectLatestRunForThread,
   sortLogRows,
 } from "../lib/history.js";
@@ -46,7 +47,7 @@ describe("history normalization", () => {
             attributes: {
               flow_id: "mail-pipeline",
               run_id: "thread-201",
-              step_id: "send.provider_call",
+              step_id: "provider-call",
               component_id: "send-worker",
               status: "error",
               thread_id: "thread-201",
@@ -88,14 +89,14 @@ describe("history normalization", () => {
         matchedFlowIds: undefined,
         runId: "thread-201",
         traceId: "trace-send-201",
-        stepId: "send.provider_call",
+        stepId: "provider-call",
         componentId: "send-worker",
         status: "error",
         message: "Gmail API timeout",
         attributes: {
           flow_id: "mail-pipeline",
           run_id: "thread-201",
-          step_id: "send.provider_call",
+          step_id: "provider-call",
           component_id: "send-worker",
           status: "error",
           thread_id: "thread-201",
@@ -202,7 +203,7 @@ describe("history normalization", () => {
         timestamp: "2026-03-23T18:41:09.901Z",
         runId: "thread-201",
         traceId: "trace-send-201",
-        stepId: "send.final_result",
+        stepId: "final-result",
         message: "sent reply",
         attributes: {},
       },
@@ -210,7 +211,7 @@ describe("history normalization", () => {
         timestamp: "2026-03-23T18:41:02.110Z",
         runId: "thread-201",
         traceId: "trace-send-201",
-        stepId: "incoming.fetch_threads",
+        stepId: "fetch-threads",
         message: "fetched threads",
         attributes: {},
       },
@@ -237,7 +238,7 @@ describe("history normalization", () => {
         timestamp: "2026-03-23T18:41:02.110Z",
         runId: "thread-201-old",
         traceId: "trace-old",
-        stepId: "incoming.fetch_threads",
+        stepId: "fetch-threads",
         message: "older thread run",
         attributes: {
           thread_id: "thread-201",
@@ -247,7 +248,7 @@ describe("history normalization", () => {
         timestamp: "2026-03-23T18:41:09.901Z",
         runId: "thread-201-new",
         traceId: "trace-new",
-        stepId: "send.final_result",
+        stepId: "final-result",
         message: "newer thread run",
         attributes: {
           thread_id: "thread-201",
@@ -258,5 +259,17 @@ describe("history normalization", () => {
     expect(selectLatestRunForThread(rows, "thread-201")).toMatchObject({
       runId: "thread-201-new",
     });
+  });
+
+  it("formats a combined human-facing step ref from component and step ids", () => {
+    expect(
+      preferredStepLabel({
+        timestamp: "2026-03-23T18:41:06.901Z",
+        componentId: "send-worker",
+        stepId: "provider-call",
+        message: "provider call",
+        attributes: {},
+      }),
+    ).toBe("send-worker.provider-call");
   });
 });

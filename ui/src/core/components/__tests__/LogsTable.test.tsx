@@ -105,7 +105,7 @@ describe('LogsTable', () => {
             defaultVisible: true,
             eventType: 'log',
             traceId: 'run-4',
-            stepId: 'analyze.final_result',
+            stepId: 'final-result',
           },
         ]}
         nodeLabels={nodeLabels}
@@ -137,7 +137,8 @@ describe('LogsTable', () => {
             timestamp: '2026-03-17T13:14:00.000Z',
             level: 'info',
             nodeId: 'node-a',
-            message: 'status: processing request',
+            stepName: 'status',
+            message: 'processing request',
             signal: 'meaningful',
             defaultVisible: true,
             eventType: 'log',

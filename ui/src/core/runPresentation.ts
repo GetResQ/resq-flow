@@ -5,6 +5,7 @@ import {
   isLifecycleTerminalStep,
   summarizeStepOutcome,
 } from './stepOutcomePresentation'
+import { combinedStepRef, stepLeaf } from './stepRefs'
 import { normalizeTraceIdentifierValue } from './traceIdentifiers'
 
 function compactIdentifier(value: string, maxLength = 10): string {
@@ -27,11 +28,6 @@ function humanizeMachineLabel(value: string): string {
   }
 
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase()
-}
-
-function stepLeaf(stepId: string): string {
-  const withoutNamespace = stepId.split('::').at(-1) ?? stepId
-  return withoutNamespace.split('.').at(-1) ?? withoutNamespace
 }
 
 function preferredRunIdentity(journey: TraceJourney): string | undefined {
@@ -101,17 +97,7 @@ export function isDefaultVisibleJourney(journey: TraceJourney): boolean {
 }
 
 export function canonicalStepId(stage: Pick<TraceStep, 'nodeId' | 'stepId'>): string | undefined {
-  const componentId = normalizeTraceIdentifierValue(stage.nodeId)
-  const stepId = normalizeTraceIdentifierValue(stage.stepId)
-
-  if (!componentId) {
-    return stepId
-  }
-  if (!stepId) {
-    return componentId
-  }
-
-  return `${componentId}.${stepLeaf(stepId)}`
+  return combinedStepRef(stage.nodeId, stage.stepId)
 }
 
 export function formatStepLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId'>): string {
@@ -120,7 +106,8 @@ export function formatStepLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'ste
   const stepId = normalizeTraceIdentifierValue(stage.stepId)
 
   const componentLabel = componentId ? humanizeMachineLabel(componentId) : undefined
-  const detailSource = explicitLabel && explicitLabel !== stepId ? explicitLabel : stepId ? stepLeaf(stepId) : undefined
+  const detailSource =
+    explicitLabel && explicitLabel !== stepId ? explicitLabel : stepLeaf(stepId)
   const detailLabel = detailSource ? humanizeMachineLabel(detailSource) : undefined
 
   if (componentLabel && detailLabel && componentLabel !== detailLabel) {

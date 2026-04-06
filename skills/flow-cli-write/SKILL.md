@@ -76,7 +76,7 @@ Use node logs when the event defines the main flow structure:
 
 - queue enqueue
 - worker pickup or result
-- core step outcomes such as `final_result`
+- core step outcomes such as `final-result`
 - stable business or lifecycle events the flow will rely on long-term at the primary node level
 
 Use step logs when the event is attached to a node and helps show what happened around that node's work:
@@ -102,6 +102,8 @@ The user usually should not have to choose. Infer the right path from the reques
    - use the existing typed path for node logs and stable step logs
    - use the helper path for simple new step logs attached to an existing node
 5. Add a clear step id and message. Let flow and node identity come from the bound context.
+   - use kebab-case child-only `step_id` values such as `resolve-identity` or `final-result`
+   - when humans need one exact reference, use `component_id.step_id`
 6. Validate the result with `resq-flow`.
 
 ## Rules
@@ -152,7 +154,7 @@ Use `logs emit` when the user wants one quick explicit debug signal in the live 
 Flow-scoped manual emit:
 
 ```bash
-resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr step_id=analyze.decision
+resq-flow logs emit --flow mail-pipeline --message "analyze finalized reply branch" --attr run_id=thread-301 --attr component_id=analyze-decision --attr step_id=final-result
 ```
 
 Unscoped manual emit:
@@ -176,7 +178,7 @@ If a change is mail-specific, default to `mail-pipeline` unless the code clearly
 For existing mail flow work:
 
 - use typed telemetry for queue, worker, and core node or step lifecycle events
-- use the helper for simple step logs such as `resolve_identity`
+- use the helper for simple step logs such as `resolve-identity`
 
 ## Manual debug fallback
 

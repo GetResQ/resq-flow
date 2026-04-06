@@ -236,7 +236,7 @@ resq-flow status
 resq-flow logs list --flow mail-pipeline
 resq-flow logs tail --flow mail-pipeline
 resq-flow runs explain --flow mail-pipeline --thread <thread-id>
-resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr step_id=analyze.decision
+resq-flow logs emit --flow mail-pipeline --message "analyze finalized reply branch" --attr run_id=thread-301 --attr component_id=analyze-decision --attr step_id=final-result
 ```
 
 If you do not want to link it, the direct fallback still works:
@@ -290,6 +290,11 @@ Recommended flow-scoped attributes are:
 - `status`
 
 If a flow-scoped log includes mappable fields such as `step_id`, `component_id`, `function_name`, or `worker_name`, it continues to drive the existing flow logs and canvas activity.
+
+When you need one exact human-facing step reference, derive it as:
+
+- `component_id.step_id`
+- example: `analyze-decision.final-result`
 
 ## Validation
 

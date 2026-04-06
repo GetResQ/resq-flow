@@ -384,7 +384,7 @@ fn matches_contract(contract: &FlowContract, event: &FlowEvent) -> bool {
         return true;
     }
 
-    let stage_candidates = [event.attr_string("step_id")];
+    let stage_candidates = [combined_step_ref(event), event.attr_string("step_id")];
     if matches_prefixes(&stage_candidates, &telemetry.step_prefixes) {
         return true;
     }
@@ -414,6 +414,22 @@ fn matches_prefixes(candidates: &[Option<String>], prefixes: &[String]) -> bool 
         .iter()
         .flatten()
         .any(|candidate| prefixes.iter().any(|prefix| candidate.starts_with(prefix)))
+}
+
+fn combined_step_ref(event: &FlowEvent) -> Option<String> {
+    let component_id = event.attr_string("component_id")?;
+    let step_id = event.attr_string("step_id")?;
+    let normalized_step_id = normalize_step_id(&step_id)?;
+    Some(format!("{component_id}.{normalized_step_id}"))
+}
+
+fn normalize_step_id(step_id: &str) -> Option<String> {
+    let trimmed = step_id.trim();
+    if trimmed.is_empty() {
+        return None;
+    }
+
+    Some(trimmed.to_string())
 }
 
 fn should_keep_context(contract: &FlowContract, event: &FlowEvent) -> bool {

@@ -72,8 +72,26 @@ export function normalizeLogRow(event: RelayFlowEvent): CliLogRow {
   };
 }
 
+export function stepLeaf(stepId: string | undefined): string | undefined {
+  return normalizeIdentifierValue(stepId);
+}
+
+export function combinedStepRef(
+  componentId: string | undefined,
+  stepId: string | undefined,
+): string | undefined {
+  const normalizedComponentId = normalizeIdentifierValue(componentId);
+  const normalizedStepLeaf = stepLeaf(stepId);
+
+  if (normalizedComponentId && normalizedStepLeaf) {
+    return `${normalizedComponentId}.${normalizedStepLeaf}`;
+  }
+
+  return normalizedComponentId ?? normalizedStepLeaf;
+}
+
 export function preferredStepLabel(row: CliLogRow): string {
-  return row.stepId ?? row.stepName ?? row.componentId ?? "-";
+  return combinedStepRef(row.componentId, row.stepId) ?? row.stepName ?? row.componentId ?? "-";
 }
 
 export function normalizeIdentifierValue(value: JsonValue | undefined): string | undefined {

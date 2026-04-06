@@ -29,6 +29,9 @@ Open these in roughly this order:
 
 - `component_id` is the first-class node identity
 - `step_id` is attached detail under that node
+- raw `component_id` and `step_id` use kebab-case
+- raw `step_id` stays child-only and must not include the node prefix
+- when you refer to one exact node step in prose, tests, or issue notes, use `component_id.step_id`
 - node logs define the sparse flow structure
 - step logs provide richer drill-down without turning every detail into a graph node
 - keep the graph sparse and the drill-down rich

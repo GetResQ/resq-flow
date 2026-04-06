@@ -17,7 +17,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_result',
-          step_id: 'send.finalize',
+          step_id: 'finalize',
           function_name: 'handle_mail_send_reply',
           outcome: 'success',
           thread_id: 'thread-1',
@@ -34,7 +34,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'enqueue',
-          step_id: 'incoming.write_threads',
+          step_id: 'write-threads',
           function_name: 'handle_mail_incoming_check',
           thread_id: 'thread-1',
           job_id: 'job-1',
@@ -50,7 +50,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_pickup',
-          step_id: 'analyze.decision',
+          step_id: 'final-result',
           function_name: 'handle_mail_analyze_reply',
           thread_id: 'thread-1',
           job_id: 'job-1',
@@ -66,9 +66,9 @@ describe('useTraceJourney', () => {
     expect(journey.traceId).toBe('run-1')
     expect(journey.identifiers.runId).toBe('run-1')
     expect(journey.steps.map((stage) => stage.stepId)).toEqual([
-      'incoming.write_threads',
-      'analyze.decision',
-      'send.finalize',
+      'write-threads',
+      'final-result',
+      'finalize',
     ])
     expect(journey.identifiers.threadId).toBe('thread-1')
     expect(journey.identifiers.jobId).toBe('job-1')
@@ -88,7 +88,7 @@ describe('useTraceJourney', () => {
         attributes: {
           run_id: 'run-2',
           function_name: 'handle_mail_extract',
-          step_id: 'extract.upsert_contacts',
+          step_id: 'upsert-contacts',
           thread_id: 'thread-2',
         },
       },
@@ -102,7 +102,7 @@ describe('useTraceJourney', () => {
         attributes: {
           run_id: 'run-2',
           function_name: 'handle_mail_extract',
-          step_id: 'extract.upsert_contacts',
+          step_id: 'upsert-contacts',
           error_class: 'db',
           error_code: 'unique_violation',
           error_message: 'upsert failed',
@@ -130,7 +130,7 @@ describe('useTraceJourney', () => {
           run_id: 'run-3',
           component_id: 'send-process',
           function_name: 'handle_mail_extract',
-          step_id: 'send.final_result',
+          step_id: 'final-result',
         },
       },
     ]
@@ -180,7 +180,7 @@ describe('useTraceJourney', () => {
           run_id: 'thread-301',
           component_id: 'send-worker',
           action: 'worker_pickup',
-          step_id: 'worker.pickup',
+          step_id: 'pickup',
         },
       },
     ]
@@ -191,7 +191,7 @@ describe('useTraceJourney', () => {
     expect(journey.steps.map((stage) => `${stage.nodeId}:${stage.stepId}`)).toEqual([
       'analyze-queue:queue.enqueue',
       'send-queue:queue.enqueue',
-      'send-worker:worker.pickup',
+      'send-worker:pickup',
     ])
   })
 
@@ -208,7 +208,7 @@ describe('useTraceJourney', () => {
           reply_draft_id: 0,
           mailbox_owner: 'jrojas@getresq.com',
           component_id: 'incoming-worker',
-          step_id: 'worker.result',
+          step_id: 'result',
         },
       },
     ]
@@ -245,7 +245,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-repeat',
           component_id: 'extract-worker',
-          step_id: 'worker.pickup',
+          step_id: 'pickup',
         },
       },
       {
@@ -267,7 +267,7 @@ describe('useTraceJourney', () => {
 
     expect(journey.steps.map((stage) => `${stage.instanceId}:${stage.stepId}`)).toEqual([
       'extract-queue::queue.enqueue:queue.enqueue',
-      'extract-worker::worker.pickup:worker.pickup',
+      'extract-worker::pickup:pickup',
       'extract-queue::queue.enqueue#2:queue.enqueue',
     ])
   })
@@ -283,7 +283,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-summary',
           component_id: 'analyze-decision',
-          step_id: 'analyze.final_result',
+          step_id: 'final-result',
           reply_status: 'needs_review',
           draft_status: 'needs_review',
           result_action: 'draft_reply',
@@ -298,7 +298,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-summary',
           component_id: 'analyze-decision',
-          step_id: 'analyze.final_result',
+          step_id: 'final-result',
         },
       },
     ]
