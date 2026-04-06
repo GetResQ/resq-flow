@@ -177,7 +177,7 @@ Status transitions should use Motion's `animate` over 300ms — never abrupt cla
 ## Canvas Shape Language
 
 Source of truth:
-- this section in `ui/DESIGN-SYSTEM.md`
+- `jrodocs/resq-flow-visual-taxonomy.md`
 
 Default mapping:
 
@@ -291,7 +291,7 @@ Use Motion's `<AnimatePresence>` for enter/exit. Use `animate` for value transit
 
 ---
 
-## Language Rules
+## Language Rules (from `jrodocs/resq-flow-language-spec.md`)
 
 | Say | Instead of |
 |---|---|
