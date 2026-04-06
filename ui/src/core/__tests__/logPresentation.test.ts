@@ -7,7 +7,7 @@ describe('logPresentation', () => {
   it('summarizes analyze final results for manual review', () => {
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'analyze.final_result',
+        stepId: 'analyze.final_result',
         message: 'analyze finalized reply branch',
         attributes: {
           reply_status: 'needs_review',
@@ -22,7 +22,7 @@ describe('logPresentation', () => {
   it('summarizes analyze final results for manual approval', () => {
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'analyze.final_result',
+        stepId: 'analyze.final_result',
         message: 'analyze finalized reply branch',
         attributes: {
           reply_status: 'pending_action_approval',
@@ -37,7 +37,7 @@ describe('logPresentation', () => {
   it('summarizes analyze final results for autosend execution', () => {
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'analyze.final_result',
+        stepId: 'analyze.final_result',
         message: 'analyze finalized reply branch',
         attributes: {
           reply_status: 'executing_actions',
@@ -52,7 +52,7 @@ describe('logPresentation', () => {
   it('summarizes send enqueue and send outcomes', () => {
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'actions.send_enqueue',
+        stepId: 'actions.send_enqueue',
         message: 'queued send reply job',
         attributes: {
           reply_status: 'sending',
@@ -62,7 +62,7 @@ describe('logPresentation', () => {
 
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         message: 'send finalized draft outcome',
         attributes: {
           reply_status: 'sent',
@@ -74,7 +74,7 @@ describe('logPresentation', () => {
 
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         message: 'retryable send failure: provider timeout',
         attributes: {
           reply_status: 'needs_review',
@@ -87,7 +87,7 @@ describe('logPresentation', () => {
 
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         message: 'send finalized draft outcome',
         attributes: {
           reply_status: 'send_failed',
@@ -101,21 +101,21 @@ describe('logPresentation', () => {
   it('summarizes extract and recompute transitions with consistent phrasing', () => {
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'extract.recompute_enqueue',
+        stepId: 'extract.recompute_enqueue',
         message: 'extract enqueued mailbox opportunity recompute',
       }),
     ).toBe('recompute queued')
 
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'recompute.started',
+        stepId: 'recompute.started',
         message: 'recompute worker started mailbox opportunity recompute',
       }),
     ).toBe('recompute started')
 
     expect(
       buildFlowLogDisplayMessage({
-        stageId: 'recompute.final_result',
+        stepId: 'recompute.final_result',
         message: 'recompute finalized mailbox opportunity sync',
       }),
     ).toBe('recompute finished')
@@ -128,7 +128,7 @@ describe('logPresentation', () => {
       nodeId: 'actions-worker',
       message: 'queued send reply job',
       displayMessage: 'send queued',
-      stageId: 'actions.send_enqueue',
+      stepId: 'actions.send_enqueue',
       componentId: 'actions-worker',
       runId: 'run-123',
       signal: 'meaningful',

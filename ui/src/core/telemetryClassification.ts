@@ -1,6 +1,6 @@
 import { resolveEventKind } from './events'
 import { inferErrorState, readStringAttribute } from './mapping'
-import { getStagePresentationTier } from './stageOutcomePresentation'
+import { getStepPresentationTier } from './stepOutcomePresentation'
 import type { FlowEvent, LogEntry, TelemetrySignal } from './types'
 
 const CRITICAL_TOKENS = ['manual', 'needs_review', 'retry', 'pause', 'stuck']
@@ -37,8 +37,8 @@ function includesAnyToken(source: string, tokens: string[]): boolean {
 
 function eventSourceText(event: FlowEvent): string {
   return [
-    readStringAttribute(event.attributes, 'stage_id'),
-    readStringAttribute(event.attributes, 'stage_name'),
+    readStringAttribute(event.attributes, 'step_id'),
+    readStringAttribute(event.attributes, 'step_name'),
     readStringAttribute(event.attributes, 'action'),
     readStringAttribute(event.attributes, 'function_name'),
     event.span_name,
@@ -58,8 +58,8 @@ function hasExplicitMessage(event: FlowEvent): boolean {
 }
 
 export function classifyFlowEvent(event: FlowEvent): TelemetrySignal {
-  const stageId = readStringAttribute(event.attributes, 'stage_id')?.toLowerCase()
-  const stageName = readStringAttribute(event.attributes, 'stage_name')?.toLowerCase()
+  const stepId = readStringAttribute(event.attributes, 'step_id')?.toLowerCase()
+  const stepName = readStringAttribute(event.attributes, 'step_name')?.toLowerCase()
   const componentId = readStringAttribute(event.attributes, 'component_id')?.toLowerCase()
   const status = readStringAttribute(event.attributes, 'status')?.toLowerCase()
   const outcome = readStringAttribute(event.attributes, 'outcome')?.toLowerCase()
@@ -67,8 +67,8 @@ export function classifyFlowEvent(event: FlowEvent): TelemetrySignal {
   const spanName = event.span_name?.toLowerCase()
   const eventKind = resolveEventKind(event)
   const sourceText = eventSourceText(event)
-  const stageTier = getStagePresentationTier({
-    stageId,
+  const stageTier = getStepPresentationTier({
+    stepId,
     nodeId: componentId,
     attributes: event.attributes,
   })
@@ -111,7 +111,7 @@ export function classifyFlowEvent(event: FlowEvent): TelemetrySignal {
     return 'operational'
   }
 
-  if (hasExplicitMessage(event) || includesAnyToken(sourceText, MEANINGFUL_TOKENS) || Boolean(stageId || stageName)) {
+  if (hasExplicitMessage(event) || includesAnyToken(sourceText, MEANINGFUL_TOKENS) || Boolean(stepId || stepName)) {
     return 'meaningful'
   }
 

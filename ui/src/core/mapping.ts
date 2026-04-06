@@ -45,7 +45,7 @@ export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping):
   const candidates = queueFirst
     ? [
         event.node_key,
-        readAttr(event, 'stage_id'),
+        readAttr(event, 'step_id'),
         rrqQueue,
         messagingDestination,
         readAttr(event, 'queue_name'),
@@ -58,7 +58,7 @@ export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping):
       ]
     : [
         event.node_key,
-        readAttr(event, 'stage_id'),
+        readAttr(event, 'step_id'),
         rrqFunction,
         messagingOperation,
         event.span_name,

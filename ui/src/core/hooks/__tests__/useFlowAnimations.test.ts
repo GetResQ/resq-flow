@@ -88,7 +88,7 @@ describe('useFlowAnimations', () => {
       span_id: 'span-store-1',
       attributes: {
         component_id: 'incoming-worker',
-        stage_id: 'incoming.write_threads',
+        step_id: 'incoming.write_threads',
         status: 'ok',
       },
     }
@@ -102,7 +102,7 @@ describe('useFlowAnimations', () => {
       duration_ms: 250,
       attributes: {
         component_id: 'incoming-worker',
-        stage_id: 'incoming.write_threads',
+        step_id: 'incoming.write_threads',
         status: 'ok',
       },
     }
@@ -181,7 +181,7 @@ describe('useFlowAnimations', () => {
     })
   })
 
-  it('animates recompute stages on the shared extract-worker lane', async () => {
+  it('animates recompute steps on the shared extract-worker lane', async () => {
     const start: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -190,7 +190,7 @@ describe('useFlowAnimations', () => {
       attributes: {
         component_id: 'recompute-worker',
         function_name: 'handle_mail_recompute_opportunities',
-        stage_id: 'recompute.started',
+        step_id: 'recompute.started',
       },
     }
 
@@ -203,7 +203,7 @@ describe('useFlowAnimations', () => {
       attributes: {
         component_id: 'recompute-worker',
         function_name: 'handle_mail_recompute_opportunities',
-        stage_id: 'recompute.final_result',
+        step_id: 'recompute.final_result',
         status: 'ok',
       },
     }
@@ -307,8 +307,8 @@ describe('useFlowAnimations', () => {
       trace_id: 'trace-autosend-1',
       span_id: 'log-a',
       attributes: {
-        action: 'stage',
-        stage_id: 'analyze.draft_insert',
+        action: 'step',
+        step_id: 'analyze.draft_insert',
         component_id: 'draft-reply',
       },
     }
@@ -318,8 +318,8 @@ describe('useFlowAnimations', () => {
       trace_id: 'trace-autosend-1',
       span_id: 'log-b',
       attributes: {
-        action: 'stage',
-        stage_id: 'analyze.action_batch_auto_approve',
+        action: 'step',
+        step_id: 'analyze.action_batch_auto_approve',
         component_id: 'autosend-decision',
       },
     }
@@ -329,8 +329,8 @@ describe('useFlowAnimations', () => {
       trace_id: 'trace-autosend-1',
       span_id: 'log-c',
       attributes: {
-        action: 'stage',
-        stage_id: 'analyze.execute_enqueue',
+        action: 'step',
+        step_id: 'analyze.execute_enqueue',
         component_id: 'actions-queue',
       },
     }
@@ -340,8 +340,8 @@ describe('useFlowAnimations', () => {
       trace_id: 'trace-autosend-1',
       span_id: 'log-c2',
       attributes: {
-        action: 'stage',
-        stage_id: 'actions.send_enqueue',
+        action: 'step',
+        step_id: 'actions.send_enqueue',
         queue_name: 'rrq:queue:mail-send',
         function_name: 'handle_mail_send_reply',
       },

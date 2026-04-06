@@ -53,7 +53,7 @@ describe("CLI integration: logs tail", () => {
           "--attr",
           "thread_id=thread-201",
           "--attr",
-          "stage_id=analyze.decision",
+          "step_id=analyze.decision",
           "--attr",
           "status=ok",
           "--url",
@@ -73,7 +73,7 @@ describe("CLI integration: logs tail", () => {
           "--attr",
           "thread_id=thread-201",
           "--attr",
-          "stage_id=send.provider_call",
+          "step_id=send.provider_call",
           "--attr",
           "status=ok",
           "--url",
@@ -96,10 +96,10 @@ describe("CLI integration: logs tail", () => {
         expect(lines[0]).toMatchObject({
           flowId: "mail-pipeline",
           runId: "thread-201",
-          stageId: "analyze.decision",
+          stepId: "analyze.decision",
         });
         expect(lines[1]).toMatchObject({
-          stageId: "send.provider_call",
+          stepId: "send.provider_call",
           message: "sent Gmail reply",
         });
       } finally {

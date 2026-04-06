@@ -7,7 +7,7 @@ import {
 } from "../lib/config.js";
 import { BadArgumentError, EXIT_CODES } from "../lib/errors.js";
 import { parseAttributeFilter, matchesLogFilters } from "../lib/filters.js";
-import { preferredStageLabel, fetchHistoryRows } from "../lib/history.js";
+import { preferredStepLabel, fetchHistoryRows } from "../lib/history.js";
 import {
   printJson,
   printJsonl,
@@ -316,7 +316,7 @@ export function renderLogsListRows(rows: CliLogRow[]): string[] {
       row.timestamp,
       displayFlowLabel(row),
       row.runId ?? "-",
-      preferredStageLabel(row),
+      preferredStepLabel(row),
       row.status ?? "-",
       row.message,
     ]),
@@ -329,7 +329,7 @@ export function renderTailRow(row: CliLogRow, scope: LogReadScope): string {
     scope.kind === "all"
       ? `${formatTailCell(displayFlowLabel(row), 16)}  `
       : "";
-  const stage = formatTailCell(preferredStageLabel(row), 24);
+  const stage = formatTailCell(preferredStepLabel(row), 24);
   const run = formatTailCell(row.runId ?? "-", 40);
   const status = formatTailCell(row.status ?? "-", 5);
   return `[${time}] ${scopePrefix}${stage}  ${run}  ${status}  ${row.message}`;

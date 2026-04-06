@@ -1,5 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { describe, expect, it, vi } from 'vitest'
 
 import { RunsTable } from '../RunsTable'
@@ -12,9 +11,9 @@ const journeys: TraceJourney[] = [
     startedAt: '2026-03-17T13:00:00.000Z',
     durationMs: 920,
     status: 'success',
-    stages: [
+    steps: [
       {
-        stageId: 'analyze',
+        stepId: 'analyze',
         label: 'Analyze',
         nodeId: 'analyze-decision',
         startSeq: 1,
@@ -37,9 +36,9 @@ const journeys: TraceJourney[] = [
     startedAt: '2026-03-17T13:02:00.000Z',
     durationMs: 1_820,
     status: 'error',
-    stages: [
+    steps: [
       {
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         label: 'Send',
         nodeId: 'send-process',
         startSeq: 3,
@@ -63,9 +62,9 @@ const journeys: TraceJourney[] = [
     startedAt: '2026-03-17T13:01:00.000Z',
     durationMs: 1774352148700,
     status: 'running',
-    stages: [
+    steps: [
       {
-        stageId: 'worker.pickup',
+        stepId: 'worker.pickup',
         label: 'worker.pickup',
         nodeId: 'incoming-worker',
         startSeq: 5,
@@ -75,7 +74,7 @@ const journeys: TraceJourney[] = [
         status: 'success',
       },
       {
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         label: 'send.final_result',
         nodeId: 'send-process',
         startSeq: 6,
@@ -103,8 +102,6 @@ const journeys: TraceJourney[] = [
 
 describe('RunsTable', () => {
   it('sorts by duration and keeps the selected row highlighted', async () => {
-    const user = userEvent.setup()
-
     render(
       <RunsTable
         journeys={journeys}
@@ -115,7 +112,7 @@ describe('RunsTable', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /duration/i }))
+    fireEvent.click(screen.getByRole('button', { name: /duration/i }))
 
     const rows = screen.getAllByRole('row').slice(1)
     expect(within(rows[0]).getByText('support@resq.dev')).toBeInTheDocument()
@@ -125,7 +122,6 @@ describe('RunsTable', () => {
   })
 
   it('supports pinning and row selection independently', async () => {
-    const user = userEvent.setup()
     const onSelectTrace = vi.fn()
     const onTogglePinned = vi.fn()
 
@@ -143,11 +139,11 @@ describe('RunsTable', () => {
     )
     expect(pinnedRow).toBeDefined()
 
-    await user.click(within(pinnedRow!).getByRole('button', { name: /unpin/i }))
+    fireEvent.click(within(pinnedRow!).getByRole('button', { name: /unpin/i }))
     expect(onTogglePinned).toHaveBeenCalledWith('run-a')
     expect(onSelectTrace).not.toHaveBeenCalled()
 
-    await user.click(screen.getByText('billing@resq.dev'))
+    fireEvent.click(screen.getByText('billing@resq.dev'))
     expect(onSelectTrace).toHaveBeenCalledWith('run-b')
     expect(screen.getByText('Provider timeout')).toBeInTheDocument()
   })

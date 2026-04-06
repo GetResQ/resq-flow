@@ -9,13 +9,13 @@ import type {
   TraceIdentifiers,
   TraceJourney,
   TraceJourneyState,
-  TraceStage,
+  TraceStep,
   TraceStatus,
 } from '../types'
 
-interface MutableStage {
+interface MutableStep {
   instanceId: string
-  stageId: string
+  stepId: string
   label: string
   nodeId?: string
   startSeq: number
@@ -36,8 +36,8 @@ interface MutableJourney {
   eventCount: number
   nodePath: string[]
   nodePathSet: Set<string>
-  stagesById: Map<string, MutableStage>
-  stageOrder: string[]
+  stepsById: Map<string, MutableStep>
+  stepOrder: string[]
   identifiers: TraceIdentifiers
 }
 
@@ -68,10 +68,10 @@ function durationFromIso(start: string, end: string | undefined): number | undef
   return endMs - startMs
 }
 
-function resolveStageId(event: FlowEvent, nodeId: string | null): string {
-  const explicitStage = readStringAttribute(event.attributes, 'stage_id')
-  if (explicitStage) {
-    return explicitStage
+function resolveStepId(event: FlowEvent, nodeId: string | null): string {
+  const explicitStep = readStringAttribute(event.attributes, 'step_id')
+  if (explicitStep) {
+    return explicitStep
   }
   if (nodeId) {
     return nodeId
@@ -85,7 +85,7 @@ function resolveStageId(event: FlowEvent, nodeId: string | null): string {
   return event.type
 }
 
-function resolveStageKey(event: FlowEvent, stageId: string, nodeId: string | null): string {
+function resolveStepKey(event: FlowEvent, stepId: string, nodeId: string | null): string {
   const componentKey =
     readStringAttribute(event.attributes, 'component_id') ??
     nodeId ??
@@ -94,35 +94,35 @@ function resolveStageKey(event: FlowEvent, stageId: string, nodeId: string | nul
     event.span_name ??
     event.type
 
-  return `${componentKey}::${stageId}`
+  return `${componentKey}::${stepId}`
 }
 
-function resolveLatestStageInstanceKey(stageOrder: string[], baseStageKey: string): string | undefined {
-  for (let index = stageOrder.length - 1; index >= 0; index -= 1) {
-    const stageKey = stageOrder[index]
-    if (stageKey === baseStageKey || stageKey.startsWith(`${baseStageKey}#`)) {
-      return stageKey
+function resolveLatestStepInstanceKey(stepOrder: string[], baseStepKey: string): string | undefined {
+  for (let index = stepOrder.length - 1; index >= 0; index -= 1) {
+    const stepKey = stepOrder[index]
+    if (stepKey === baseStepKey || stepKey.startsWith(`${baseStepKey}#`)) {
+      return stepKey
     }
   }
 
   return undefined
 }
 
-function nextStageInstanceKey(stageOrder: string[], baseStageKey: string): string {
+function nextStepInstanceKey(stepOrder: string[], baseStepKey: string): string {
   let occurrence = 2
-  let candidate = `${baseStageKey}#${occurrence}`
-  while (stageOrder.includes(candidate)) {
+  let candidate = `${baseStepKey}#${occurrence}`
+  while (stepOrder.includes(candidate)) {
     occurrence += 1
-    candidate = `${baseStageKey}#${occurrence}`
+    candidate = `${baseStepKey}#${occurrence}`
   }
   return candidate
 }
 
-function resolveStageLabel(event: FlowEvent, stageId: string): string {
-  return readStringAttribute(event.attributes, 'stage_name') ?? stageId
+function resolveStepLabel(event: FlowEvent, stepId: string): string {
+  return readStringAttribute(event.attributes, 'step_name') ?? stepId
 }
 
-function mergeStageAttributes(
+function mergeStepAttributes(
   existing: Record<string, unknown> | undefined,
   incoming: Record<string, unknown> | undefined,
 ): Record<string, unknown> | undefined {
@@ -135,7 +135,7 @@ function mergeStageAttributes(
   return { ...existing, ...incoming }
 }
 
-function resolveStageStatus(event: FlowEvent, current: TraceStatus): TraceStatus {
+function resolveStepStatus(event: FlowEvent, current: TraceStatus): TraceStatus {
   if (inferErrorState(event)) {
     return 'error'
   }
@@ -187,9 +187,9 @@ function setIdentifierIfEmpty(target: TraceIdentifiers, key: keyof TraceIdentifi
 function materializeJourneys(journeyMap: Map<string, MutableJourney>): TraceJourney[] {
   return [...journeyMap.values()]
     .map((journey): TraceJourney => {
-      const stages: TraceStage[] = journey.stageOrder
-        .map((stageId) => journey.stagesById.get(stageId))
-        .filter((stage): stage is MutableStage => Boolean(stage))
+      const steps: TraceStep[] = journey.stepOrder
+        .map((stepId) => journey.stepsById.get(stepId))
+        .filter((stage): stage is MutableStep => Boolean(stage))
         .sort((left, right) => {
           const bySeq = left.startSeq - right.startSeq
           if (bySeq !== 0) {
@@ -199,7 +199,7 @@ function materializeJourneys(journeyMap: Map<string, MutableJourney>): TraceJour
         })
         .map((stage) => ({
           instanceId: stage.instanceId,
-          stageId: stage.stageId,
+          stepId: stage.stepId,
           label: stage.label,
           nodeId: stage.nodeId,
           startSeq: stage.startSeq,
@@ -213,9 +213,9 @@ function materializeJourneys(journeyMap: Map<string, MutableJourney>): TraceJour
           attrs: stage.attrs,
         }))
 
-      const hasError = stages.some((stage) => stage.status === 'error')
-      const hasRunning = stages.some((stage) => stage.status === 'running')
-      const hasSuccess = stages.some((stage) => stage.status === 'success')
+      const hasError = steps.some((stage) => stage.status === 'error')
+      const hasRunning = steps.some((stage) => stage.status === 'running')
+      const hasSuccess = steps.some((stage) => stage.status === 'success')
 
       let status: TraceStatus = 'running'
       if (hasError) {
@@ -241,9 +241,9 @@ function materializeJourneys(journeyMap: Map<string, MutableJourney>): TraceJour
         endedAt: journey.endedAt,
         durationMs: durationFromIso(journey.startedAt, journey.endedAt),
         status,
-        stages,
+        steps,
         nodePath: journey.nodePath,
-        errorSummary: stages.find((stage) => stage.status === 'error')?.errorSummary,
+        errorSummary: steps.find((stage) => stage.status === 'error')?.errorSummary,
         lastUpdatedAt: journey.lastUpdatedAt,
         eventCount: journey.eventCount,
         identifiers: journey.identifiers,
@@ -322,8 +322,8 @@ export function useTraceJourney(
         eventCount: 0,
         nodePath: [],
         nodePathSet: new Set<string>(),
-        stagesById: new Map<string, MutableStage>(),
-        stageOrder: [],
+        stepsById: new Map<string, MutableStep>(),
+        stepOrder: [],
         identifiers: {},
       }
 
@@ -352,31 +352,31 @@ export function useTraceJourney(
       setIdentifierIfEmpty(journey.identifiers, 'contentHash', readStringAttribute(event.attributes, 'content_hash'))
       setIdentifierIfEmpty(journey.identifiers, 'journeyKey', readStringAttribute(event.attributes, 'journey_key'))
 
-      const stageId = resolveStageId(event, nodeId)
-      const baseStageKey = resolveStageKey(event, stageId, nodeId)
-      const previousStageKey = journey.stageOrder[journey.stageOrder.length - 1]
-      const latestStageInstanceKey = resolveLatestStageInstanceKey(journey.stageOrder, baseStageKey)
-      const stageKey =
-        latestStageInstanceKey && previousStageKey === latestStageInstanceKey
+      const stepId = resolveStepId(event, nodeId)
+      const baseStepKey = resolveStepKey(event, stepId, nodeId)
+      const previousStepKey = journey.stepOrder[journey.stepOrder.length - 1]
+      const latestStageInstanceKey = resolveLatestStepInstanceKey(journey.stepOrder, baseStepKey)
+      const stepKey =
+        latestStageInstanceKey && previousStepKey === latestStageInstanceKey
           ? latestStageInstanceKey
           : latestStageInstanceKey
-            ? nextStageInstanceKey(journey.stageOrder, baseStageKey)
-            : baseStageKey
+            ? nextStepInstanceKey(journey.stepOrder, baseStepKey)
+            : baseStepKey
 
-      if (previousStageKey && previousStageKey !== stageKey) {
-        const previousStage = journey.stagesById.get(previousStageKey)
-        if (previousStage && previousStage.status === 'running') {
-          previousStage.status = 'success'
-          previousStage.endSeq = Math.max(previousStage.endSeq, seq)
-          previousStage.endTs = event.timestamp
-          journey.stagesById.set(previousStageKey, previousStage)
+      if (previousStepKey && previousStepKey !== stepKey) {
+        const previousStep = journey.stepsById.get(previousStepKey)
+        if (previousStep && previousStep.status === 'running') {
+          previousStep.status = 'success'
+          previousStep.endSeq = Math.max(previousStep.endSeq, seq)
+          previousStep.endTs = event.timestamp
+          journey.stepsById.set(previousStepKey, previousStep)
         }
       }
 
-      const stage = journey.stagesById.get(stageKey) ?? {
-        instanceId: stageKey,
-        stageId,
-        label: resolveStageLabel(event, stageId),
+      const stage = journey.stepsById.get(stepKey) ?? {
+        instanceId: stepKey,
+        stepId,
+        label: resolveStepLabel(event, stepId),
         nodeId: nodeId ?? undefined,
         startSeq: seq,
         endSeq: seq,
@@ -385,19 +385,19 @@ export function useTraceJourney(
         status: 'running',
       }
 
-      if (!journey.stagesById.has(stageKey)) {
-        journey.stageOrder.push(stageKey)
+      if (!journey.stepsById.has(stepKey)) {
+        journey.stepOrder.push(stepKey)
       }
 
-      const nextLabel = resolveStageLabel(event, stageId)
-      if (stage.label === stage.stageId || nextLabel !== stageId) {
+      const nextLabel = resolveStepLabel(event, stepId)
+      if (stage.label === stage.stepId || nextLabel !== stepId) {
         stage.label = nextLabel
       }
       stage.nodeId = stage.nodeId ?? nodeId ?? undefined
       stage.endSeq = Math.max(stage.endSeq, seq)
       stage.endTs = event.timestamp
-      stage.attrs = mergeStageAttributes(stage.attrs, event.attributes)
-      stage.status = resolveStageStatus(event, stage.status)
+      stage.attrs = mergeStepAttributes(stage.attrs, event.attributes)
+      stage.status = resolveStepStatus(event, stage.status)
 
       const attempt = readAttempt(event.attributes)
       if (typeof attempt === 'number') {
@@ -408,7 +408,7 @@ export function useTraceJourney(
         stage.errorSummary = stage.errorSummary ?? resolveErrorSummary(event)
       }
 
-      journey.stagesById.set(stageKey, stage)
+      journey.stepsById.set(stepKey, stage)
       journeyMap.set(traceId, journey)
     }
 

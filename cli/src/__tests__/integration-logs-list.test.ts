@@ -69,7 +69,7 @@ describe("CLI integration: logs list", () => {
         expect(parsed).toHaveLength(3);
         expect(parsed[2]).toMatchObject({
           runId: "thread-201",
-          stageId: "send.provider_call",
+          stepId: "send.provider_call",
           message: "Gmail API timeout",
         });
 
@@ -114,7 +114,7 @@ describe("CLI integration: logs list", () => {
         expect(matchedOnlyRows[0]).toMatchObject({
           matchedFlowIds: ["mail-pipeline"],
           runId: "thread-301",
-          stageId: "analyze.decision",
+          stepId: "analyze.decision",
           message: "matched-only history log",
         });
       } finally {
@@ -215,7 +215,7 @@ function routeHistoryRequest(
         flow_id: "mail-pipeline",
         run_id: "thread-201",
         thread_id: "thread-201",
-        stage_id: "incoming.fetch_threads",
+        step_id: "incoming.fetch_threads",
         status: "ok",
         message: "fetched 12 Gmail threads",
       },
@@ -225,7 +225,7 @@ function routeHistoryRequest(
         flow_id: "mail-pipeline",
         run_id: "thread-201",
         thread_id: "thread-201",
-        stage_id: "analyze.decision",
+        step_id: "analyze.decision",
         status: "ok",
         message: "classified thread as needs-reply",
       },
@@ -235,7 +235,7 @@ function routeHistoryRequest(
         flow_id: "mail-pipeline",
         run_id: "thread-201",
         thread_id: "thread-201",
-        stage_id: "send.provider_call",
+        step_id: "send.provider_call",
         status: "error",
         worker_name: "mail_sender",
         message: "Gmail API timeout",
@@ -255,7 +255,7 @@ function routeHistoryRequest(
         event: "flow_event",
         run_id: "thread-301",
         thread_id: "thread-301",
-        stage_id: "analyze.decision",
+        step_id: "analyze.decision",
         status: "ok",
         message: "matched-only history log",
       },

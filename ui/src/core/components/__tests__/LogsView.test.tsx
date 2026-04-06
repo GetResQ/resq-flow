@@ -17,7 +17,7 @@ const flow: FlowConfig = {
       queue_prefixes: [],
       function_prefixes: [],
       worker_prefixes: [],
-      stage_prefixes: [],
+      step_prefixes: [],
     },
     keep_context: {
       parent_spans: false,
@@ -73,7 +73,7 @@ const logs: LogEntry[] = [
     level: 'error',
     nodeId: 'send',
     message: 'Provider timeout',
-    stageName: 'Send: provider call',
+    stepName: 'Send: provider call',
     signal: 'critical',
     defaultVisible: true,
     eventType: 'log',

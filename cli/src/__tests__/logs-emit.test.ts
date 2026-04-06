@@ -65,7 +65,7 @@ describe("resq-flow logs emit", () => {
         "--attr",
         "run_id=thread-301",
         "--attr",
-        "stage_id=analyze.decision",
+        "step_id=analyze.decision",
         "--attr",
         "status=ok",
       ],
@@ -87,7 +87,7 @@ describe("resq-flow logs emit", () => {
       attributes: {
         flow_id: "mail-pipeline",
         run_id: "thread-301",
-        stage_id: "analyze.decision",
+        step_id: "analyze.decision",
         status: "ok",
       },
     });

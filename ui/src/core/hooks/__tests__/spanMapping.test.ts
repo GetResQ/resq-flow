@@ -18,13 +18,13 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('keeps explicit component_id when stage_id points at a different fallback node', () => {
+  it('keeps explicit component_id when step_id points at a different fallback node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         component_id: 'incoming-schedule-process',
-        stage_id: 'scheduler.cursor_update',
+        step_id: 'scheduler.cursor_update',
       },
     }
 
@@ -91,12 +91,12 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('analyze-queue')
   })
 
-  it('maps demoted store stage_id to its owning first-class node', () => {
+  it('maps demoted store step_id to its owning first-class node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'incoming.write_metadata',
+        step_id: 'incoming.write_metadata',
       },
     }
 
@@ -132,7 +132,7 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'extract.upsert_contacts',
+        step_id: 'extract.upsert_contacts',
       },
     }
 
@@ -144,7 +144,7 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'recompute.started',
+        step_id: 'recompute.started',
       },
     }
 
@@ -176,12 +176,12 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('maps autosend decision stage_id to decision node', () => {
+  it('maps autosend decision step_id to decision node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'analyze.autosend_decision',
+        step_id: 'analyze.autosend_decision',
       },
     }
 
@@ -193,7 +193,7 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'analyze.execute_enqueue',
+        step_id: 'analyze.execute_enqueue',
       },
     }
 
@@ -205,7 +205,7 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'actions.send_enqueue',
+        step_id: 'actions.send_enqueue',
         queue_name: 'rrq:queue:mail-send',
         function_name: 'handle_mail_send_reply',
       },
@@ -220,7 +220,7 @@ describe('span mapping resolution', () => {
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         component_id: 'send-queue',
-        stage_id: 'actions.send_enqueue',
+        step_id: 'actions.send_enqueue',
         queue_name: 'rrq:queue:mail-send',
       },
     }
@@ -233,7 +233,7 @@ describe('span mapping resolution', () => {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
-        stage_id: 'send.precheck',
+        step_id: 'send.precheck',
       },
     }
 

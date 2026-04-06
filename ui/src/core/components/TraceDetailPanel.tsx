@@ -15,8 +15,8 @@ import {
 } from '@/components/ui'
 
 import { formatEasternTime } from '../time'
-import type { SpanEntry, TraceJourney, TraceStage, TraceStatus } from '../types'
-import { formatStepDisplayLabel, getJourneySummaryStage, getOverviewStages } from '../runPresentation'
+import type { SpanEntry, TraceJourney, TraceStep, TraceStatus } from '../types'
+import { formatStepDisplayLabel, getJourneySummaryStep, getOverviewSteps } from '../runPresentation'
 import { DurationBadge, formatDurationLabel } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { WaterfallChart } from './WaterfallChart'
@@ -68,11 +68,11 @@ function insightIcon(tone: InsightTone) {
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-function stepDisplayLabel(step: TraceStage): string {
+function stepDisplayLabel(step: TraceStep): string {
   return formatStepDisplayLabel(step)
 }
 
-function stageErrorSummary(stage: TraceStage): string | undefined {
+function stepErrorSummary(stage: TraceStep): string | undefined {
   const attrs = stage.attrs
   const errorMessage = typeof attrs?.error_message === 'string' ? attrs.error_message : undefined
   const errorClass = typeof attrs?.error_class === 'string' ? attrs.error_class : undefined
@@ -95,39 +95,39 @@ function stageErrorSummary(stage: TraceStage): string | undefined {
 }
 
 function defaultSelectedStepId(journey: TraceJourney): string | undefined {
-  const summaryStage = getJourneySummaryStage(journey)
+  const summaryStage = getJourneySummaryStep(journey)
   return (
     summaryStage?.instanceId ??
-    summaryStage?.stageId ??
-    journey.stages.find((stage) => stage.status === 'error')?.instanceId ??
-    journey.stages.find((stage) => stage.status === 'error')?.stageId ??
-    journey.stages.at(-1)?.instanceId ??
-    journey.stages.at(-1)?.stageId
+    summaryStage?.stepId ??
+    journey.steps.find((stage) => stage.status === 'error')?.instanceId ??
+    journey.steps.find((stage) => stage.status === 'error')?.stepId ??
+    journey.steps.at(-1)?.instanceId ??
+    journey.steps.at(-1)?.stepId
   )
 }
 
 export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
-  const [selectedStageId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
+  const [selectedStepId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
 
-  const selectedStage = useMemo(
+  const selectedStep = useMemo(
     () =>
-      journey.stages.find((stage) => (stage.instanceId ?? stage.stageId) === selectedStageId) ??
-      journey.stages.at(-1) ??
-      journey.stages[0],
-    [journey.stages, selectedStageId],
+      journey.steps.find((stage) => (stage.instanceId ?? stage.stepId) === selectedStepId) ??
+      journey.steps.at(-1) ??
+      journey.steps[0],
+    [journey.steps, selectedStepId],
   )
 
-  const overviewStages = useMemo(() => getOverviewStages(journey.stages), [journey.stages])
+  const overviewSteps = useMemo(() => getOverviewSteps(journey.steps), [journey.steps])
 
-  const failedStep = useMemo(() => overviewStages.find((stage) => stage.status === 'error') ?? journey.stages.find((stage) => stage.status === 'error'), [journey.stages, overviewStages])
+  const failedStep = useMemo(() => overviewSteps.find((stage) => stage.status === 'error') ?? journey.steps.find((stage) => stage.status === 'error'), [journey.steps, overviewSteps])
 
   const slowestStep = useMemo(
     () =>
-      [...overviewStages]
+      [...overviewSteps]
         .filter((stage) => typeof stage.durationMs === 'number')
         .sort((left, right) => (right.durationMs ?? 0) - (left.durationMs ?? 0))[0],
-    [overviewStages],
+    [overviewSteps],
   )
 
   const insights = useMemo(() => {
@@ -139,14 +139,14 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
         text: `This run failed in ${stepDisplayLabel(failedStep)}.`,
       })
     } else if (journey.status === 'running' || journey.status === 'partial') {
-      const currentStep = getJourneySummaryStage(journey) ?? journey.stages.at(-1)
+      const currentStep = getJourneySummaryStep(journey) ?? journey.steps.at(-1)
       items.push({
         tone: 'warning',
         text: currentStep ? `This run is still active in ${stepDisplayLabel(currentStep)}.` : 'This run is still active.',
       })
     }
 
-    if (slowestStep && slowestStep.durationMs && journey.stages.length > 1) {
+    if (slowestStep && slowestStep.durationMs && journey.steps.length > 1) {
       const slowestDuration = formatDurationLabel(slowestStep.durationMs)
       if (slowestDuration) {
           items.push({
@@ -156,15 +156,15 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
         }
       }
 
-    if (overviewStages.length > 0) {
+    if (overviewSteps.length > 0) {
       items.push({
         tone: 'neutral',
-        text: `This run reached ${overviewStages.length} ${overviewStages.length === 1 ? 'lifecycle step' : 'lifecycle steps'}.`,
+        text: `This run reached ${overviewSteps.length} ${overviewSteps.length === 1 ? 'lifecycle step' : 'lifecycle steps'}.`,
       })
     }
 
     return items.slice(0, 3)
-  }, [failedStep, journey, overviewStages, slowestStep])
+  }, [failedStep, journey, overviewSteps, slowestStep])
 
   const focusLabel = failedStep ? 'Failed In' : 'Slowest Step'
   const focusValue = failedStep ? stepDisplayLabel(failedStep) : slowestStep ? stepDisplayLabel(slowestStep) : 'None yet'
@@ -238,7 +238,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
 
             <section className="space-y-2">
               <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
-              {overviewStages.length === 0 ? (
+              {overviewSteps.length === 0 ? (
                 <PanelSkeleton lines={2} />
               ) : (
                 <div className="relative ml-3">
@@ -248,8 +248,8 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                     style={{ height: `calc(100% - 24px)` }}
                   />
 
-                  {overviewStages.map((stage, index) => {
-                    const errorSummary = stageErrorSummary(stage)
+                  {overviewSteps.map((stage, index) => {
+                    const errorSummary = stepErrorSummary(stage)
                     const isError = stage.status === 'error'
                     const isActive = stage.status === 'running' || stage.status === 'partial'
                     const dotColor = isError
@@ -261,7 +261,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                           : 'var(--text-muted)'
 
                     return (
-                      <div key={stage.instanceId ?? `${stage.stageId}-${index}`} className="relative flex gap-3 pb-3">
+                      <div key={stage.instanceId ?? `${stage.stepId}-${index}`} className="relative flex gap-3 pb-3">
                           {/* Timeline dot */}
                         <div className="relative z-10 mt-3 flex shrink-0 items-start">
                           <div
@@ -327,7 +327,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                   <Card>
                     <CardContent className="p-3">
                       <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Steps</div>
-                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.stages.length}</div>
+                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.steps.length}</div>
                       <div className="mt-1 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
                         telemetry steps
                       </div>
@@ -346,14 +346,14 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
             <section className="space-y-2">
               <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
               <div className="space-y-2">
-                {journey.stages.map((stage, index) => {
-                  const stageSelectionId = stage.instanceId ?? stage.stageId
-                  const selected = (selectedStage?.instanceId ?? selectedStage?.stageId) === stageSelectionId
+                {journey.steps.map((stage, index) => {
+                  const stepSelectionId = stage.instanceId ?? stage.stepId
+                  const selected = (selectedStep?.instanceId ?? selectedStep?.stepId) === stepSelectionId
                   return (
                     <button
-                      key={stage.instanceId ?? `${stage.stageId}-${index}`}
+                      key={stage.instanceId ?? `${stage.stepId}-${index}`}
                       type="button"
-                      onClick={() => setSelectedStageId(stageSelectionId)}
+                      onClick={() => setSelectedStageId(stepSelectionId)}
                       className={`w-full rounded-lg border p-3 text-left ${
                         selected
                           ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
@@ -382,7 +382,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
               <CardContent className="p-3">
                 <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Selected Step Attributes</h3>
                 <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
-                  {JSON.stringify(selectedStage?.attrs ?? {}, null, 2)}
+                  {JSON.stringify(selectedStep?.attrs ?? {}, null, 2)}
                 </pre>
               </CardContent>
             </Card>

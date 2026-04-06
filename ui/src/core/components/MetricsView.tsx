@@ -33,9 +33,9 @@ function recentRunsToJourneys(flow: FlowConfig, recentRuns: ReturnType<typeof ge
     startedAt: run.lastUpdatedAt,
     durationMs: run.durationMs,
     status: run.status,
-    stages: [
+    steps: [
       {
-        stageId: run.currentStep,
+        stepId: run.currentStep,
         label: run.currentStep,
         startSeq: 0,
         endSeq: 0,

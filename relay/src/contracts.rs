@@ -32,7 +32,7 @@ pub struct FlowTelemetryContract {
     #[serde(default)]
     pub worker_prefixes: Vec<String>,
     #[serde(default)]
-    pub stage_prefixes: Vec<String>,
+    pub step_prefixes: Vec<String>,
     #[serde(default)]
     pub span_prefixes: Vec<String>,
     #[serde(default)]
@@ -159,7 +159,7 @@ impl FlowRegistry {
                 format!("thread_id:{quoted}"),
                 format!("reply_draft_id:{quoted}"),
                 format!("journey_key:{quoted}"),
-                format!("stage_id:{quoted}"),
+                format!("step_id:{quoted}"),
                 format!("function_name:{quoted}"),
                 format!("queue_name:{quoted}"),
                 format!("worker_name:{quoted}"),
@@ -384,8 +384,8 @@ fn matches_contract(contract: &FlowContract, event: &FlowEvent) -> bool {
         return true;
     }
 
-    let stage_candidates = [event.attr_string("stage_id")];
-    if matches_prefixes(&stage_candidates, &telemetry.stage_prefixes) {
+    let stage_candidates = [event.attr_string("step_id")];
+    if matches_prefixes(&stage_candidates, &telemetry.step_prefixes) {
         return true;
     }
 

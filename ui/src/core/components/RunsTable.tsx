@@ -27,7 +27,7 @@ import {
   canonicalStepId,
   formatRunLabel,
   formatStepDisplayLabel,
-  getJourneySummaryStage,
+  getJourneySummaryStep,
 } from '../runPresentation'
 import { DurationBadge } from './DurationBadge'
 
@@ -108,7 +108,7 @@ export function RunsTable({
   const data = useMemo<RunRowData[]>(
     () =>
       journeys.map((journey) => {
-        const summaryStage = getJourneySummaryStage(journey)
+        const summaryStage = getJourneySummaryStep(journey)
         return {
           traceId: journey.traceId,
           runLabel: formatRunLabel(journey),

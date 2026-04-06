@@ -1,10 +1,10 @@
-import type { TraceJourney, TraceStage } from './types'
+import type { TraceJourney, TraceStep } from './types'
 import {
-  getStagePresentationTier,
-  isGenericOperationalStage,
-  isLifecycleTerminalStage,
-  summarizeStageOutcome,
-} from './stageOutcomePresentation'
+  getStepPresentationTier,
+  isGenericOperationalStep,
+  isLifecycleTerminalStep,
+  summarizeStepOutcome,
+} from './stepOutcomePresentation'
 import { normalizeTraceIdentifierValue } from './traceIdentifiers'
 
 function compactIdentifier(value: string, maxLength = 10): string {
@@ -29,8 +29,8 @@ function humanizeMachineLabel(value: string): string {
   return normalized.charAt(0).toUpperCase() + normalized.slice(1).toLowerCase()
 }
 
-function stageLeaf(stageId: string): string {
-  const withoutNamespace = stageId.split('::').at(-1) ?? stageId
+function stepLeaf(stepId: string): string {
+  const withoutNamespace = stepId.split('::').at(-1) ?? stepId
   return withoutNamespace.split('.').at(-1) ?? withoutNamespace
 }
 
@@ -94,33 +94,33 @@ export function isDefaultVisibleJourney(journey: TraceJourney): boolean {
     return true
   }
 
-  return journey.stages.some((stage) => {
-    const stageId = normalizeTraceIdentifierValue(stage.stageId)
-    return isLifecycleTerminalStage(stageId)
+  return journey.steps.some((stage) => {
+    const stepId = normalizeTraceIdentifierValue(stage.stepId)
+    return isLifecycleTerminalStep(stepId)
   })
 }
 
-export function canonicalStepId(stage: Pick<TraceStage, 'nodeId' | 'stageId'>): string | undefined {
+export function canonicalStepId(stage: Pick<TraceStep, 'nodeId' | 'stepId'>): string | undefined {
   const componentId = normalizeTraceIdentifierValue(stage.nodeId)
-  const stageId = normalizeTraceIdentifierValue(stage.stageId)
+  const stepId = normalizeTraceIdentifierValue(stage.stepId)
 
   if (!componentId) {
-    return stageId
+    return stepId
   }
-  if (!stageId) {
+  if (!stepId) {
     return componentId
   }
 
-  return `${componentId}.${stageLeaf(stageId)}`
+  return `${componentId}.${stepLeaf(stepId)}`
 }
 
-export function formatStepLabel(stage: Pick<TraceStage, 'label' | 'nodeId' | 'stageId'>): string {
+export function formatStepLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId'>): string {
   const componentId = normalizeTraceIdentifierValue(stage.nodeId)
   const explicitLabel = normalizeTraceIdentifierValue(stage.label)
-  const stageId = normalizeTraceIdentifierValue(stage.stageId)
+  const stepId = normalizeTraceIdentifierValue(stage.stepId)
 
   const componentLabel = componentId ? humanizeMachineLabel(componentId) : undefined
-  const detailSource = explicitLabel && explicitLabel !== stageId ? explicitLabel : stageId ? stageLeaf(stageId) : undefined
+  const detailSource = explicitLabel && explicitLabel !== stepId ? explicitLabel : stepId ? stepLeaf(stepId) : undefined
   const detailLabel = detailSource ? humanizeMachineLabel(detailSource) : undefined
 
   if (componentLabel && detailLabel && componentLabel !== detailLabel) {
@@ -131,10 +131,10 @@ export function formatStepLabel(stage: Pick<TraceStage, 'label' | 'nodeId' | 'st
 }
 
 export function formatStepDisplayLabel(
-  stage: Pick<TraceStage, 'label' | 'nodeId' | 'stageId' | 'attrs'>,
+  stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId' | 'attrs'>,
 ): string {
-  const summary = summarizeStageOutcome({
-    stageId: stage.stageId,
+  const summary = summarizeStepOutcome({
+    stepId: stage.stepId,
     nodeId: stage.nodeId,
     attributes: stage.attrs,
   })
@@ -146,32 +146,32 @@ export function formatStepDisplayLabel(
   return formatStepLabel(stage)
 }
 
-export function getOverviewStages(stages: TraceStage[]): TraceStage[] {
-  const lifecycleStages = stages.filter((stage) => {
-    const tier = getStagePresentationTier({
-      stageId: stage.stageId,
+export function getOverviewSteps(steps: TraceStep[]): TraceStep[] {
+  const lifecycleSteps = steps.filter((stage) => {
+    const tier = getStepPresentationTier({
+      stepId: stage.stepId,
       nodeId: stage.nodeId,
       attributes: stage.attrs,
     })
 
-    return tier === 'outcome' || tier === 'transition' || isLifecycleTerminalStage(stage.stageId)
+    return tier === 'outcome' || tier === 'transition' || isLifecycleTerminalStep(stage.stepId)
   })
 
-  if (lifecycleStages.length > 0) {
-    return lifecycleStages
+  if (lifecycleSteps.length > 0) {
+    return lifecycleSteps
   }
 
-  const filtered = stages.filter(
+  const filtered = steps.filter(
     (stage) =>
-      !isGenericOperationalStage({
-        stageId: stage.stageId,
+      !isGenericOperationalStep({
+        stepId: stage.stepId,
         nodeId: stage.nodeId,
       }),
   )
 
-  return filtered.length > 0 ? filtered : stages
+  return filtered.length > 0 ? filtered : steps
 }
 
-export function getJourneySummaryStage(journey: TraceJourney): TraceStage | undefined {
-  return getOverviewStages(journey.stages).at(-1) ?? journey.stages.at(-1)
+export function getJourneySummaryStep(journey: TraceJourney): TraceStep | undefined {
+  return getOverviewSteps(journey.steps).at(-1) ?? journey.steps.at(-1)
 }

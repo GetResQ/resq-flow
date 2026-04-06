@@ -101,8 +101,8 @@ export interface CliLogRow {
   matchedFlowIds?: string[] | undefined;
   runId?: string | undefined;
   traceId?: string | undefined;
-  stageId?: string | undefined;
-  stageName?: string | undefined;
+  stepId?: string | undefined;
+  stepName?: string | undefined;
   componentId?: string | undefined;
   status?: string | undefined;
   message: string;

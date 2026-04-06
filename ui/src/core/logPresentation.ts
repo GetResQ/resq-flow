@@ -1,10 +1,10 @@
 import type { LogEntry } from './types'
-import { summarizeStageOutcome } from './stageOutcomePresentation'
+import { summarizeStepOutcome } from './stepOutcomePresentation'
 
 interface FlowLogPresentationInput {
-  stageId?: string
+  stepId?: string
   nodeId?: string
-  stageName?: string
+  stepName?: string
   message: string
   retryable?: boolean
   errorClass?: string
@@ -20,28 +20,28 @@ function defaultDisplayMessage(stageLabel: string | undefined, message: string):
 }
 
 export function buildFlowLogDisplayMessage(input: FlowLogPresentationInput): string {
-  const summary = summarizeStageOutcome(input)
+  const summary = summarizeStepOutcome(input)
   if (summary) {
     return summary
   }
 
-  return defaultDisplayMessage(input.stageName ?? input.stageId, input.message)
+  return defaultDisplayMessage(input.stepName ?? input.stepId, input.message)
 }
 
 export function getLogDisplayMessage(
-  entry: Pick<LogEntry, 'displayMessage' | 'message' | 'stageId' | 'stageName'>,
+  entry: Pick<LogEntry, 'displayMessage' | 'message' | 'stepId' | 'stepName'>,
 ): string {
   if (entry.displayMessage) {
     return entry.displayMessage
   }
 
-  return defaultDisplayMessage(entry.stageName ?? entry.stageId, entry.message)
+  return defaultDisplayMessage(entry.stepName ?? entry.stepId, entry.message)
 }
 
 export function buildLogSearchText(
   entry: Pick<
     LogEntry,
-    'displayMessage' | 'message' | 'stageId' | 'stageName' | 'componentId' | 'runId' | 'traceId' | 'nodeId'
+    'displayMessage' | 'message' | 'stepId' | 'stepName' | 'componentId' | 'runId' | 'traceId' | 'nodeId'
   >,
   nodeLabel?: string,
 ): string {
@@ -50,8 +50,8 @@ export function buildLogSearchText(
     entry.message,
     nodeLabel,
     entry.nodeId,
-    entry.stageName,
-    entry.stageId,
+    entry.stepName,
+    entry.stepId,
     entry.componentId,
     entry.runId,
     entry.traceId,

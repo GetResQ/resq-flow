@@ -108,7 +108,7 @@ For the current mail example, the Vector layer stays coarse and cheap:
 
 - do not fan out metrics to `resq-flow`
 - fan out logs only when they include the explicit mail telemetry event contract such as `mail_e2e_event`
-- fan out traces when the OTLP batch clearly contains stable mail markers such as `rrq:queue:mail-`, `handle_mail_`, `mail_` worker names, or mail stage IDs like `incoming.*`, `analyze.*`, `extract.*`, and `send.*`
+- fan out traces when the OTLP batch clearly contains stable mail markers such as `rrq:queue:mail-`, `handle_mail_`, `mail_` worker names, or mail step IDs like `incoming.*`, `analyze.*`, `extract.*`, and `send.*`
 - treat `service.name` as a helpful secondary signal, not the only gate
 - keep exact flow membership out of Vector; the relay owns exact contract matching and `matched_flow_ids`
 
@@ -197,7 +197,7 @@ resq-flow --help
 resq-flow status
 resq-flow logs list --flow mail-pipeline
 resq-flow logs tail --flow mail-pipeline
-resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr stage_id=analyze.decision
+resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr step_id=analyze.decision
 ```
 
 If you do not want to link it, the direct fallback still works:
@@ -243,13 +243,13 @@ Recommended flow-scoped attributes are:
 
 - `run_id`
 - `thread_id`
-- `stage_id`
+- `step_id`
 - `component_id`
 - `function_name`
 - `worker_name`
 - `status`
 
-If a flow-scoped log includes mappable fields such as `stage_id`, `component_id`, `function_name`, or `worker_name`, it continues to drive the existing flow logs and canvas activity.
+If a flow-scoped log includes mappable fields such as `step_id`, `component_id`, `function_name`, or `worker_name`, it continues to drive the existing flow logs and canvas activity.
 
 ## Validation
 

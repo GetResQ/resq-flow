@@ -59,8 +59,8 @@ export function normalizeLogRow(event: RelayFlowEvent): CliLogRow {
     matchedFlowIds: readMatchedFlowIds(event),
     runId: stringAttribute(event.attributes.run_id),
     traceId: event.trace_id,
-    stageId: stringAttribute(event.attributes.stage_id),
-    stageName: stringAttribute(event.attributes.stage_name),
+    stepId: stringAttribute(event.attributes.step_id),
+    stepName: stringAttribute(event.attributes.step_name),
     componentId: stringAttribute(event.attributes.component_id),
     status: stringAttribute(event.attributes.status),
     message:
@@ -72,8 +72,8 @@ export function normalizeLogRow(event: RelayFlowEvent): CliLogRow {
   };
 }
 
-export function preferredStageLabel(row: CliLogRow): string {
-  return row.stageId ?? row.stageName ?? row.componentId ?? "-";
+export function preferredStepLabel(row: CliLogRow): string {
+  return row.stepId ?? row.stepName ?? row.componentId ?? "-";
 }
 
 export function stringAttribute(value: JsonValue | undefined): string | undefined {

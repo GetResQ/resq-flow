@@ -110,7 +110,7 @@ export interface FlowTelemetryContract {
   queue_prefixes: string[]
   function_prefixes: string[]
   worker_prefixes: string[]
-  stage_prefixes: string[]
+  step_prefixes: string[]
   span_prefixes?: string[]
   span_names?: string[]
 }
@@ -187,8 +187,8 @@ export interface LogEntry {
   runId?: string
   flowId?: string
   componentId?: string
-  stageId?: string
-  stageName?: string
+  stepId?: string
+  stepName?: string
   errorClass?: string
   errorCode?: string
   retryable?: boolean
@@ -276,9 +276,9 @@ export interface TraceIdentifiers {
   journeyKey?: string
 }
 
-export interface TraceStage {
+export interface TraceStep {
   instanceId?: string
-  stageId: string
+  stepId: string
   label: string
   nodeId?: string
   startSeq: number
@@ -299,7 +299,7 @@ export interface TraceJourney {
   endedAt?: string
   durationMs?: number
   status: TraceStatus
-  stages: TraceStage[]
+  steps: TraceStep[]
   nodePath: string[]
   errorSummary?: string
   lastUpdatedAt: string

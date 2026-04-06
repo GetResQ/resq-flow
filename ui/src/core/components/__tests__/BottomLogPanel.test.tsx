@@ -1,5 +1,4 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BottomLogPanel } from '../BottomLogPanel'
@@ -18,7 +17,7 @@ const flow: FlowConfig = {
       queue_prefixes: [],
       function_prefixes: [],
       worker_prefixes: [],
-      stage_prefixes: [],
+      step_prefixes: [],
     },
     keep_context: {
       parent_spans: false,
@@ -70,7 +69,7 @@ const journeys: TraceJourney[] = [
     traceId: 'run-1',
     startedAt: '2026-03-24T16:00:00.000Z',
     status: 'success',
-    stages: [],
+    steps: [],
     nodePath: ['incoming-worker'],
     lastUpdatedAt: '2026-03-24T16:00:01.000Z',
     eventCount: 2,
@@ -89,9 +88,7 @@ describe('BottomLogPanel', () => {
     })
   })
 
-  it('shows emitted flow logs by default on the logs tab and keeps show all for runs only', async () => {
-    const user = userEvent.setup()
-
+  it('shows emitted flow logs by default on the logs tab and keeps show all for runs only', () => {
     render(
       <BottomLogPanel
         flow={flow}
@@ -106,7 +103,7 @@ describe('BottomLogPanel', () => {
     expect(screen.queryByText('span completed: rrq.job')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /show all runs/i })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: /runs/i }))
+    fireEvent.click(screen.getByRole('button', { name: /runs/i }))
 
     expect(screen.getByRole('button', { name: /show all runs/i })).toBeInTheDocument()
   })

@@ -66,7 +66,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    stage_id: "analyze.decision",
+                    step_id: "analyze.decision",
                     status: "ok",
                   },
                 },
@@ -112,7 +112,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
                     thread_id: "thread-201",
-                    stage_id: "analyze.decision",
+                    step_id: "analyze.decision",
                     status: "ok",
                   },
                 },
@@ -125,7 +125,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "mail-pipeline",
                     run_id: "thread-202",
                     thread_id: "thread-202",
-                    stage_id: "send.provider_call",
+                    step_id: "send.provider_call",
                     status: "ok",
                   },
                 },
@@ -138,7 +138,7 @@ describe("resq-flow logs tail", () => {
                     flow_id: "other-flow",
                     run_id: "thread-999",
                     thread_id: "thread-201",
-                    stage_id: "send.provider_call",
+                    step_id: "send.provider_call",
                     status: "ok",
                   },
                 },
@@ -174,7 +174,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    stage_id: "analyze.decision",
+                    step_id: "analyze.decision",
                     status: "ok",
                   },
                 },
@@ -191,7 +191,7 @@ describe("resq-flow logs tail", () => {
                   attributes: {
                     flow_id: "mail-pipeline",
                     run_id: "thread-201",
-                    stage_id: "send.provider_call",
+                    step_id: "send.provider_call",
                     status: "ok",
                   },
                 },
@@ -211,10 +211,10 @@ describe("resq-flow logs tail", () => {
     expect(lines[0]).toMatchObject({
       flowId: "mail-pipeline",
       runId: "thread-201",
-      stageId: "analyze.decision",
+      stepId: "analyze.decision",
     });
     expect(lines[1]).toMatchObject({
-      stageId: "send.provider_call",
+      stepId: "send.provider_call",
       message: "sent Gmail reply",
     });
   });

@@ -1,7 +1,7 @@
 import { readStringAttribute } from './mapping'
 
-export interface StageOutcomeInput {
-  stageId?: string
+export interface StepOutcomeInput {
+  stepId?: string
   nodeId?: string
   message?: string
   retryable?: boolean
@@ -9,7 +9,7 @@ export interface StageOutcomeInput {
   attributes?: Record<string, unknown>
 }
 
-export type StagePresentationTier = 'outcome' | 'transition' | 'plumbing' | 'fallback'
+export type StepPresentationTier = 'outcome' | 'transition' | 'plumbing' | 'fallback'
 
 const TRANSITION_SUMMARIES: Record<string, string> = {
   'actions.send_enqueue': 'send queued',
@@ -18,7 +18,7 @@ const TRANSITION_SUMMARIES: Record<string, string> = {
   'recompute.started': 'recompute started',
 }
 
-const PLUMBING_STAGE_IDS = new Set([
+const PLUMBING_STEP_IDS = new Set([
   'analyze.reply_status_write',
   'analyze.draft_status_write',
   'extract.state_write',
@@ -47,7 +47,7 @@ function readNormalizedAttribute(
   return normalize(readStringAttribute(attributes, key))
 }
 
-function summarizeAnalyzeFinalResult(input: StageOutcomeInput): string | undefined {
+function summarizeAnalyzeFinalResult(input: StepOutcomeInput): string | undefined {
   const replyStatus = readNormalizedAttribute(input.attributes, 'reply_status')
   const draftStatus = readNormalizedAttribute(input.attributes, 'draft_status')
   const resultAction = readNormalizedAttribute(input.attributes, 'result_action')
@@ -80,7 +80,7 @@ function summarizeAnalyzeFinalResult(input: StageOutcomeInput): string | undefin
   return undefined
 }
 
-function summarizeSendFinalResult(input: StageOutcomeInput): string | undefined {
+function summarizeSendFinalResult(input: StepOutcomeInput): string | undefined {
   const replyStatus = readNormalizedAttribute(input.attributes, 'reply_status')
   const draftStatus = readNormalizedAttribute(input.attributes, 'draft_status')
   const resultAction = readNormalizedAttribute(input.attributes, 'result_action')
@@ -118,46 +118,46 @@ function summarizeSendFinalResult(input: StageOutcomeInput): string | undefined 
   return undefined
 }
 
-function summarizeLifecycleOutcome(input: StageOutcomeInput): string | undefined {
-  const stageId = normalize(input.stageId)
+function summarizeLifecycleOutcome(input: StepOutcomeInput): string | undefined {
+  const stepId = normalize(input.stepId)
 
-  if (!stageId) {
+  if (!stepId) {
     return undefined
   }
 
-  if (stageId === 'analyze.final_result') {
+  if (stepId === 'analyze.final_result') {
     return summarizeAnalyzeFinalResult(input)
   }
 
-  if (stageId === 'send.final_result') {
+  if (stepId === 'send.final_result') {
     return summarizeSendFinalResult(input)
   }
 
-  if (stageId === 'extract.final_result') {
+  if (stepId === 'extract.final_result') {
     return 'extract completed'
   }
 
-  if (stageId === 'recompute.final_result') {
+  if (stepId === 'recompute.final_result') {
     return 'recompute finished'
   }
 
   return undefined
 }
 
-function summarizeLifecycleTransition(input: StageOutcomeInput): string | undefined {
-  const stageId = normalize(input.stageId)
-  if (!stageId) {
+function summarizeLifecycleTransition(input: StepOutcomeInput): string | undefined {
+  const stepId = normalize(input.stepId)
+  if (!stepId) {
     return undefined
   }
 
-  return TRANSITION_SUMMARIES[stageId]
+  return TRANSITION_SUMMARIES[stepId]
 }
 
-function isNodeWrapperStage(input: StageOutcomeInput): boolean {
-  const stageId = normalize(input.stageId)
+function isNodeWrapperStep(input: StepOutcomeInput): boolean {
+  const stepId = normalize(input.stepId)
   const nodeId = normalize(input.nodeId)
 
-  if (!stageId) {
+  if (!stepId) {
     return Boolean(nodeId)
   }
 
@@ -165,20 +165,20 @@ function isNodeWrapperStage(input: StageOutcomeInput): boolean {
     return false
   }
 
-  if (stageId === nodeId) {
+  if (stepId === nodeId) {
     return true
   }
 
-  const stageLeaf = stageId.split('.').at(-1)
+  const stepLeaf = stepId.split('.').at(-1)
   const nodeLeaf = nodeId.split('.').at(-1)
-  return Boolean(stageLeaf && nodeLeaf && stageLeaf === nodeLeaf)
+  return Boolean(stepLeaf && nodeLeaf && stepLeaf === nodeLeaf)
 }
 
-export function summarizeStageOutcome(input: StageOutcomeInput): string | undefined {
+export function summarizeStepOutcome(input: StepOutcomeInput): string | undefined {
   return summarizeLifecycleOutcome(input) ?? summarizeLifecycleTransition(input)
 }
 
-export function getStagePresentationTier(input: StageOutcomeInput): StagePresentationTier {
+export function getStepPresentationTier(input: StepOutcomeInput): StepPresentationTier {
   if (summarizeLifecycleOutcome(input)) {
     return 'outcome'
   }
@@ -187,19 +187,19 @@ export function getStagePresentationTier(input: StageOutcomeInput): StagePresent
     return 'transition'
   }
 
-  const stageId = normalize(input.stageId)
-  if ((stageId && PLUMBING_STAGE_IDS.has(stageId)) || isNodeWrapperStage(input)) {
+  const stepId = normalize(input.stepId)
+  if ((stepId && PLUMBING_STEP_IDS.has(stepId)) || isNodeWrapperStep(input)) {
     return 'plumbing'
   }
 
   return 'fallback'
 }
 
-export function isLifecycleTerminalStage(stageId?: string): boolean {
-  const normalized = normalize(stageId)
+export function isLifecycleTerminalStep(stepId?: string): boolean {
+  const normalized = normalize(stepId)
   return Boolean(normalized?.endsWith('final_result'))
 }
 
-export function isGenericOperationalStage(input: Pick<StageOutcomeInput, 'stageId' | 'nodeId'>): boolean {
-  return getStagePresentationTier(input) === 'plumbing'
+export function isGenericOperationalStep(input: Pick<StepOutcomeInput, 'stepId' | 'nodeId'>): boolean {
+  return getStepPresentationTier(input) === 'plumbing'
 }

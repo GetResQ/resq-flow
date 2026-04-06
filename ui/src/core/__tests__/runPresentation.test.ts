@@ -5,8 +5,8 @@ import {
   formatRunLabel,
   formatStepDisplayLabel,
   formatStepLabel,
-  getJourneySummaryStage,
-  getOverviewStages,
+  getJourneySummaryStep,
+  getOverviewSteps,
   isDefaultVisibleJourney,
 } from '../runPresentation'
 
@@ -16,7 +16,7 @@ function makeJourney(overrides: Partial<TraceJourney> = {}): TraceJourney {
     startedAt: '2026-03-24T12:00:00.000Z',
     durationMs: 450,
     status: 'success',
-    stages: [],
+    steps: [],
     nodePath: [],
     lastUpdatedAt: '2026-03-24T12:00:01.000Z',
     eventCount: 1,
@@ -41,7 +41,7 @@ describe('runPresentation', () => {
   it('humanizes canonical step labels', () => {
     expect(
       formatStepLabel({
-        stageId: 'extract.final_result',
+        stepId: 'extract.final_result',
         label: 'extract.final_result',
         nodeId: 'extract-worker',
       }),
@@ -51,7 +51,7 @@ describe('runPresentation', () => {
   it('prefers outcome summaries for lifecycle steps when attrs are present', () => {
     expect(
       formatStepDisplayLabel({
-        stageId: 'analyze.final_result',
+        stepId: 'analyze.final_result',
         label: 'analyze.final_result',
         nodeId: 'analyze-decision',
         attrs: {
@@ -65,7 +65,7 @@ describe('runPresentation', () => {
 
     expect(
       formatStepDisplayLabel({
-        stageId: 'send.final_result',
+        stepId: 'send.final_result',
         label: 'send.final_result',
         nodeId: 'send-process',
         attrs: {
@@ -82,9 +82,9 @@ describe('runPresentation', () => {
       identifiers: {
         threadId: 'thread-1',
       },
-      stages: [
+      steps: [
         {
-          stageId: 'send.final_result',
+          stepId: 'send.final_result',
           label: 'send.final_result',
           nodeId: 'send-process',
           startSeq: 1,
@@ -99,9 +99,9 @@ describe('runPresentation', () => {
       identifiers: {
         requestId: 'request-1',
       },
-      stages: [
+      steps: [
         {
-          stageId: 'scheduler.cursor_update',
+          stepId: 'scheduler.cursor_update',
           label: 'scheduler.cursor_update',
           nodeId: 'cron-scheduler',
           startSeq: 1,
@@ -119,9 +119,9 @@ describe('runPresentation', () => {
 
   it('prefers the last lifecycle stage over generic worker wrappers for run summaries', () => {
     const journey = makeJourney({
-      stages: [
+      steps: [
         {
-          stageId: 'worker.pickup',
+          stepId: 'worker.pickup',
           label: 'worker.pickup',
           nodeId: 'analyze-worker',
           startSeq: 1,
@@ -131,7 +131,7 @@ describe('runPresentation', () => {
           status: 'success',
         },
         {
-          stageId: 'analyze.final_result',
+          stepId: 'analyze.final_result',
           label: 'analyze.final_result',
           nodeId: 'analyze-decision',
           startSeq: 2,
@@ -147,7 +147,7 @@ describe('runPresentation', () => {
           },
         },
         {
-          stageId: 'worker.result',
+          stepId: 'worker.result',
           label: 'worker.result',
           nodeId: 'analyze-worker',
           startSeq: 3,
@@ -159,14 +159,14 @@ describe('runPresentation', () => {
       ],
     })
 
-    expect(getJourneySummaryStage(journey)?.stageId).toBe('analyze.final_result')
-    expect(getOverviewStages(journey.stages).map((stage) => stage.stageId)).toEqual(['analyze.final_result'])
+    expect(getJourneySummaryStep(journey)?.stepId).toBe('analyze.final_result')
+    expect(getOverviewSteps(journey.steps).map((stage) => stage.stepId)).toEqual(['analyze.final_result'])
   })
 
-  it('keeps lifecycle transitions and hides bookkeeping stages in overview', () => {
-    const stages = [
+  it('keeps lifecycle transitions and hides bookkeeping steps in overview', () => {
+    const steps = [
       {
-        stageId: 'analyze.reply_status_write',
+        stepId: 'analyze.reply_status_write',
         label: 'analyze.reply_status_write',
         nodeId: 'analyze-decision',
         startSeq: 1,
@@ -176,7 +176,7 @@ describe('runPresentation', () => {
         status: 'success' as const,
       },
       {
-        stageId: 'extract.recompute_enqueue',
+        stepId: 'extract.recompute_enqueue',
         label: 'extract.recompute_enqueue',
         nodeId: 'extract-worker',
         startSeq: 2,
@@ -186,7 +186,7 @@ describe('runPresentation', () => {
         status: 'success' as const,
       },
       {
-        stageId: 'recompute.final_result',
+        stepId: 'recompute.final_result',
         label: 'recompute.final_result',
         nodeId: 'extract-worker',
         startSeq: 3,
@@ -196,7 +196,7 @@ describe('runPresentation', () => {
         status: 'success' as const,
       },
       {
-        stageId: 'worker.result',
+        stepId: 'worker.result',
         label: 'worker.result',
         nodeId: 'extract-worker',
         startSeq: 4,
@@ -207,7 +207,7 @@ describe('runPresentation', () => {
       },
     ]
 
-    expect(getOverviewStages(stages).map((stage) => stage.stageId)).toEqual([
+    expect(getOverviewSteps(steps).map((stage) => stage.stepId)).toEqual([
       'extract.recompute_enqueue',
       'recompute.final_result',
     ])

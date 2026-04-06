@@ -148,7 +148,7 @@ export function BottomLogPanel({
       if (!showAllRuns && !isDefaultVisibleJourney(journey)) {
         return false
       }
-      const stage = journey.stages.at(-1)
+      const stage = journey.steps.at(-1)
       return (
         journey.traceId.toLowerCase().includes(query) ||
         formatRunLabel(journey).toLowerCase().includes(query) ||

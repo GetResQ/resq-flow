@@ -1,6 +1,6 @@
 ---
 name: flow-cli-create
-description: Use this skill when the user wants to create or scaffold a new flow that should show up in resq-flow. It helps developers define the flow boundary, choose flow and node names, add the core node logs the flow needs, add any clearly requested initial stage logs, create the matching resq-flow contract, and validate the result with resq-flow. Do not use it for raw infrastructure logs or for simple log additions to an already existing flow.
+description: Use this skill when the user wants to create or scaffold a new flow that should show up in resq-flow. It helps developers define the flow boundary, choose flow and node names, add the core node logs the flow needs, add any clearly requested initial step logs, create the matching resq-flow contract, and validate the result with resq-flow. Do not use it for raw infrastructure logs or for simple log additions to an already existing flow.
 ---
 
 # resq-flow Flow Creation
@@ -19,7 +19,7 @@ Use it to:
 - create a new flow boundary and flow identity
 - choose or confirm node and component names
 - add the core node logs the flow needs
-- add any clearly requested initial stage logs
+- add any clearly requested initial step logs
 - create the matching `resq-flow` contract
 - validate the result with `resq-flow`
 
@@ -49,16 +49,16 @@ That means the stable backbone of the flow should exist from the start:
 - queue enqueue
 - worker pickup
 - worker result
-- core stage outcomes such as `final_result`
+- core step outcomes such as `final_result`
 
-If the user also wants smaller local visibility points, add those as stage logs after the backbone exists.
+If the user also wants smaller local visibility points, add those as step logs after the backbone exists.
 
-## Node logs vs stage logs during flow creation
+## Node logs vs step logs during flow creation
 
-When a create-flow request includes both major flow stages and smaller local logs:
+When a create-flow request includes both major flow steps and smaller local logs:
 
 - use node logs for the main flow backbone
-- use stage logs for the smaller local visibility points
+- use step logs for the smaller local visibility points
 
 The user should not have to split that request up manually. Do the decomposition in the implementation.
 
@@ -73,7 +73,7 @@ The user should not have to split that request up manually. Do the decomposition
    - `tracing_emit.rs`
    - optional `touchpoints.rs`
 4. Add the producer-side flow context and core node logs.
-5. Add one or more initial stage logs only when they were clearly requested or obviously useful.
+5. Add one or more initial step logs only when they were clearly requested or obviously useful.
 6. Create the matching `resq-flow` contract.
 7. Validate the new flow with `resq-flow`.
 
@@ -85,7 +85,7 @@ The user should not have to split that request up manually. Do the decomposition
 - Keep `flow_id` simple and stable.
 - Keep node ownership explicit.
 - Treat node logs as the default for new-flow scaffolding.
-- Use stage logs only for smaller local visibility points, not as a replacement for the flow backbone.
+- Use step logs only for smaller local visibility points, not as a replacement for the flow backbone.
 
 ## Naming guidance
 
@@ -93,9 +93,9 @@ Prefer:
 
 - simple stable `flow_id`
 - explicit node or component names
-- child-step `stage_id` values
+- child-step `step_id` values
 
-Do not encode the whole node path into `stage_id` when the node identity already exists separately.
+Do not encode the whole node path into `step_id` when the node identity already exists separately.
 
 ## Validation workflow
 

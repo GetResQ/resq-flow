@@ -6,7 +6,7 @@ import type { FlowEvent } from '../../types'
 import { useTraceJourney } from '../useTraceJourney'
 
 describe('useTraceJourney', () => {
-  it('derives ordered stages and identifiers from mixed events', () => {
+  it('derives ordered steps and identifiers from mixed events', () => {
     const events: FlowEvent[] = [
       {
         type: 'log',
@@ -17,7 +17,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_result',
-          stage_id: 'send.finalize',
+          step_id: 'send.finalize',
           function_name: 'handle_mail_send_reply',
           outcome: 'success',
           thread_id: 'thread-1',
@@ -34,7 +34,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'enqueue',
-          stage_id: 'incoming.write_threads',
+          step_id: 'incoming.write_threads',
           function_name: 'handle_mail_incoming_check',
           thread_id: 'thread-1',
           job_id: 'job-1',
@@ -50,7 +50,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-1',
           action: 'worker_pickup',
-          stage_id: 'analyze.decision',
+          step_id: 'analyze.decision',
           function_name: 'handle_mail_analyze_reply',
           thread_id: 'thread-1',
           job_id: 'job-1',
@@ -65,7 +65,7 @@ describe('useTraceJourney', () => {
     const journey = result.current.journeys[0]
     expect(journey.traceId).toBe('run-1')
     expect(journey.identifiers.runId).toBe('run-1')
-    expect(journey.stages.map((stage) => stage.stageId)).toEqual([
+    expect(journey.steps.map((stage) => stage.stepId)).toEqual([
       'incoming.write_threads',
       'analyze.decision',
       'send.finalize',
@@ -88,7 +88,7 @@ describe('useTraceJourney', () => {
         attributes: {
           run_id: 'run-2',
           function_name: 'handle_mail_extract',
-          stage_id: 'extract.upsert_contacts',
+          step_id: 'extract.upsert_contacts',
           thread_id: 'thread-2',
         },
       },
@@ -102,7 +102,7 @@ describe('useTraceJourney', () => {
         attributes: {
           run_id: 'run-2',
           function_name: 'handle_mail_extract',
-          stage_id: 'extract.upsert_contacts',
+          step_id: 'extract.upsert_contacts',
           error_class: 'db',
           error_code: 'unique_violation',
           error_message: 'upsert failed',
@@ -115,8 +115,8 @@ describe('useTraceJourney', () => {
     expect(journey.traceId).toBe('run-2')
     expect(journey.status).toBe('error')
     expect(journey.errorSummary).toBe('upsert failed')
-    expect(journey.stages[0].status).toBe('error')
-    expect(journey.stages[0].nodeId).toBe('extract-worker')
+    expect(journey.steps[0].status).toBe('error')
+    expect(journey.steps[0].nodeId).toBe('extract-worker')
   })
 
   it('prefers explicit component_id when deriving journey nodes', () => {
@@ -130,7 +130,7 @@ describe('useTraceJourney', () => {
           run_id: 'run-3',
           component_id: 'send-process',
           function_name: 'handle_mail_extract',
-          stage_id: 'send.final_result',
+          step_id: 'send.final_result',
         },
       },
     ]
@@ -139,10 +139,10 @@ describe('useTraceJourney', () => {
     const journey = result.current.journeys[0]
 
     expect(journey.traceId).toBe('run-3')
-    expect(journey.stages[0].nodeId).toBe('send-process')
+    expect(journey.steps[0].nodeId).toBe('send-process')
   })
 
-  it('keeps repeated generic stage ids separate across distinct components', () => {
+  it('keeps repeated generic step ids separate across distinct components', () => {
     const events: FlowEvent[] = [
       {
         type: 'log',
@@ -154,7 +154,7 @@ describe('useTraceJourney', () => {
           run_id: 'thread-301',
           component_id: 'analyze-queue',
           action: 'enqueue',
-          stage_id: 'queue.enqueue',
+          step_id: 'queue.enqueue',
         },
       },
       {
@@ -167,7 +167,7 @@ describe('useTraceJourney', () => {
           run_id: 'thread-301',
           component_id: 'send-queue',
           action: 'enqueue',
-          stage_id: 'queue.enqueue',
+          step_id: 'queue.enqueue',
         },
       },
       {
@@ -180,7 +180,7 @@ describe('useTraceJourney', () => {
           run_id: 'thread-301',
           component_id: 'send-worker',
           action: 'worker_pickup',
-          stage_id: 'worker.pickup',
+          step_id: 'worker.pickup',
         },
       },
     ]
@@ -188,7 +188,7 @@ describe('useTraceJourney', () => {
     const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
     const journey = result.current.journeys[0]
 
-    expect(journey.stages.map((stage) => `${stage.nodeId}:${stage.stageId}`)).toEqual([
+    expect(journey.steps.map((stage) => `${stage.nodeId}:${stage.stepId}`)).toEqual([
       'analyze-queue:queue.enqueue',
       'send-queue:queue.enqueue',
       'send-worker:worker.pickup',
@@ -208,7 +208,7 @@ describe('useTraceJourney', () => {
           reply_draft_id: 0,
           mailbox_owner: 'jrojas@getresq.com',
           component_id: 'incoming-worker',
-          stage_id: 'worker.result',
+          step_id: 'worker.result',
         },
       },
     ]
@@ -233,7 +233,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-repeat',
           component_id: 'extract-queue',
-          stage_id: 'queue.enqueue',
+          step_id: 'queue.enqueue',
         },
       },
       {
@@ -245,7 +245,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-repeat',
           component_id: 'extract-worker',
-          stage_id: 'worker.pickup',
+          step_id: 'worker.pickup',
         },
       },
       {
@@ -257,7 +257,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-repeat',
           component_id: 'extract-queue',
-          stage_id: 'queue.enqueue',
+          step_id: 'queue.enqueue',
         },
       },
     ]
@@ -265,7 +265,7 @@ describe('useTraceJourney', () => {
     const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
     const journey = result.current.journeys[0]
 
-    expect(journey.stages.map((stage) => `${stage.instanceId}:${stage.stageId}`)).toEqual([
+    expect(journey.steps.map((stage) => `${stage.instanceId}:${stage.stepId}`)).toEqual([
       'extract-queue::queue.enqueue:queue.enqueue',
       'extract-worker::worker.pickup:worker.pickup',
       'extract-queue::queue.enqueue#2:queue.enqueue',
@@ -283,7 +283,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-summary',
           component_id: 'analyze-decision',
-          stage_id: 'analyze.final_result',
+          step_id: 'analyze.final_result',
           reply_status: 'needs_review',
           draft_status: 'needs_review',
           result_action: 'draft_reply',
@@ -298,7 +298,7 @@ describe('useTraceJourney', () => {
           event: 'flow_event',
           run_id: 'run-summary',
           component_id: 'analyze-decision',
-          stage_id: 'analyze.final_result',
+          step_id: 'analyze.final_result',
         },
       },
     ]
@@ -306,9 +306,9 @@ describe('useTraceJourney', () => {
     const { result } = renderHook(() => useTraceJourney(events, mailPipelineFlow.spanMapping))
     const journey = result.current.journeys[0]
 
-    expect(journey.stages).toHaveLength(1)
-    expect(journey.stages[0].attrs?.reply_status).toBe('needs_review')
-    expect(journey.stages[0].attrs?.draft_status).toBe('needs_review')
-    expect(journey.stages[0].attrs?.result_action).toBe('draft_reply')
+    expect(journey.steps).toHaveLength(1)
+    expect(journey.steps[0].attrs?.reply_status).toBe('needs_review')
+    expect(journey.steps[0].attrs?.draft_status).toBe('needs_review')
+    expect(journey.steps[0].attrs?.result_action).toBe('draft_reply')
   })
 })

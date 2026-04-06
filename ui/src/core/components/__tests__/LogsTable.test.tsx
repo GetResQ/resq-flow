@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -53,13 +53,11 @@ const logs: LogEntry[] = [
 
 describe('LogsTable', () => {
   it('sorts by duration when the header is clicked', async () => {
-    const user = userEvent.setup()
-
     render(
       <LogsTable logs={logs} nodeLabels={nodeLabels} nodeFamilies={nodeFamilies} onSelectLog={vi.fn()} />,
     )
 
-    await user.click(screen.getByRole('button', { name: /duration/i }))
+    fireEvent.click(screen.getByRole('button', { name: /duration/i }))
 
     const rows = screen.getAllByRole('row').slice(1)
     expect(within(rows[0]).getByText('Analyzed message')).toBeInTheDocument()
@@ -67,7 +65,6 @@ describe('LogsTable', () => {
   })
 
   it('calls the row click handler and marks error rows with data-level', async () => {
-    const user = userEvent.setup()
     const onSelectLog = vi.fn()
 
     render(
@@ -80,7 +77,7 @@ describe('LogsTable', () => {
       />,
     )
 
-    await user.click(screen.getByText('Provider timeout'))
+    fireEvent.click(screen.getByText('Provider timeout'))
 
     expect(onSelectLog).toHaveBeenCalledWith(logs[1])
 
@@ -109,7 +106,7 @@ describe('LogsTable', () => {
             defaultVisible: true,
             eventType: 'log',
             traceId: 'run-4',
-            stageId: 'analyze.final_result',
+            stepId: 'analyze.final_result',
           },
         ]}
         nodeLabels={nodeLabels}

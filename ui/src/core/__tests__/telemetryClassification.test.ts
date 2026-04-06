@@ -42,7 +42,7 @@ describe('telemetryClassification', () => {
       trace_id: 'trace-3',
       span_id: 'log-2',
       attributes: {
-        stage_id: 'incoming.write_metadata',
+        step_id: 'incoming.write_metadata',
         component_id: 'incoming-worker',
       },
       message: 'metadata write complete',
@@ -59,7 +59,7 @@ describe('telemetryClassification', () => {
       trace_id: 'trace-4',
       span_id: 'log-3',
       attributes: {
-        stage_id: 'send.final_result',
+        step_id: 'send.final_result',
         status: 'error',
         retryable: true,
         error_message: 'provider timeout',
@@ -92,7 +92,7 @@ describe('telemetryClassification', () => {
       span_id: 'span-5',
       attributes: {
         component_id: 'analyze-decision',
-        stage_id: 'analyze.final_result',
+        step_id: 'analyze.final_result',
         reply_status: 'needs_review',
       },
       message: 'span completed',
@@ -105,7 +105,7 @@ describe('telemetryClassification', () => {
       span_id: 'log-5',
       attributes: {
         component_id: 'analyze-decision',
-        stage_id: 'analyze.final_result',
+        step_id: 'analyze.final_result',
         reply_status: 'needs_review',
         draft_status: 'needs_review',
         result_action: 'draft_reply',

@@ -1,6 +1,6 @@
 ---
 name: flow-cli-write
-description: Use this skill when the user wants to add or change flow-visible logs for an existing flow, either by adding runtime logs in application code that should show up in resq-flow or by manually emitting one explicit debug log with the resq-flow CLI. It helps developers find the right existing flow, choose between node logs and stage logs, reuse the normal flow telemetry path, keep scope explicit, and validate the result with the resq-flow CLI. Do not use it for raw infrastructure logs or brand-new flow scaffolding.
+description: Use this skill when the user wants to add or change flow-visible logs for an existing flow, either by adding runtime logs in application code that should show up in resq-flow or by manually emitting one explicit debug log with the resq-flow CLI. It helps developers find the right existing flow, choose between node logs and step logs, reuse the normal flow telemetry path, keep scope explicit, and validate the result with the resq-flow CLI. Do not use it for raw infrastructure logs or brand-new flow scaffolding.
 ---
 
 # resq-flow Runtime Logs
@@ -54,21 +54,21 @@ If the user names a flow, use it.
 
 If the user does not name a flow, infer it from repo context when it is obvious. If not obvious, ask one short question.
 
-## Node logs vs stage logs
+## Node logs vs step logs
 
 This skill should choose between two structural log types:
 
 - node logs
-- stage logs
+- step logs
 
 Use node logs when the event defines the main flow structure:
 
 - queue enqueue
 - worker pickup or result
-- core stage outcomes such as `final_result`
+- core step outcomes such as `final_result`
 - stable business or lifecycle events the flow will rely on long-term at the primary node level
 
-Use stage logs when the event is attached to a node and helps show what happened around that node's work:
+Use step logs when the event is attached to a node and helps show what happened around that node's work:
 
 - one extra branch or decision log
 - one extra save or write log
@@ -77,8 +77,8 @@ Use stage logs when the event is attached to a node and helps show what happened
 Implementation rule:
 
 - node logs usually use the existing typed telemetry path
-- stage logs can use either the existing typed stage pattern or the small helper path
-- prefer the helper path when you are adding one incremental stage log and do not need to expand the typed contract
+- step logs can use either the existing typed step pattern or the small helper path
+- prefer the helper path when you are adding one incremental step log and do not need to expand the typed contract
 
 The user usually should not have to choose. Infer the right path from the request.
 
@@ -88,9 +88,9 @@ The user usually should not have to choose. Infer the right path from the reques
 2. Reuse the normal flow telemetry path already used by that flow.
 3. Keep flow scope explicit with the existing flow identity and run identity.
 4. Choose the right log style:
-   - use the existing typed path for node logs and stable stage logs
-   - use the helper path for simple new stage logs attached to an existing node
-5. Add a clear stage id and message. Let flow and node identity come from the bound context.
+   - use the existing typed path for node logs and stable step logs
+   - use the helper path for simple new step logs attached to an existing node
+5. Add a clear step id and message. Let flow and node identity come from the bound context.
 6. Validate the result with `resq-flow`.
 
 ## Rules
@@ -103,7 +103,7 @@ The user usually should not have to choose. Infer the right path from the reques
 - Do not pass `flow_id`, `run_id`, or `component_id` manually when the bound context already knows them.
 - Prefer the smallest callsite that still preserves correct scope.
 - Keep manual CLI attrs small, flat, and useful for filtering.
-- Do not overwrite reserved flow fields such as `flow_id`, `run_id`, `component_id`, `status`, `stage_id`, or `message` with extra attrs.
+- Do not overwrite reserved flow fields such as `flow_id`, `run_id`, `component_id`, `status`, `step_id`, or `message` with extra attrs.
 
 ## Good runtime log shape
 
@@ -111,15 +111,15 @@ For runtime code, aim for a small, useful record:
 
 - flow
 - run
-- stage
+- step
 - message
 
-For simple stage-log additions, prefer the tiny helper shape:
+For simple step-log additions, prefer the tiny helper shape:
 
-- `stage_ok(stage_id, message)`
-- `stage_err(stage_id, message, error_message)`
+- `step_ok(step_id, message)`
+- `step_err(step_id, message, error_message)`
 
-Use the existing typed telemetry pattern instead when the log is a primary node event or an already-established typed stage event.
+Use the existing typed telemetry pattern instead when the log is a primary node event or an already-established typed step event.
 
 ## Validation workflow
 
@@ -140,7 +140,7 @@ Use `logs emit` when the user wants one quick explicit debug signal in the live 
 Flow-scoped manual emit:
 
 ```bash
-resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr stage_id=analyze.decision
+resq-flow logs emit --flow mail-pipeline --message "picked thread for analysis" --attr run_id=thread-301 --attr step_id=analyze.decision
 ```
 
 Unscoped manual emit:
@@ -163,8 +163,8 @@ If a change is mail-specific, default to `mail-pipeline` unless the code clearly
 
 For existing mail flow work:
 
-- use typed telemetry for queue, worker, and core node or stage lifecycle events
-- use the helper for simple stage logs such as `resolve_identity`
+- use typed telemetry for queue, worker, and core node or step lifecycle events
+- use the helper for simple step logs such as `resolve_identity`
 
 ## Manual debug fallback
 

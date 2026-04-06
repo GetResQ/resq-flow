@@ -27,7 +27,7 @@ If the user names a flow, use it. If the user names `resq-flow` but not the flow
 
 If the user asks for "logs" without saying whether they want `resq-flow` or raw logs, clarify briefly:
 
-- `resq-flow` is for flow-aware logs with run/stage context
+- `resq-flow` is for flow-aware logs with run/step context
 - raw logs are for broad service or infrastructure log digging
 
 ## Rules
@@ -61,6 +61,6 @@ resq-flow logs tail --all --jsonl
 
 - Prefer `logs tail` for "is it happening right now?"
 - Prefer `logs list` for "did it show up in history?"
-- When checking a specific execution, filter with `thread_id`, `run_id`, `stage_id`, or `status` when available.
+- When checking a specific execution, filter with `thread_id`, `run_id`, `step_id`, or `status` when available.
 - If a log does not appear in a flow, check whether the wrong scope was used before assuming relay or UI bugs.
 - Remember that ordinary unmatched runtime logs are not the main thing `resq-flow` surfaces today; flow logs are the normal path.

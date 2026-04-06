@@ -19,8 +19,8 @@ function compareLogs(left: LogEntry, right: LogEntry): number {
 
 function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
   const isError = inferErrorState(event)
-  const stageId = readStringAttribute(event.attributes, 'stage_id')
-  const stageName = readStringAttribute(event.attributes, 'stage_name')
+  const stepId = readStringAttribute(event.attributes, 'step_id')
+  const stepName = readStringAttribute(event.attributes, 'step_name')
   const retryable = readStringAttribute(event.attributes, 'retryable')
   const signal = classifyFlowEvent(event)
   const message =
@@ -35,8 +35,8 @@ function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
     runId: eventExecutionKey(event),
     flowId: readStringAttribute(event.attributes, 'flow_id'),
     componentId: readStringAttribute(event.attributes, 'component_id'),
-    stageId,
-    stageName,
+    stepId,
+    stepName,
     errorClass: readStringAttribute(event.attributes, 'error_class'),
     errorCode: readStringAttribute(event.attributes, 'error_code'),
     retryable: retryable ? retryable.toLowerCase() === 'true' : undefined,
@@ -48,9 +48,9 @@ function toLogEntry(event: FlowEvent, nodeId?: string): LogEntry {
     defaultVisible: isDefaultVisibleSignal(signal),
     message,
     displayMessage: buildFlowLogDisplayMessage({
-      stageId,
+      stepId,
       nodeId,
-      stageName,
+      stepName,
       message,
       retryable: retryable ? retryable.toLowerCase() === 'true' : undefined,
       errorClass: readStringAttribute(event.attributes, 'error_class'),
