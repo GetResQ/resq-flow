@@ -43,6 +43,23 @@ const roleWidthDefaults: Partial<Record<NodeSemanticRole, number>> = {
   decision:  100,
 }
 
+export function normalizeTechnicalAlias(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  if (!trimmed) {
+    return undefined
+  }
+
+  let normalized = trimmed
+  if (normalized.startsWith('rrq:queue:')) {
+    normalized = normalized.slice('rrq:queue:'.length)
+  }
+  if (normalized.startsWith('handle_')) {
+    normalized = normalized.slice('handle_'.length)
+  }
+
+  return normalized.replaceAll('_', '-')
+}
+
 function inferSemanticRole(node: FlowNodeConfig): NodeSemanticRole {
   if (node.semanticRole) {
     return node.semanticRole

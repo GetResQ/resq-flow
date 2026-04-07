@@ -1,5 +1,4 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BottomLogPanel } from '../BottomLogPanel'
@@ -127,9 +126,7 @@ describe('BottomLogPanel', () => {
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
   })
 
-  it('keeps critical non-error logs visible when the error filter is active', async () => {
-    const user = userEvent.setup()
-
+  it('keeps critical non-error logs visible when the error filter is active', () => {
     render(
       <BottomLogPanel
         flow={flow}
@@ -152,7 +149,7 @@ describe('BottomLogPanel', () => {
       />,
     )
 
-    await user.click(screen.getByRole('button', { name: /error/i }))
+    fireEvent.click(screen.getByRole('button', { name: /error/i }))
 
     expect(screen.getByText(/provider timeout/i)).toBeInTheDocument()
     expect(screen.queryByText(/mail_incoming worker picked up job/i)).not.toBeInTheDocument()

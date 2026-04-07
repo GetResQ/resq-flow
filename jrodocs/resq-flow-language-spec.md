@@ -218,6 +218,30 @@ Good:
 - "Run details."
 - "Advanced telemetry."
 
+## Graph Block Language
+
+On-canvas graph blocks should stay compact and easy to scan.
+
+- title = short human-readable name
+- subtitle = optional short technical alias
+- description = longer plain-English explanation in the sidebar
+- notes = bullet caveats only
+
+Preferred patterns:
+
+- queues/workers: noun phrases
+  - `Analyze Queue`
+  - `Send Worker`
+- processes: verb-first
+  - `Fetch Thread`
+  - `Reuse Batch`
+  - `Mark Sent`
+- decisions: short questions
+  - `Supported Actions?`
+  - `Auto Send?`
+
+Avoid putting long rule sentences directly on the block face.
+
 Avoid:
 
 - "194 events" in primary UI without qualification

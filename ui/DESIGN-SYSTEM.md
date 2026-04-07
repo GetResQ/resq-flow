@@ -75,6 +75,37 @@ All tokens are defined in `ui/src/index.css`. Runtime JS values (for React Flow 
 
 ---
 
+## Graph Block Naming
+
+Graph blocks should stay short and easy to scan.
+
+- block face = short title + optional short subtitle only
+- titles should usually be 1 to 3 words
+- process titles should usually be verb-first
+- decision titles should usually be short questions
+- subtitles are optional and should show a short normalized technical alias when they add value
+- do not put long business-rule sentences on the face of a block
+- longer explanation belongs in sidebar `description`
+- `notes` are only for short bullet caveats or gotchas
+
+Examples:
+
+- good titles:
+  - `Analyze Queue`
+  - `Reuse Batch`
+  - `Fetch Thread`
+  - `Auto Send?`
+- good subtitles:
+  - `mail-analyze`
+  - `mail-reply-drafts`
+  - `thread-store`
+- avoid:
+  - `if existing active action batch: reuse batch and stop`
+  - `rrq:queue:mail-analyze`
+  - `mail_reply_drafts`
+
+---
+
 ## Spacing
 
 | Token | Value | Use |
