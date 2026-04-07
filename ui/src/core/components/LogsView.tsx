@@ -100,8 +100,9 @@ export function LogsView({
       if (selectedTraceId && (entry.runId ?? entry.traceId) !== selectedTraceId) {
         return false
       }
-      if (statusFilter !== 'all' && entry.level !== statusFilter) {
-        return false
+      if (statusFilter !== 'all') {
+        const isCritical = entry.level === 'error' || entry.signal === 'critical'
+        if (!isCritical) return false
       }
       if (nodeFilter !== 'all' && entry.nodeId !== nodeFilter) {
         return false

@@ -986,9 +986,18 @@ body[data-theme='light'] {
   cursor: default;
 }
 
-/* ── Log table error row accent ── */
-[data-level='error'] td:first-child {
+/* ── Log table row severity accents ── */
+[data-severity='error'] td:first-child {
   border-left: 2px solid var(--status-error);
+  padding-left: calc(var(--spacing) * 3 - 2px);
+}
+
+[data-severity='error'] {
+  background-color: color-mix(in srgb, var(--status-error) 4%, transparent);
+}
+
+[data-severity='warning'] td:first-child {
+  border-left: 2px solid var(--status-warning);
   padding-left: calc(var(--spacing) * 3 - 2px);
 }
 

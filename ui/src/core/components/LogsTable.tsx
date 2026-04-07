@@ -164,46 +164,20 @@ export function LogsTable({
         accessorKey: 'messageBody',
         header: 'Message',
         cell: ({ row }) => (
-          <span className="block truncate" title={row.original.messageTitle}>
-            {row.original.messagePrefix && (
-              <span className="mr-1 font-mono text-[10px] text-[var(--text-muted)]">
-                {row.original.messagePrefix}:
-              </span>
+          <span className="flex min-w-0 items-center gap-3" title={row.original.messageTitle}>
+            <span className="min-w-0 truncate">
+              {row.original.messagePrefix && (
+                <span className="mr-1 font-mono text-[10px] text-[var(--text-muted)]">
+                  {row.original.messagePrefix}:
+                </span>
+              )}
+              <span className="text-[var(--text-primary)]">{row.original.messageBody}</span>
+            </span>
+            {typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs > 0 && (
+              <DurationBadge durationMs={row.original.entry.durationMs} className="flex-shrink-0" />
             )}
-            <span className="text-[var(--text-primary)]">{row.original.messageBody}</span>
           </span>
         ),
-      },
-      {
-        id: 'status',
-        accessorFn: (row) => row.entry.level,
-        header: '',
-        cell: ({ row }) => (
-          <span
-            className="inline-block h-1.5 w-1.5 flex-shrink-0 rounded-full"
-            style={{
-              background:
-                row.original.entry.level === 'error'
-                  ? 'var(--status-error)'
-                  : 'var(--status-success)',
-            }}
-          />
-        ),
-      },
-      {
-        id: 'duration',
-        accessorFn: (row) => row.entry.durationMs ?? -1,
-        header: ({ column }) => (
-          <button
-            type="button"
-            className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest"
-            onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
-          >
-            Duration
-            <span>{sortIndicator(column.getIsSorted())}</span>
-          </button>
-        ),
-        cell: ({ row }) => <DurationBadge durationMs={row.original.entry.durationMs} />,
       },
     ],
     [],
@@ -225,8 +199,6 @@ export function LogsTable({
         <col className="w-[160px]" />
         <col className="w-[200px]" />
         <col />
-        <col className="w-[24px]" />
-        <col className="w-[90px]" />
       </colgroup>
       <TableHeader>
         {table.getHeaderGroups().map((headerGroup) => (
@@ -250,11 +222,18 @@ export function LogsTable({
           table.getRowModel().rows.map((row) => {
             const selected = selectedTraceId && row.original.executionId === selectedTraceId
             const isFresh = typeof row.original.entry.seq === 'number' && freshSeqs.has(row.original.entry.seq)
+            const severity =
+              row.original.entry.level === 'error' || row.original.entry.signal === 'critical'
+                ? 'error'
+                : typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000
+                  ? 'warning'
+                  : undefined
             return (
               <TableRow
                 key={row.id}
                 data-state={selected ? 'selected' : undefined}
                 data-level={row.original.entry.level}
+                data-severity={severity}
                 data-fresh={isFresh ? '' : undefined}
                 onClick={() => onSelectLog(row.original.entry)}
               >

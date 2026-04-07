@@ -51,16 +51,106 @@ const logs: LogEntry[] = [
 ]
 
 describe('LogsTable', () => {
-  it('sorts by duration when the header is clicked', async () => {
+  it('shows inline duration when durationMs > 0 and hides it when 0 or absent', () => {
+    const mixed: LogEntry[] = [
+      {
+        timestamp: '2026-03-17T13:10:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'has duration',
+        durationMs: 250,
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-a',
+      },
+      {
+        timestamp: '2026-03-17T13:11:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'zero duration',
+        durationMs: 0,
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-b',
+      },
+      {
+        timestamp: '2026-03-17T13:12:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'no duration',
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-c',
+      },
+    ]
+
     render(
-      <LogsTable logs={logs} nodeLabels={nodeLabels} nodeFamilies={nodeFamilies} onSelectLog={vi.fn()} />,
+      <LogsTable logs={mixed} nodeLabels={nodeLabels} nodeFamilies={nodeFamilies} onSelectLog={vi.fn()} />,
     )
 
-    fireEvent.click(screen.getByRole('button', { name: /duration/i }))
+    expect(screen.getByTestId('duration-badge')).toBeInTheDocument()
+    expect(screen.getAllByTestId('duration-badge')).toHaveLength(1)
+  })
+
+  it('marks error and critical-signal rows with data-severity="error" and slow rows with "warning"', () => {
+    const mixed: LogEntry[] = [
+      {
+        timestamp: '2026-03-17T13:10:00.000Z',
+        level: 'error',
+        nodeId: 'node-a',
+        message: 'hard error',
+        signal: 'critical',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-a',
+      },
+      {
+        timestamp: '2026-03-17T13:11:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'critical signal only',
+        signal: 'critical',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-b',
+      },
+      {
+        timestamp: '2026-03-17T13:12:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'slow operation',
+        durationMs: 1500,
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-c',
+      },
+      {
+        timestamp: '2026-03-17T13:13:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'normal',
+        durationMs: 50,
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-d',
+      },
+    ]
+
+    render(
+      <LogsTable logs={mixed} nodeLabels={nodeLabels} nodeFamilies={nodeFamilies} onSelectLog={vi.fn()} />,
+    )
 
     const rows = screen.getAllByRole('row').slice(1)
-    expect(within(rows[0]).getByText('Analyzed message')).toBeInTheDocument()
-    expect(within(rows[2]).getByText('Provider timeout')).toBeInTheDocument()
+    const bySeverity = (s: string) => rows.filter((r) => r.getAttribute('data-severity') === s)
+
+    expect(bySeverity('error')).toHaveLength(2)
+    expect(bySeverity('warning')).toHaveLength(1)
+    expect(rows.find((r) => r.getAttribute('data-severity') === null || r.getAttribute('data-severity') === undefined || !r.getAttribute('data-severity'))).toBeDefined()
   })
 
   it('calls the row click handler and marks error rows with data-level', async () => {
@@ -161,6 +251,6 @@ describe('LogsTable', () => {
     )
 
     expect(screen.getByRole('table')).toHaveClass('table-fixed')
-    expect(container.querySelectorAll('col')).toHaveLength(5)
+    expect(container.querySelectorAll('col')).toHaveLength(3)
   })
 })
