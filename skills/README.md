@@ -5,6 +5,9 @@ These skills help developers and agents use `resq-flow` in a consistent way.
 Use this folder as the quick "which skill do I want?" index.
 Use each `SKILL.md` for the full instructions.
 
+Start here when you need to choose a workflow quickly.
+After you pick a skill, that `SKILL.md` should be understandable on its own without needing to read every other skill first.
+
 ## Skill guide
 
 | Skill | Use when | Do not use when |
@@ -35,6 +38,12 @@ Use each `SKILL.md` for the full instructions.
 - If an existing flow already fits, prefer `flow-cli-write`.
 - If no existing flow fits and the user does not want a new one, this is ordinary logging work, not a `resq-flow` skill task.
 - Keep `resq-flow` focused on flow-visible logging, not generic application logging.
+
+## Read order
+
+1. Use this file to choose the right skill.
+2. Read the selected `SKILL.md`.
+3. Only then dive into deeper repo docs if the selected skill points you there.
 
 ## Related local docs
 

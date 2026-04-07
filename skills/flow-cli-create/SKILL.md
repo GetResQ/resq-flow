@@ -12,6 +12,26 @@ This is the producer-side scaffolding companion to:
 - `flow-cli-read` for inspecting logs
 - `flow-cli-write` for adding or changing logs in an existing flow
 
+## Quick routing
+
+Use this skill when:
+
+- the user wants a brand-new first-class flow in `resq-flow`
+- the work needs a new flow contract, new flow identity, and the initial backbone logs
+- the request is clearly about creating a new flow, not just adding visibility
+
+Do not use this skill when:
+
+- an existing flow already fits
+- the user explicitly says they do not want a new flow
+- the task is just ordinary application or infrastructure logging
+
+Route elsewhere when:
+
+- existing flow logging work belongs in `flow-cli-write`
+- validation or troubleshooting belongs in `flow-cli-read`
+- non-flow logging belongs in the application's normal log tooling
+
 ## What this skill is for
 
 Use it to:

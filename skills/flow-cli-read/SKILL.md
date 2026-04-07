@@ -16,6 +16,31 @@ Use this skill when the task is about operating `resq-flow` from the terminal:
 
 Do not use this skill when the main task is to add durable runtime instrumentation in another repo. Use the producer-side write skill for that.
 
+## Quick routing
+
+Use this skill when:
+
+- the user wants to validate whether flow-visible logs are showing up
+- the user wants to troubleshoot an existing flow quickly
+- the task is about relay status, recent errors, history, run explanation, or live tailing
+
+Do not use this skill when:
+
+- the main task is to add or change instrumentation
+- the task needs a brand-new flow
+- the task is just ordinary application or infrastructure logging
+
+Route elsewhere when:
+
+- instrumentation changes belong in `flow-cli-write`
+- new flow creation belongs in `flow-cli-create`
+- non-flow logging belongs in the application's normal log tooling
+
+Default assumption:
+
+- if the task is really "why is this flow failing?" or "do these logs show up?" use this skill
+- if the task is really "add or change the logs," stop and route to `flow-cli-write`
+
 ## Quick Context
 
 Start with the local docs and contract:

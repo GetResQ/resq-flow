@@ -1,6 +1,6 @@
 # resq-flow
 
-`resq-flow` is a flow visualizer and log viewer for ResQ telemetry.
+`resq-flow` is a specialized flow visualizer and log viewer for ResQ telemetry.
 
 It sits on top of the shared observability stack and turns raw traces and logs into a flow-shaped product experience:
 
@@ -9,21 +9,60 @@ It sits on top of the shared observability stack and turns raw traces and logs i
 - filtered logs that prioritize useful signal over telemetry exhaust
 - replay and fixture support for UI and relay development
 
+In the product UI, people usually work in two complementary views:
+
+- visualizer view
+  - follow the execution path in the graph or canvas view and drill into the relevant node
+- logs view
+  - read the filtered flow logs directly in a logs-first view when the graph is not the fastest way to reason about the issue
+
 `Victoria` remains the durable storage and query source of truth. `resq-flow` is the flow-aware consumer and presentation layer.
 
-## If you're new
+## Start Here
 
-Start with these three files:
+If you are a human or an agent, this `README.md` is the front door for the repo.
 
-1. `AGENTS.md`
-2. `README.md`
-3. `ARCHITECTURE.md`
+If you only read one file first, read this one.
 
-Then use:
+> Agents and humans:
+> If you are looking for next steps, use the routing below to decide whether this task is `flow-cli-create`, `flow-cli-write`, `flow-cli-read`, or ordinary non-`resq-flow` logging. If one of those workflows fits, open the matching `SKILL.md` and follow it.
 
-- `docs/flow-event-contract.md` for contract semantics
-- `docs/cli.md` for CLI behavior
-- `skills/README.md` for the create/write/read workflows
+Use it to answer:
+
+- what `resq-flow` is for
+- whether your task belongs in `resq-flow`
+- which workflow or skill to use next
+- which deeper docs to read only after the route is clear
+
+### Quick routing
+
+Use this routing before you dive into implementation details:
+
+- brand-new first-class flow in `resq-flow`
+  - use `skills/flow-cli-create/SKILL.md`
+- durable logging changes for an existing flow
+  - use `skills/flow-cli-write/SKILL.md`
+- validation and troubleshooting for an existing flow
+  - use `skills/flow-cli-read/SKILL.md`
+- ordinary application, service, or infrastructure logs that should not become flow-visible
+  - do not use the `resq-flow` skills; use normal logging tools
+
+### Recommended read order
+
+After this file:
+
+1. `AGENTS.md` for repo guardrails and coding expectations
+2. `skills/README.md` for the skill chooser
+3. `docs/cli.md` for CLI behavior
+4. `docs/flow-event-contract.md` only when you need contract semantics
+5. `ARCHITECTURE.md` only when you need deeper topology and ownership detail
+
+### One-line guidance to reuse
+
+- "New flow?" use `flow-cli-create`
+- "Existing flow needs logs?" use `flow-cli-write`
+- "Need to validate or troubleshoot?" use `flow-cli-read`
+- "Not actually a flow?" use normal logs, not `resq-flow`
 
 ## Topology
 
@@ -46,16 +85,25 @@ This repo keeps a discoverable Vector example in:
 
 ## What resq-flow is solving
 
-Traditional observability tools are still necessary, but they often make a business or worker flow hard to read quickly.
+Traditional observability tools are still necessary, but their default posture is to show everything.
 
-`resq-flow` exists to answer questions like:
+That is powerful, but it also means a developer usually has to know what to query, what to filter, and which low-level details to ignore before the real story becomes clear.
+
+`resq-flow` is solving the opposite problem:
+
+- show only the flow-relevant subset of telemetry
+- make the execution path easy to see without custom querying first
+- surface the logs and boundaries that matter to the flow
+- keep low-value exhaust out of the default view until you intentionally drill down
+
+In practice, `resq-flow` should make it faster to answer questions like:
 
 - what path did this run take
 - where is work currently sitting
 - which boundary actually failed
 - which details matter, and which ones are just exhaust
 
-`resq-flow` makes the execution spine visible and keeps the underlying detail accessible.
+`resq-flow` is a specialized, flow-aware view over shared telemetry. It makes the execution spine visible, keeps the relevant detail accessible, and avoids drowning the user in everything else by default.
 
 ## What resq-flow is not
 
@@ -64,6 +112,7 @@ Traditional observability tools are still necessary, but they often make a busin
 - a second observability database
 - the primary storage or query layer
 - a second control plane for producer logging
+- a raw "show me every log" tool
 - a place to mirror every architecture box as a graph node
 
 The normal model is still:
@@ -71,7 +120,7 @@ The normal model is still:
 - producers emit once
 - Vector fans out
 - Victoria stores and serves history
-- `resq-flow` consumes and presents the flow-shaped view
+- `resq-flow` consumes and presents the filtered flow-shaped subset that is relevant to the user’s flow
 
 ## Core principles
 
@@ -203,40 +252,21 @@ make replay-direct
 
 ## CLI
 
-The CLI is the headless `resq-flow` interface for relay checks, flow log inspection, run explanation, and ad hoc log emission.
+The CLI is the headless `resq-flow` interface for relay checks, flow log inspection, and run explanation.
 It lives in `cli/` and builds to `cli/dist/`.
 
-Scope is explicit:
-
-- a log belongs to a flow only when it explicitly declares that flow with `attributes.flow_id` or relay-assigned `matched_flow_ids`
-- unscoped logs are global
-- unscoped logs never appear in a specific flow UI
-
-Build and test it locally from the repo root:
+Build it from the repo root:
 
 ```bash
 make build-cli
-make test-cli
 ```
-
-`make test-cli` runs both the fast CLI unit tests and the integration tests that boot a real relay on random local ports. If you only want the integration subset, run `make test-cli-integration`.
 
 Link it once if you want the normal executable name locally:
 
 ```bash
 cd cli
 npm link
-```
-
-Then use the built CLI:
-
-```bash
 resq-flow --help
-resq-flow status
-resq-flow logs errors --flow mail-pipeline
-resq-flow logs list --flow mail-pipeline
-resq-flow logs tail --flow mail-pipeline
-resq-flow runs explain --flow mail-pipeline --thread <thread-id>
 ```
 
 If you do not want to link it, the direct fallback still works:
@@ -245,94 +275,19 @@ If you do not want to link it, the direct fallback still works:
 node cli/dist/index.js --help
 ```
 
-Available CLI commands:
+The main commands most people need are:
 
 - `resq-flow status`
-- `resq-flow logs errors (--flow <flow-id> | --all)`
-- `resq-flow logs list (--flow <flow-id> | --all)`
-- `resq-flow logs tail (--flow <flow-id> | --all)`
-- `resq-flow runs explain --flow <flow-id> (--run <run-id> | --thread <thread-id>)`
+- `resq-flow logs errors --flow <flow-id>`
+- `resq-flow logs list --flow <flow-id>`
+- `resq-flow logs tail --flow <flow-id>`
+- `resq-flow runs explain --flow <flow-id> --thread <thread-id>`
 
-`logs errors` supports:
+Use `logs errors` first for "what failed or needs attention?" If it is empty or inconclusive, broaden to `logs list`, then `runs explain` or `logs tail`, and finally regular Victoria or raw service logs when you need wider context.
 
-- exactly one of `--flow <flow-id>` or `--all`
-- `--window <duration>` where duration is `<number><unit>` and unit is `s`, `m`, or `h`
-- `--attr <key=value>` repeatable
-- `--query <text>`
-- `--limit <n>`
-- `--hard-only`
-- `--json`
-- `--jsonl`
-- `--url <base-url>`
-- `--timeout <ms>`
+For full CLI behavior, flags, troubleshooting flow, and advanced utilities, see:
 
-`logs list` supports:
-
-- exactly one of `--flow <flow-id>` or `--all`
-- `--window <duration>` where duration is `<number><unit>` and unit is `s`, `m`, or `h`
-- `--attr <key=value>` repeatable
-- `--query <text>`
-- `--limit <n>`
-- `--json`
-- `--jsonl`
-- `--url <base-url>`
-
-`logs tail` supports:
-
-- exactly one of `--flow <flow-id>` or `--all`
-- `--attr <key=value>` repeatable
-- `--query <text>`
-- `--jsonl`
-- `--url <base-url>`
-
-Recommended flow-scoped attributes are:
-
-- `run_id`
-- `thread_id`
-- `step_id`
-- `component_id`
-- `function_name`
-- `worker_name`
-- `status`
-
-Recommended skill routing:
-
-- new first-class flow in `resq-flow`
-  - use `skills/flow-cli-create/SKILL.md`
-- durable logging changes for an existing flow
-  - use `skills/flow-cli-write/SKILL.md`
-- validation and troubleshooting for an existing flow
-  - use `skills/flow-cli-read/SKILL.md`
-- ordinary application logs that should not become flow-visible
-  - do not use the `resq-flow` skills
-
-Principle:
-
-- do not create a new flow unless the user clearly wants a new first-class flow
-- if an existing flow fits, add logs there
-- if no existing flow fits and the user does not want a new one, this is ordinary logging work outside `resq-flow`
-
-Troubleshooting flow for agents:
-
-```bash
-resq-flow status
-resq-flow logs errors --flow mail-pipeline --json
-resq-flow logs list --flow mail-pipeline --json
-resq-flow runs explain --flow mail-pipeline --thread <thread-id>
-```
-
-`logs errors` is the default first stop for "what failed or needs attention?" It returns hard errors via `status=error`, `error_type`, or `error_message`, plus retryable critical rows via `retryable=true`. Use `--hard-only` when you only want terminal-looking failures.
-
-If `logs errors` is empty or inconclusive, broaden to `logs list`, then `runs explain` or `logs tail` depending on whether the problem is historical or live. If the flow-aware `resq-flow` views still do not explain the problem, widen to regular Victoria or raw service logs in your normal tooling.
-
-`logs emit` still exists as a low-level manual utility, but it is not part of the recommended create/write/read workflow.
-
-If a flow-scoped log includes mappable fields such as `step_id`, `component_id`, `function_name`, or `worker_name`, it continues to drive the existing flow logs and canvas activity.
-
-When you need one exact human-facing step reference, derive it as:
-
-- `component_id.step_id`
-- example: `analyze-decision.final-result`
+- `docs/cli.md`
 
 ## Validation
 

@@ -9,6 +9,31 @@ Use this skill when the task is about writing logs into `resq-flow`.
 
 This is the producer-side companion to `flow-cli-read`.
 
+## Quick routing
+
+Use this skill when:
+
+- the user wants durable logging changes for an existing `resq-flow` flow
+- the goal is to make an existing flow easier to visualize or troubleshoot
+- the user says "add some logs" and an existing flow already fits
+- the work is about real producer-side instrumentation, not a temporary debug shortcut
+
+Do not use this skill when:
+
+- the task needs a brand-new first-class flow
+- the task is only validation or troubleshooting
+- the task is just ordinary application or infrastructure logging
+
+Route elsewhere when:
+
+- new flow creation belongs in `flow-cli-create`
+- validation or troubleshooting belongs in `flow-cli-read`
+- non-flow logging belongs in the application's normal log tooling
+
+Default assumption:
+
+- if the user says "just add some logs," prefer existing-flow instrumentation when an existing `resq-flow` flow already fits
+
 ## What this skill is for
 
 Use it to:
