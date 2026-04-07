@@ -118,8 +118,11 @@ export function BottomLogPanel({
         if (selectedTraceId && executionId !== selectedTraceId) {
           return false
         }
-        if (statusFilter !== 'all' && entry.level !== statusFilter) {
-          return false
+        if (statusFilter !== 'all') {
+          const matchesErrorFilter = entry.level === 'error' || entry.signal === 'critical'
+          if (!matchesErrorFilter) {
+            return false
+          }
         }
         if (!query) {
           return true

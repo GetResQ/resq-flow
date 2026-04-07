@@ -21,6 +21,35 @@ It is not:
 - a second flow model
 - the normal producer-side logging path
 
+## Install locally
+
+Build the CLI from the `resq-flow` repo root:
+
+```bash
+make build-cli
+```
+
+If you want the `resq-flow` command available on your shell `PATH`, link it once:
+
+```bash
+cd cli
+npm link
+resq-flow --help
+```
+
+The tools have different jobs:
+
+- Bun builds and tests the CLI package locally
+- the built output is a Node-compatible executable
+- `npm link` only makes the `resq-flow` command available on your shell `PATH`
+
+If you skip `npm link`, the CLI still builds normally, but `resq-flow` will usually not be available as a shell command.
+Use the built entrypoint directly instead:
+
+```bash
+node cli/dist/index.js --help
+```
+
 ## Current command set
 
 ```bash

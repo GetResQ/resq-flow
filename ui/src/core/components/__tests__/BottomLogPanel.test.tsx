@@ -1,4 +1,5 @@
 import { fireEvent, render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BottomLogPanel } from '../BottomLogPanel'
@@ -124,5 +125,36 @@ describe('BottomLogPanel', () => {
     expect(screen.getByText('Logs')).toBeInTheDocument()
     expect(screen.getByText('Runs')).toBeInTheDocument()
     expect(screen.queryByRole('tab')).not.toBeInTheDocument()
+  })
+
+  it('keeps critical non-error logs visible when the error filter is active', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <BottomLogPanel
+        flow={flow}
+        globalLogs={[
+          ...logs,
+          {
+            timestamp: '2026-03-24T16:00:02.000Z',
+            level: 'info',
+            nodeId: 'incoming-worker',
+            message: 'provider timeout — will retry',
+            signal: 'critical',
+            defaultVisible: true,
+            eventType: 'log',
+            traceId: 'run-2',
+          },
+        ]}
+        journeys={journeys}
+        onSelectNode={vi.fn()}
+        onSelectTrace={vi.fn()}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /error/i }))
+
+    expect(screen.getByText(/provider timeout/i)).toBeInTheDocument()
+    expect(screen.queryByText(/mail_incoming worker picked up job/i)).not.toBeInTheDocument()
   })
 })

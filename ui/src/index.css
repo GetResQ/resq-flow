@@ -988,17 +988,21 @@ body[data-theme='light'] {
 
 /* ── Log table row severity accents ── */
 [data-severity='error'] td:first-child {
-  border-left: 2px solid var(--status-error);
-  padding-left: calc(var(--spacing) * 3 - 2px);
+  border-left: 3px solid var(--status-error);
+  padding-left: calc(var(--spacing) * 3 - 3px);
 }
 
 [data-severity='error'] {
-  background-color: color-mix(in srgb, var(--status-error) 4%, transparent);
+  background-color: color-mix(in srgb, var(--status-error) 10%, transparent);
 }
 
 [data-severity='warning'] td:first-child {
-  border-left: 2px solid var(--status-warning);
-  padding-left: calc(var(--spacing) * 3 - 2px);
+  border-left: 3px solid var(--status-warning);
+  padding-left: calc(var(--spacing) * 3 - 3px);
+}
+
+[data-severity='warning'] {
+  background-color: color-mix(in srgb, var(--status-warning) 7%, transparent);
 }
 
 /* ── Log fresh-arrival highlight fade ── */
