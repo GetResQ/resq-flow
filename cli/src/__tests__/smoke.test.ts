@@ -66,6 +66,7 @@ describe("CLI smoke", () => {
 
     expect(exitCode).toBe(0);
     expect(buffered.readStdout()).toContain("resq-flow logs <subcommand>");
+    expect(buffered.readStdout()).toContain("errors");
   });
 
   it("shows runs command help", async () => {

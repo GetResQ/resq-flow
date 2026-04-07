@@ -1,4 +1,5 @@
 import { EmptyResultError } from "./errors.js";
+import { isHardErrorRow } from "./errorRows.js";
 import {
   combinedStepRef,
   executionKeyForRow,
@@ -98,7 +99,7 @@ export function buildRunExplainSummary({
 
   const nodePath = collectNodePath(sortedRows);
   const furthestNode = nodePath.at(-1);
-  const firstError = sortedRows.find(isErrorRow);
+  const firstError = sortedRows.find(isHardErrorRow);
   const terminalRow = [...sortedRows].reverse().find(isTerminalRow);
   const pickupRow = [...sortedRows].reverse().find(isPickupRow);
   const enqueueRow = [...sortedRows].reverse().find(isQueueRow);
@@ -419,14 +420,6 @@ function selectLatestRunGroupByThread(
     runId: best.runId,
     rows: best.rows,
   };
-}
-
-function isErrorRow(row: CliLogRow): boolean {
-  return (
-    normalizeIdentifierValue(row.status) === "error" ||
-    Boolean(rowAttribute(row, "error_message")) ||
-    Boolean(rowAttribute(row, "error_type"))
-  );
 }
 
 function isTerminalRow(row: CliLogRow): boolean {

@@ -109,6 +109,50 @@ function createHistoryFetchMock(): typeof fetch {
     })) as typeof fetch;
 }
 
+function createFailureHistoryFetchMock(): typeof fetch {
+  return (async () =>
+    createJsonResponse({
+      from: "2026-03-23T18:00:00.000Z",
+      to: "2026-03-23T18:15:00.000Z",
+      flow_id: "mail-pipeline",
+      events: [
+        {
+          type: "log",
+          timestamp: "2026-03-23T18:41:06.901Z",
+          trace_id: "trace-thread-301",
+          message: "picked up mail thread",
+          attributes: {
+            flow_id: "mail-pipeline",
+            run_id: "thread-301",
+            thread_id: "thread-301",
+            component_id: "incoming-worker",
+            step_id: "pickup",
+            status: "ok",
+          },
+        },
+        {
+          type: "log",
+          timestamp: "2026-03-23T18:41:08.901Z",
+          trace_id: "trace-thread-301",
+          message: "token refresh failed",
+          attributes: {
+            flow_id: "mail-pipeline",
+            run_id: "thread-301",
+            thread_id: "thread-301",
+            component_id: "auth-worker",
+            step_id: "refresh-token",
+            error_type: "AuthError",
+            error_message: "oauth refresh token expired",
+          },
+        },
+      ],
+      log_count: 2,
+      span_count: 0,
+      truncated: false,
+      warnings: [],
+    })) as typeof fetch;
+}
+
 describe("resq-flow runs explain", () => {
   it("prints help for the explain subcommand", async () => {
     const buffered = createBufferedIo();
@@ -193,5 +237,21 @@ describe("resq-flow runs explain", () => {
       outcome: "stopped",
       nodePath: ["incoming-worker", "analyze-decision"],
     });
+  });
+
+  it("treats error_type and error_message rows as hard failures", async () => {
+    const buffered = createBufferedIo();
+
+    const exitCode = await runCli(
+      ["runs", "explain", "--flow", "mail-pipeline", "--run", "thread-301"],
+      buffered.io,
+      { fetchImpl: createFailureHistoryFetchMock() },
+    );
+
+    expect(exitCode).toBe(0);
+    expect(buffered.readStdout()).toContain("Outcome: failed");
+    expect(buffered.readStdout()).toContain("First failure was at auth-worker.refresh-token");
+    expect(buffered.readStdout()).toContain("token refresh failed");
+    expect(buffered.readStderr()).toBe("");
   });
 });

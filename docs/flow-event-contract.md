@@ -95,6 +95,26 @@ That keeps the graph clean:
 - the node stays first-class
 - the step stays attached detail
 
+## Troubleshooting attributes
+
+These fields power the CLI troubleshooting path, especially `resq-flow logs errors`.
+
+### Hard-error attributes
+
+Any of these will surface a row as an `error`:
+
+- `status=error`
+- `error_type`
+- `error_message`
+
+### Critical retry attributes
+
+This will surface a row as `critical`:
+
+- `retryable=true`
+
+If you want a row to be easy for humans and agents to troubleshoot from the CLI, prefer setting one of the hard-error fields for terminal failures and `retryable=true` for attention-worthy retries.
+
 ## Why the event name is shared
 
 We use one shared event name so the stack can route flow logs generically.

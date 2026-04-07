@@ -15,6 +15,7 @@ import {
   writeStdout,
   type CliIo,
 } from "../lib/output.js";
+import { classifyErrorRows } from "../lib/errorRows.js";
 import { displayFlowLabel } from "../lib/scope.js";
 import {
   emitLogEvent,
@@ -22,6 +23,7 @@ import {
   type WebSocketFactory,
 } from "../lib/ws.js";
 import type {
+  ClassifiedCliLogRow,
   CliLogRow,
   JsonObject,
   LogEmitScope,
@@ -34,6 +36,7 @@ export const LOGS_HELP = `Usage:
 
 Subcommands:
   list                List recent log rows
+  errors              List recent error or critical log rows
   tail                Stream live log rows
   emit                Emit an ad hoc log event
 `;
@@ -65,6 +68,24 @@ Options:
   --query <text>      Search term
   --jsonl             Emit JSONL output
   --url <base-url>    Relay base URL
+`;
+
+export const LOGS_ERRORS_HELP = `Usage:
+  resq-flow logs errors (--flow <flow-id> | --all) [options]
+
+Options:
+  --help              Show help
+  --flow <flow-id>    Flow ID to query
+  --all               Query logs across all scopes
+  --window <window>   Time window (<number><unit>, where unit is s, m, or h)
+  --attr <key=value>  Exact attribute filter (repeatable)
+  --query <text>      Search term
+  --limit <n>         Maximum rows to request
+  --hard-only         Return only hard errors
+  --json              Emit JSON output
+  --jsonl             Emit JSONL output
+  --url <base-url>    Relay base URL
+  --timeout <ms>      History query timeout in milliseconds
 `;
 
 export const LOGS_EMIT_HELP = `Usage:
@@ -103,6 +124,21 @@ interface LogsTailOptions {
   url?: string;
 }
 
+interface LogsErrorsOptions {
+  help: boolean;
+  flow?: string;
+  all: boolean;
+  window?: string;
+  attrs: string[];
+  query?: string;
+  limit?: string;
+  hardOnly: boolean;
+  json: boolean;
+  jsonl: boolean;
+  url?: string;
+  timeout?: string;
+}
+
 interface LogsEmitOptions {
   help: boolean;
   flow?: string;
@@ -131,6 +167,8 @@ export async function runLogsCommand(
   switch (subcommand) {
     case "list":
       return runLogsListCommand(rest, io, dependencies);
+    case "errors":
+      return runLogsErrorsCommand(rest, io, dependencies);
     case "tail":
       return runLogsTailCommand(rest, io, dependencies);
     case "emit":
@@ -158,21 +196,16 @@ async function runLogsListCommand(
     json: options.json,
     jsonl: options.jsonl,
   });
-  const rows = await fetchHistoryRows({
+  const filtered = await fetchMatchingHistoryRows({
     baseUrl,
     scope,
-    window: resolveWindow(options.window ?? DEFAULT_LOG_WINDOW),
+    window: options.window,
     query: options.query,
     attrs: options.attrs,
     limit: resolveLimit(options.limit),
     timeoutMs,
     fetchImpl: dependencies.fetchImpl,
   });
-  const filters = {
-    attrs: options.attrs.map(parseAttributeFilter),
-    query: options.query,
-  };
-  const filtered = rows.filter((row) => matchesLogFilters(row, filters));
 
   if (outputMode === "json") {
     printJson(io, filtered);
@@ -190,6 +223,60 @@ async function runLogsListCommand(
   }
 
   for (const line of renderLogsListRows(filtered)) {
+    writeStdout(io, line);
+  }
+
+  return EXIT_CODES.OK;
+}
+
+async function runLogsErrorsCommand(
+  args: string[],
+  io: CliIo,
+  dependencies: LogsCommandDependencies,
+): Promise<number> {
+  const options = parseLogsErrorsArgs(args);
+  if (options.help) {
+    writeStdout(io, LOGS_ERRORS_HELP.trimEnd());
+    return EXIT_CODES.OK;
+  }
+
+  const scope = resolveReadScope(options.flow, options.all);
+  const baseUrl = resolveBaseUrl(options.url);
+  const timeoutMs = resolveTimeout(options.timeout);
+  const outputMode = resolveOutputMode({
+    json: options.json,
+    jsonl: options.jsonl,
+  });
+  const rows = await fetchMatchingHistoryRows({
+    baseUrl,
+    scope,
+    window: options.window,
+    query: options.query,
+    attrs: options.attrs,
+    limit: resolveLimit(options.limit),
+    timeoutMs,
+    fetchImpl: dependencies.fetchImpl,
+  });
+  const filtered = classifyErrorRows(rows, {
+    hardOnly: options.hardOnly,
+  });
+
+  if (outputMode === "json") {
+    printJson(io, filtered);
+    return EXIT_CODES.OK;
+  }
+
+  if (outputMode === "jsonl") {
+    printJsonl(io, filtered);
+    return EXIT_CODES.OK;
+  }
+
+  if (filtered.length === 0) {
+    writeStdout(io, "No matching error or critical logs found.");
+    return EXIT_CODES.OK;
+  }
+
+  for (const line of renderLogsErrorsRows(filtered)) {
     writeStdout(io, line);
   }
 
@@ -323,6 +410,19 @@ export function renderLogsListRows(rows: CliLogRow[]): string[] {
   );
 }
 
+export function renderLogsErrorsRows(rows: ClassifiedCliLogRow[]): string[] {
+  return renderAlignedRows(
+    rows.map((row) => [
+      row.timestamp,
+      displayFlowLabel(row),
+      row.runId ?? "-",
+      preferredStepLabel(row),
+      row.classification,
+      row.message,
+    ]),
+  );
+}
+
 export function renderTailRow(row: CliLogRow, scope: LogReadScope): string {
   const time = row.timestamp.length >= 19 ? row.timestamp.slice(11, 19) : row.timestamp;
   const scopePrefix =
@@ -351,6 +451,43 @@ function formatTailCell(value: string, width: number): string {
   return fitTailColumn(value, width).padEnd(width);
 }
 
+async function fetchMatchingHistoryRows({
+  baseUrl,
+  scope,
+  window,
+  query,
+  attrs,
+  limit,
+  timeoutMs,
+  fetchImpl,
+}: {
+  baseUrl: string;
+  scope: LogReadScope;
+  window?: string | undefined;
+  query?: string | undefined;
+  attrs: string[];
+  limit?: number | undefined;
+  timeoutMs: number;
+  fetchImpl?: typeof fetch | undefined;
+}): Promise<CliLogRow[]> {
+  const rows = await fetchHistoryRows({
+    baseUrl,
+    scope,
+    window: resolveWindow(window ?? DEFAULT_LOG_WINDOW),
+    query,
+    attrs,
+    limit,
+    timeoutMs,
+    fetchImpl,
+  });
+  const filters = {
+    attrs: attrs.map(parseAttributeFilter),
+    query,
+  };
+
+  return rows.filter((row) => matchesLogFilters(row, filters));
+}
+
 function parseLogsListArgs(args: string[]): LogsListOptions {
   const options: LogsListOptions = {
     help: false,
@@ -368,6 +505,107 @@ function parseLogsListArgs(args: string[]): LogsListOptions {
 
     if (arg === "--help") {
       options.help = true;
+      continue;
+    }
+
+    if (arg === "--json") {
+      options.json = true;
+      continue;
+    }
+
+    if (arg === "--jsonl") {
+      options.jsonl = true;
+      continue;
+    }
+
+    if (arg === "--all") {
+      options.all = true;
+      continue;
+    }
+
+    if (arg === "--attr") {
+      const value = args[index + 1];
+      if (!value) {
+        throw new BadArgumentError("missing value for --attr");
+      }
+      options.attrs.push(value);
+      index += 1;
+      continue;
+    }
+
+    if (
+      arg === "--flow" ||
+      arg === "--window" ||
+      arg === "--query" ||
+      arg === "--limit" ||
+      arg === "--url" ||
+      arg === "--timeout"
+    ) {
+      const value = args[index + 1];
+      if (!value) {
+        throw new BadArgumentError(`missing value for ${arg}`);
+      }
+
+      switch (arg) {
+        case "--flow":
+          options.flow = value;
+          break;
+        case "--window":
+          options.window = value;
+          break;
+        case "--query":
+          options.query = value;
+          break;
+        case "--limit":
+          options.limit = value;
+          break;
+        case "--url":
+          options.url = value;
+          break;
+        case "--timeout":
+          options.timeout = value;
+          break;
+        default:
+          break;
+      }
+
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith("-")) {
+      throw new BadArgumentError(`unknown flag: ${arg}`);
+    }
+
+    throw new BadArgumentError(`unexpected argument: ${arg}`);
+  }
+
+  return options;
+}
+
+function parseLogsErrorsArgs(args: string[]): LogsErrorsOptions {
+  const options: LogsErrorsOptions = {
+    help: false,
+    all: false,
+    attrs: [],
+    hardOnly: false,
+    json: false,
+    jsonl: false,
+  };
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === undefined) {
+      break;
+    }
+
+    if (arg === "--help") {
+      options.help = true;
+      continue;
+    }
+
+    if (arg === "--hard-only") {
+      options.hardOnly = true;
       continue;
     }
 

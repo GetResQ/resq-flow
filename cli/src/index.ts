@@ -27,7 +27,7 @@ const MAIN_HELP = renderHelp({
       title: "Commands:",
       lines: [
         "  status              Show relay status and ingest health",
-        "  logs                List, tail, or emit logs",
+        "  logs                Troubleshoot, list, tail, or emit logs",
         "  runs                Explain a run from recent history",
       ],
     },

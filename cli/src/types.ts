@@ -109,6 +109,21 @@ export interface CliLogRow {
   attributes: JsonObject;
 }
 
+export type ErrorClassification = "error" | "critical";
+
+export type ErrorMatchReason =
+  | "status=error"
+  | "error_type"
+  | "error_message"
+  | "retryable=true";
+
+export interface ErrorMatch {
+  classification: ErrorClassification;
+  matchReasons: ErrorMatchReason[];
+}
+
+export interface ClassifiedCliLogRow extends CliLogRow, ErrorMatch {}
+
 export type RunExplainTarget =
   | {
       kind: "run";

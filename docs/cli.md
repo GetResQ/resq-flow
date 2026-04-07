@@ -54,6 +54,7 @@ node cli/dist/index.js --help
 
 ```bash
 resq-flow status
+resq-flow logs errors --flow <flow-id>
 resq-flow logs list --flow <flow-id>
 resq-flow logs tail --flow <flow-id>
 resq-flow logs emit --flow <flow-id> --message "<text>"
@@ -80,6 +81,8 @@ Unscoped logs are global and do not silently belong to a flow.
 
 - `resq-flow status`
   use for relay reachability and ingest health
+- `resq-flow logs errors`
+  use first for "what is failing or needs attention?" in the flow-aware view
 - `resq-flow logs list`
   use for bounded recent history
 - `resq-flow logs tail`
@@ -88,6 +91,59 @@ Unscoped logs are global and do not silently belong to a flow.
   use for "why did this run stop, fail, or complete?"
 - `resq-flow logs emit`
   use for one manual local debug log
+- regular Victoria or raw service logs
+  use when the flow-aware `resq-flow` views do not surface enough evidence and you need broader infrastructure or service context
+
+## Error troubleshooting
+
+`logs errors` is the first troubleshooting command for agents and terminal workflows when the question is about failures, retries, or attention-worthy conditions.
+
+It uses the existing history query path and returns only rows that match the CLI troubleshooting heuristics:
+
+- `error`
+  - `status=error`
+  - `error_type`
+  - `error_message`
+- `critical`
+  - `retryable=true`
+
+Use `--hard-only` when you only want terminal-looking failures and want to exclude retryable critical rows.
+
+Examples:
+
+```bash
+resq-flow logs errors --flow mail-pipeline
+resq-flow logs errors --all --window 30m
+resq-flow logs errors --flow mail-pipeline --attr run_id=thread-201
+resq-flow logs errors --flow mail-pipeline --hard-only --json
+resq-flow logs errors --flow mail-pipeline --jsonl
+resq-flow logs errors --flow mail-pipeline --timeout 10000
+```
+
+JSON and JSONL output include:
+
+- the original row fields
+- `classification`
+  - `error` or `critical`
+- `matchReasons`
+  - exact deterministic reasons such as `status=error`, `error_type`, `error_message`, or `retryable=true`
+
+Use `--timeout <ms>` when you need a longer history query budget against a slow local stack.
+
+Recommended troubleshooting flow:
+
+1. `resq-flow status`
+2. `resq-flow logs errors --flow <flow-id>`
+3. If empty or inconclusive, broaden with `resq-flow logs list --flow <flow-id>`
+4. If one run or thread is implicated, use `resq-flow runs explain --flow <flow-id> --run <run-id>` or `--thread <thread-id>`
+5. If the issue is happening right now, use `resq-flow logs tail --flow <flow-id>`
+6. If the flow-aware views still do not explain the problem, widen to regular Victoria or raw service logs in your normal log tooling
+
+Why this escalation exists:
+
+- `resq-flow` is intentionally flow-aware and selective
+- it is good at surfacing the execution spine and the most relevant flow logs
+- it is not intended to replace broad raw log investigation for every infrastructure or service-level issue
 
 ## Explain command
 
