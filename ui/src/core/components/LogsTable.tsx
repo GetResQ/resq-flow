@@ -173,7 +173,7 @@ export function LogsTable({
               )}
               <span className="text-[var(--text-primary)]">{row.original.messageBody}</span>
             </span>
-            {typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs > 0 && (
+            {typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000 && (
               <DurationBadge durationMs={row.original.entry.durationMs} className="flex-shrink-0" />
             )}
           </span>

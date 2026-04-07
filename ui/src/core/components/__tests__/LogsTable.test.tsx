@@ -51,14 +51,14 @@ const logs: LogEntry[] = [
 ]
 
 describe('LogsTable', () => {
-  it('shows inline duration when durationMs > 0 and hides it when 0 or absent', () => {
+  it('shows inline duration only when crossing the warning threshold (>= 1s)', () => {
     const mixed: LogEntry[] = [
       {
         timestamp: '2026-03-17T13:10:00.000Z',
         level: 'info',
         nodeId: 'node-a',
-        message: 'has duration',
-        durationMs: 250,
+        message: 'slow operation',
+        durationMs: 1500,
         signal: 'meaningful',
         defaultVisible: true,
         eventType: 'log',
@@ -68,8 +68,8 @@ describe('LogsTable', () => {
         timestamp: '2026-03-17T13:11:00.000Z',
         level: 'info',
         nodeId: 'node-a',
-        message: 'zero duration',
-        durationMs: 0,
+        message: 'normal speed',
+        durationMs: 250,
         signal: 'meaningful',
         defaultVisible: true,
         eventType: 'log',
@@ -91,7 +91,6 @@ describe('LogsTable', () => {
       <LogsTable logs={mixed} nodeLabels={nodeLabels} nodeFamilies={nodeFamilies} onSelectLog={vi.fn()} />,
     )
 
-    expect(screen.getByTestId('duration-badge')).toBeInTheDocument()
     expect(screen.getAllByTestId('duration-badge')).toHaveLength(1)
   })
 
