@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Zap } from 'lucide-react'
+import { MoonStar, SunMedium, Zap } from 'lucide-react'
 
-import { Button } from '@/components/ui'
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui'
 
 import { flows } from '../../flows'
 import { useLayoutStore } from '../../stores/layout'
@@ -21,6 +21,8 @@ export function FlowsHome({
 }: FlowsHomeProps) {
   const navigate = useNavigate()
   const setCommandPaletteOpen = useLayoutStore((state) => state.setCommandPaletteOpen)
+  const theme = useLayoutStore((state) => state.theme)
+  const setTheme = useLayoutStore((state) => state.setTheme)
 
   const { data: metrics = initialMetrics ?? [] } = useQuery({
     queryKey: ['flows-home', registeredFlows.map((flow) => flow.id)],
@@ -43,9 +45,30 @@ export function FlowsHome({
               Health, throughput, and recent run quality across every registered flow.
             </p>
           </div>
-          <Button type="button" variant="outline" onClick={() => setCommandPaletteOpen(true)}>
-            Cmd+K
-          </Button>
+          <div className="flex items-center gap-2">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                    onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                  >
+                    {theme === 'dark'
+                      ? <SunMedium className="size-4 transition-transform duration-150 ease-out" />
+                      : <MoonStar className="size-4 transition-transform duration-150 ease-out" />}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <Button type="button" variant="outline" onClick={() => setCommandPaletteOpen(true)}>
+              Cmd+K
+            </Button>
+          </div>
         </header>
 
         {registeredFlows.length === 0 ? (

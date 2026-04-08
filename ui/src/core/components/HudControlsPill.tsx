@@ -13,6 +13,9 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
 } from '@/components/ui'
 
 import type { ThemeMode } from '../types'
@@ -67,7 +70,25 @@ export function HudControlsPill({
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   return (
-    <div>
+    <div className="flex items-center gap-1">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            onClick={onToggleTheme}
+          >
+            {theme === 'dark'
+              ? <SunMedium className="size-4 transition-transform duration-150 ease-out" />
+              : <MoonStar className="size-4 transition-transform duration-150 ease-out" />}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>
+      </Tooltip>
+
       <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DropdownMenuTrigger asChild>
           <Button type="button" variant="ghost" size="icon" className="size-8" aria-label="Open settings">
@@ -76,28 +97,8 @@ export function HudControlsPill({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-80">
           <div className="space-y-3 p-2">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                Appearance
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full justify-start"
-                onClick={() => {
-                  onToggleTheme()
-                  setSettingsOpen(false)
-                }}
-              >
-                {theme === 'dark' ? <SunMedium className="mr-2 size-4" /> : <MoonStar className="mr-2 size-4" />}
-                Switch to {theme === 'dark' ? 'light' : 'dark'} mode
-              </Button>
-            </div>
-
             {showCanvasControls ? (
               <>
-                <DropdownMenuSeparator />
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
                     Canvas

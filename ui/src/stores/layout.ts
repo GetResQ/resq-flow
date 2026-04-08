@@ -45,7 +45,8 @@ function resolveInitialTheme(): ThemeMode {
   }
 
   const stored = window.localStorage.getItem(THEME_STORAGE_KEY)
-  return stored === 'light' || stored === 'dark' ? stored : 'dark'
+  if (stored === 'light' || stored === 'dark') return stored
+  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'
 }
 
 export const useLayoutStore = create<LayoutState>((set) => ({

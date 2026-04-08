@@ -336,6 +336,14 @@
   --color-canvas-dot: var(--canvas-dot);
 }
 
+/* ── Theme crossfade (View Transitions API) ── */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 200ms;
+  mix-blend-mode: normal;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -10,8 +10,17 @@ import { flows } from './flows'
 import { useLayoutStore } from './stores/layout'
 
 function applyTheme(theme: ThemeMode) {
-  document.documentElement.dataset.theme = theme
-  document.body.dataset.theme = theme
+  const apply = () => {
+    document.documentElement.dataset.theme = theme
+    document.body.dataset.theme = theme
+  }
+
+  if (!document.startViewTransition) {
+    apply()
+    return
+  }
+
+  document.startViewTransition(apply)
 }
 
 function App() {
