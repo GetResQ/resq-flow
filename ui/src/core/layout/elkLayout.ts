@@ -44,9 +44,9 @@ function groupLayoutOptions(mode: GroupLayoutMode = 'stack') {
   return {
     ...baseLayoutOptions(),
     'elk.padding': '[top=24,left=24,bottom=24,right=24]',
-    'elk.layered.spacing.nodeNodeBetweenLayers': '20',
-    'elk.layered.spacing.edgeNodeBetweenLayers': '12',
-    'elk.spacing.nodeNode': '14',
+    'elk.layered.spacing.nodeNodeBetweenLayers': '44',
+    'elk.layered.spacing.edgeNodeBetweenLayers': '24',
+    'elk.spacing.nodeNode': '28',
   } as const
 }
 
