@@ -24,6 +24,7 @@ import { computeElkLayout, type LayoutGeometry } from '../layout/elkLayout'
 import { clearPersistedLayout, loadPersistedLayout, savePersistedLayout } from '../layout/persistedLayout'
 import { nodeTypes } from '../nodes'
 import type { FlowEdge, FlowNode } from '../nodes/types'
+import { resolveNodeDimensions } from '../nodeSizing'
 import type { FlowConfig, LogEntry, NodeRuntimeStatus, SpanEntry, ThemeMode } from '../types'
 
 interface FocusState {
@@ -141,10 +142,7 @@ function resolveFocusState(
 }
 
 function nodeDimensions(node: FlowConfig['nodes'][number]) {
-  return {
-    width: node.size?.width ?? 158,
-    height: node.size?.height ?? (node.type === 'diamond' ? 144 : node.type === 'pill' ? 44 : 64),
-  }
+  return resolveNodeDimensions(node)
 }
 
 function inferAnnotationAnchors(flow: FlowConfig): Map<string, AnnotationAnchor> {

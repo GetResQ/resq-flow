@@ -104,6 +104,25 @@ Examples:
   - `rrq:queue:mail-analyze`
   - `mail_reply_drafts`
 
+## Graph Block Sizing
+
+Use a small size system, not one-off widths.
+
+- queue / worker / scheduler blocks: `240 × 72`
+- process blocks: `200 × 72`
+- detail / badge blocks: `200 × 44`
+- trigger pills: `240 × 44`
+- keep semantic exceptions:
+  - decision nodes stay diamonds
+  - datastore nodes stay cylinders
+
+Rules:
+
+- do not widen blocks to fit long prose
+- shorten the title first
+- use `description` in the sidebar for longer explanation
+- use explicit per-node widths only when a real layout need remains after label cleanup
+
 ---
 
 ## Spacing

@@ -1,14 +1,10 @@
 import type { BranchPlacementConfig, FlowNodeConfig } from '../types'
+import { resolveNodeDimensions } from '../nodeSizing'
 
 export interface Position {
   x: number
   y: number
 }
-
-const DEFAULT_WIDTH = 200
-const DEFAULT_HEIGHT = 64
-const DEFAULT_DIAMOND_SIZE = 144
-const DEFAULT_PILL_HEIGHT = 44
 
 const PRIMARY_VERTICAL_GAP = 132
 const PRIMARY_RANK_SPACING = 132
@@ -22,16 +18,7 @@ const BRANCH_VERTICAL_CLEARANCE = 28
 const BRANCH_HORIZONTAL_CLEARANCE = 24
 
 function nodeDimensions(node: FlowNodeConfig) {
-  return {
-    width: node.size?.width ?? DEFAULT_WIDTH,
-    height:
-      node.size?.height ??
-      (node.type === 'diamond'
-        ? DEFAULT_DIAMOND_SIZE
-        : node.type === 'pill'
-          ? DEFAULT_PILL_HEIGHT
-          : DEFAULT_HEIGHT),
-  }
+  return resolveNodeDimensions(node)
 }
 
 function mergeOffset(base: number, override?: number) {

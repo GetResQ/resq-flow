@@ -2,21 +2,11 @@ import ELK from 'elkjs/lib/main.js'
 import type { ElkNode } from 'elkjs/lib/elk-api'
 
 import type { FlowEdgeConfig, FlowNodeConfig, GroupLayoutMode, LayoutLane } from '../types'
+import { resolveNodeDimensions } from '../nodeSizing'
 
 const elk = new ELK()
 
 const EXCLUDED_SHAPES = new Set<string>(['annotation'])
-
-const shapeDimensions: Record<string, { width: number; height: number }> = {
-  rectangle: { width: 248, height: 64 },
-  roundedRect: { width: 248, height: 64 },
-  diamond: { width: 144, height: 144 },
-  circle: { width: 112, height: 112 },
-  cylinder: { width: 112, height: 128 },
-  pill: { width: 240, height: 44 },
-  badge: { width: 220, height: 52 },
-  octagon: { width: 160, height: 70 },
-}
 
 export interface LayoutGeometry {
   x: number
@@ -31,7 +21,7 @@ function baseLayoutOptions() {
     'elk.direction': 'DOWN',
     'elk.layered.spacing.nodeNodeBetweenLayers': '80',
     'elk.layered.spacing.edgeNodeBetweenLayers': '40',
-    'elk.spacing.nodeNode': '50',
+    'elk.spacing.nodeNode': '56',
     'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
     'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     'elk.layered.crossingMinimization.forceNodeModelOrder': 'true',
@@ -61,18 +51,7 @@ function groupLayoutOptions(mode: GroupLayoutMode = 'stack') {
 }
 
 function nodeDimensions(node: FlowNodeConfig) {
-  if (node.type === 'group') {
-    return {
-      width: node.size?.width ?? node.minSize?.width ?? 420,
-      height: node.size?.height ?? node.minSize?.height ?? 280,
-    }
-  }
-
-  const dims = shapeDimensions[node.type] ?? { width: 200, height: 50 }
-  return {
-    width: node.size?.width ?? dims.width,
-    height: node.size?.height ?? dims.height,
-  }
+  return resolveNodeDimensions(node)
 }
 
 const lanePriority: Record<LayoutLane, number> = {

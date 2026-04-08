@@ -110,7 +110,6 @@ export const mailPipelineFlow: FlowConfig = {
       ],
       style: { icon: 'queue' },
       position: { x: 110, y: -70 },
-      size: { width: 240 },
     },
     {
       id: 'backfill-worker',
@@ -121,7 +120,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 185, y: 60 },
       bullets: workerBullets,
-      size: { width: 210 },
     },
     {
       id: 'cron-scheduler',
@@ -131,7 +129,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Recurring scheduler boundary that decides when mailbox checks should run.',
       style: { icon: 'cron' },
       position: { x: 175, y: 220 },
-      size: { width: 240 },
     },
     {
       id: 'cron-enqueue',
@@ -139,7 +136,6 @@ export const mailPipelineFlow: FlowConfig = {
       label: 'Enqueue Cron Tick',
       description: 'Queues the recurring cron tick that drives mailbox checks every minute.',
       position: { x: 150, y: 320 },
-      size: { width: 200 },
       handles: [
         { position: 'top', type: 'target' },
         { position: 'bottom', type: 'source' },
@@ -156,7 +152,6 @@ export const mailPipelineFlow: FlowConfig = {
       ],
       style: { icon: 'queue' },
       position: { x: 145, y: 405 },
-      size: { width: 240 },
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
         { id: 'in-left', position: 'left', type: 'target' },
@@ -175,7 +170,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 205, y: 535 },
       bullets: workerBullets,
-      size: { width: 210 },
       handles: [
         { position: 'top', type: 'target' },
         { id: 'out-left', position: 'left', type: 'source' },
@@ -199,7 +193,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Finds mailboxes that should get an incoming check and prepares the next queue work.',
 
       position: { x: 115, y: 32 },
-      size: { width: 300 },
       parentId: 'incoming-schedule-group',
       bullets: ['find mailboxes to check', 'query mail_oauth_tokens', 'lookup mail_cursors'],
       handles: [
@@ -217,7 +210,6 @@ export const mailPipelineFlow: FlowConfig = {
 
       position: { x: 55, y: 145 },
       parentId: 'incoming-schedule-group',
-      size: { width: 210 },
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
         { id: 'out-left', position: 'left', type: 'source' },
@@ -231,7 +223,6 @@ export const mailPipelineFlow: FlowConfig = {
 
       position: { x: 60, y: 235 },
       parentId: 'incoming-schedule-group',
-      size: { width: 220 },
       handles: [{ id: 'in-top', position: 'top', type: 'target' }],
     },
     {
@@ -268,7 +259,6 @@ export const mailPipelineFlow: FlowConfig = {
 
       position: { x: 55, y: 35 },
       parentId: 'persistence-group',
-      size: { width: 180 },
     },
     {
       id: 'metadata-write',
@@ -278,7 +268,6 @@ export const mailPipelineFlow: FlowConfig = {
 
       position: { x: 55, y: 135 },
       parentId: 'persistence-group',
-      size: { width: 180 },
     },
     {
       id: 's3',
@@ -308,7 +297,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Queues extract work for the newly stored thread payload.',
 
       position: { x: 58, y: 28 },
-      size: { width: 180 },
       parentId: 'incoming-normal-group',
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
@@ -322,7 +310,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Queues analyze work for the stored thread and extracted context.',
 
       position: { x: 40, y: 90 },
-      size: { width: 180 },
       parentId: 'incoming-normal-group',
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
@@ -336,7 +323,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Updates the incoming history cursor after new mail has been stored.',
 
       position: { x: 35, y: 152 },
-      size: { width: 210 },
       parentId: 'incoming-normal-group',
       handles: [{ id: 'in-top', position: 'top', type: 'target' }],
     },
@@ -347,7 +333,6 @@ export const mailPipelineFlow: FlowConfig = {
       sublabel: alias('rrq:queue:mail-analyze'),
       style: { icon: 'queue' },
       position: { x: 980, y: 1010 },
-      size: { width: 240 },
       layout: { order: 56 },
       handles: [
         { id: 'in-left', position: 'left', type: 'target' },
@@ -363,7 +348,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 1005, y: 1160 },
       bullets: workerBullets,
-      size: { width: 210 },
       layout: { lane: 'main', order: 58 },
     },
     {
@@ -386,7 +370,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Stops analyze when the latest sender is the mailbox owner.',
 
       position: { x: 1275, y: 1370 },
-      size: { width: 210 },
       layout: { lane: 'branch', order: 61, branch: { anchorId: 'analyze-decision', track: 'right', rank: 0, domain: 'analyze', column: 0 } },
     },
     {
@@ -396,7 +379,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Reuses the existing active action batch instead of creating a new one.',
 
       position: { x: 1300, y: 1470 },
-      size: { width: 210 },
       layout: { lane: 'branch', order: 62, branch: { anchorId: 'analyze-decision', track: 'right', rank: 1, domain: 'analyze', column: 0 } },
     },
     {
@@ -406,7 +388,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Marks the thread as skipped and ends this branch.',
 
       position: { x: 1310, y: 1570 },
-      size: { width: 170 },
       layout: { lane: 'branch', order: 63, branch: { anchorId: 'analyze-decision', track: 'right', rank: 2, domain: 'analyze', column: 0 } },
     },
     {
@@ -416,7 +397,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Falls back to needs_review when analyze returns an error or malformed output.',
 
       position: { x: 1210, y: 1665 },
-      size: { width: 200 },
       layout: { lane: 'branch', order: 66, branch: { anchorId: 'analyze-decision', track: 'right', rank: 3, domain: 'analyze', column: 0, dx: 0, dy: 8 } },
     },
     {
@@ -437,7 +417,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Writes the reply draft record before approval or send decisions continue.',
 
       position: { x: 930, y: 1780 },
-      size: { width: 190 },
       layout: { lane: 'main', order: 68, branch: { anchorId: 'supported-actions-outcome', track: 'primary', rank: 0 } },
     },
     {
@@ -447,7 +426,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Creates the draft and marks both draft and thread state as needs_review.',
 
       position: { x: 1270, y: 1780 },
-      size: { width: 210 },
       layout: { lane: 'branch', order: 65, branch: { anchorId: 'supported-actions', track: 'right', rank: 0, domain: 'analyze', column: 0, dx: 10 } },
     },
     {
@@ -457,7 +435,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Stops the flow until someone reviews the draft manually.',
 
       position: { x: 1335, y: 1940 },
-      size: { width: 170, height: 96 },
       layout: { lane: 'branch', order: 67, branch: { anchorId: 'unsupported-actions-outcome', track: 'primary', rank: 0, dy: 4 } },
     },
     {
@@ -467,7 +444,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Creates the draft, writes approval-pending state, and creates the action batch.',
 
       position: { x: 875, y: 1945 },
-      size: { width: 220 },
       layout: { lane: 'main', order: 70, branch: { anchorId: 'supported-actions', track: 'primary', rank: 0, dy: 10 } },
     },
     {
@@ -487,7 +463,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Stops the flow until someone manually approves the pending action batch.',
 
       position: { x: 1290, y: 2195 },
-      size: { width: 175, height: 96 },
       layout: { lane: 'branch', order: 73, branch: { anchorId: 'autosend-decision', track: 'right', rank: 0, domain: 'approval', column: 0, dx: 10 } },
     },
     {
@@ -497,7 +472,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Manual approval path that approves the batch and enqueues the approved-actions job.',
 
       position: { x: 1280, y: 2335 },
-      size: { width: 180 },
       layout: { lane: 'branch', order: 74, branch: { anchorId: 'pause-manual-approval', track: 'primary', rank: 0 } },
     },
     {
@@ -507,7 +481,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Auto-approves the batch, updates thread state, and enqueues the approved-actions job.',
 
       position: { x: 835, y: 2325 },
-      size: { width: 220 },
       layout: { lane: 'main', order: 76, branch: { anchorId: 'autosend-decision', track: 'primary', rank: 0, dy: 6 } },
     },
     {
@@ -517,7 +490,6 @@ export const mailPipelineFlow: FlowConfig = {
       sublabel: alias('rrq:queue:mail-actions'),
       style: { icon: 'queue' },
       position: { x: 985, y: 2525 },
-      size: { width: 240 },
       layout: { lane: 'main', order: 77 },
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
@@ -533,7 +505,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 1005, y: 2670 },
       bullets: workerBullets,
-      size: { width: 210 },
       layout: { lane: 'main', order: 78 },
     },
     {
@@ -551,7 +522,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Executes the approved send action before the send job handoff.',
 
       position: { x: 82, y: 24 },
-      size: { width: 180 },
       parentId: 'actions-process-group',
     },
     {
@@ -561,7 +531,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Marks the draft as needs_review before the send handoff continues.',
 
       position: { x: 82, y: 103 },
-      size: { width: 180 },
       parentId: 'actions-process-group',
     },
     {
@@ -571,7 +540,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Enqueues send-reply work and marks the thread as sending.',
 
       position: { x: 82, y: 177 },
-      size: { width: 180 },
       parentId: 'actions-process-group',
     },
     {
@@ -585,7 +553,6 @@ export const mailPipelineFlow: FlowConfig = {
       ],
       style: { icon: 'queue' },
       position: { x: 1565, y: 900 },
-      size: { width: 240 },
       layout: { lane: 'sidecar', order: 64 },
       handles: [
         { id: 'in-left', position: 'left', type: 'target' },
@@ -601,7 +568,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 1580, y: 1035 },
       bullets: workerBullets,
-      size: { width: 210 },
       layout: { lane: 'sidecar', order: 68 },
     },
     {
@@ -612,7 +578,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Loads the stored thread payload and runs AI extraction.',
       style: { borderStyle: 'dashed' },
       position: { x: 1545, y: 1215 },
-      size: { width: 190 },
       layout: { lane: 'sidecar', order: 70 },
     },
     {
@@ -632,7 +597,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Records extract error state and returns a retryable job error.',
 
       position: { x: 1905, y: 1455 },
-      size: { width: 180 },
       layout: { lane: 'branch', order: 73, branch: { anchorId: 'extract-ai-success', track: 'right', rank: 0, domain: 'extract', column: 1 } },
     },
     {
@@ -648,7 +612,6 @@ export const mailPipelineFlow: FlowConfig = {
       ],
 
       position: { x: 1535, y: 1605 },
-      size: { width: 180 },
       layout: { lane: 'sidecar', order: 74, branch: { anchorId: 'extract-ai-success', track: 'primary', rank: 0 } },
     },
     {
@@ -678,7 +641,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Records extract error state and returns a retryable job error.',
 
       position: { x: 1905, y: 1850 },
-      size: { width: 180 },
       layout: { lane: 'branch', order: 77, branch: { anchorId: 'contact-upsert-success', track: 'right', rank: 0, domain: 'extract', column: 1 } },
     },
     {
@@ -688,7 +650,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Stores the extract summary, including the identified customer count.',
 
       position: { x: 1535, y: 1995 },
-      size: { width: 210 },
       layout: { lane: 'sidecar', order: 78, branch: { anchorId: 'contact-upsert-success', track: 'primary', rank: 0 } },
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
@@ -703,7 +664,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Queues recompute-opportunities work with mailbox-level debouncing.',
 
       position: { x: 1825, y: 1965 },
-      size: { width: 190 },
       layout: { lane: 'branch', order: 79, branch: { anchorId: 'extract-record-success', track: 'right', rank: 0, domain: 'extract', column: 0, dx: -80, dy: -8 } },
       handles: [
         { id: 'in-left', position: 'left', type: 'target' },
@@ -722,7 +682,6 @@ export const mailPipelineFlow: FlowConfig = {
       ],
 
       position: { x: 1845, y: 1180 },
-      size: { width: 210 },
       layout: { lane: 'branch', order: 69, branch: { anchorId: 'extract-worker', track: 'right', rank: 0, domain: 'extract', column: 1, dx: -20, dy: -12 } },
     },
     {
@@ -732,7 +691,6 @@ export const mailPipelineFlow: FlowConfig = {
       sublabel: alias('rrq:queue:mail-send'),
       style: { icon: 'queue' },
       position: { x: 985, y: 3135 },
-      size: { width: 240 },
       handles: [
         { id: 'in-top', position: 'top', type: 'target' },
         { id: 'out-bottom', position: 'bottom', type: 'source' },
@@ -747,7 +705,6 @@ export const mailPipelineFlow: FlowConfig = {
       style: { icon: 'worker' },
       position: { x: 1005, y: 3280 },
       bullets: workerBullets,
-      size: { width: 210 },
     },
     {
       id: 'send-process',
@@ -758,7 +715,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Owns the send lifecycle after the send worker picks up the job.',
 
       position: { x: 1005, y: 3450 },
-      size: { width: 210 },
     },
     {
       id: 'send-process-group',
@@ -776,7 +732,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Runs idempotency, freshness, auth, recipient, and body checks before the Gmail API send.',
 
       position: { x: 210, y: 40 },
-      size: { width: 220 },
       parentId: 'send-process-group',
     },
     {
@@ -786,7 +741,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Marks both the draft and thread as sent after the provider call succeeds.',
 
       position: { x: 30, y: 170 },
-      size: { width: 180 },
       parentId: 'send-process-group',
     },
     {
@@ -796,7 +750,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Marks the draft as send_failed and the thread as send_failed or stale.',
 
       position: { x: 260, y: 300 },
-      size: { width: 210 },
       parentId: 'send-process-group',
     },
     {
@@ -806,7 +759,6 @@ export const mailPipelineFlow: FlowConfig = {
       description: 'Moves the draft and thread back to needs_review after a retryable send failure.',
 
       position: { x: 580, y: 170 },
-      size: { width: 210 },
       parentId: 'send-process-group',
     },
   ]),

@@ -1,4 +1,5 @@
 import type { FlowNodeConfig, NodeSemanticRole, NodeShape, NodeStyle } from '../core/types'
+import { defaultNodeSizeForRole } from '../core/nodeSizing'
 
 const roleColorMap: Record<NodeSemanticRole, string> = {
   trigger:   'trigger',
@@ -24,23 +25,6 @@ const roleShapeMap: Record<NodeSemanticRole, NodeShape> = {
   detail: 'roundedRect',
   group: 'group',
   note: 'annotation',
-}
-
-// Width tiers per design contract:
-// Tier 1 — Standard Execution: 240px (queue, worker, cron)
-// Tier 2 — Process:            200px
-// Tier 3 — Compact:            160px (detail, trigger)
-// Tier 5 — Resource:           140px (cylinder)
-// Decision diamond: 100px (square, label-dependent; 80–120px per spec)
-const roleWidthDefaults: Partial<Record<NodeSemanticRole, number>> = {
-  trigger:   160,
-  queue:     240,
-  worker:    240,
-  scheduler: 240,
-  process:   200,
-  detail:    160,
-  resource:  140,
-  decision:  100,
 }
 
 export function normalizeTechnicalAlias(value: string | undefined): string | undefined {
@@ -122,15 +106,18 @@ function normalizeStyle(node: FlowNodeConfig, semanticRole: NodeSemanticRole): N
 export function withNodeVisualDefaults(node: FlowNodeConfig): FlowNodeConfig {
   const semanticRole = inferSemanticRole(node)
   const normalizedType = roleShapeMap[semanticRole]
-  const defaultWidth = roleWidthDefaults[semanticRole]
+  const defaultSize = defaultNodeSizeForRole(semanticRole, normalizedType)
 
   return {
     ...node,
     semanticRole,
     type: normalizedType,
     style: normalizeStyle(node, semanticRole),
-    size: defaultWidth && !node.size?.width
-      ? { width: defaultWidth, height: node.size?.height }
+    size: defaultSize
+      ? {
+          width: node.size?.width ?? defaultSize.width,
+          height: node.size?.height ?? defaultSize.height,
+        }
       : node.size,
   }
 }

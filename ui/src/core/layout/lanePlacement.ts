@@ -1,29 +1,16 @@
 import type { FlowNodeConfig, LayoutLane } from '../types'
+import { resolveNodeDimensions } from '../nodeSizing'
 
 export interface Position {
   x: number
   y: number
 }
 
-const DEFAULT_WIDTH = 200
-const DEFAULT_HEIGHT = 64
-const DEFAULT_DIAMOND_SIZE = 144
-const DEFAULT_PILL_HEIGHT = 44
-
 const SIDECAR_GAP = 180
 const RESOURCE_GAP = 180
 
 function nodeDimensions(node: FlowNodeConfig) {
-  return {
-    width: node.size?.width ?? DEFAULT_WIDTH,
-    height:
-      node.size?.height ??
-      (node.type === 'diamond'
-        ? DEFAULT_DIAMOND_SIZE
-        : node.type === 'pill'
-          ? DEFAULT_PILL_HEIGHT
-          : DEFAULT_HEIGHT),
-  }
+  return resolveNodeDimensions(node)
 }
 
 function rightEdge(node: FlowNodeConfig, position: Position) {
