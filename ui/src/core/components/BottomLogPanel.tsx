@@ -297,7 +297,7 @@ export function BottomLogPanel({
       animate={{ y: 0, opacity: 1, height: displayHeight }}
       transition={dragHeight !== null ? { duration: 0 } : { duration: 0.28, ease: 'easeOut' }}
       className={`fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-[var(--border-default)] bg-[var(--surface-raised)]/96 backdrop-blur-sm ${
-        isFull ? '' : 'shadow-[0_-1px_6px_rgba(0,0,0,0.05)] dark:shadow-[0_-1px_6px_rgba(0,0,0,0.15)]'
+        isFull ? '' : 'shadow-[0_-2px_12px_rgba(0,0,0,0.04),0_-1px_3px_rgba(0,0,0,0.03)] dark:shadow-[0_-1px_6px_rgba(0,0,0,0.15)]'
       }`}
     >
       <div

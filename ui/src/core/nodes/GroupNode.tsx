@@ -10,7 +10,7 @@ export function GroupNode({ id, data, selected }: NodeProps<FlowNode>) {
 
   return (
     <div
-      className={`h-full w-full rounded-[20px] border-2 border-dashed ${tone.border} ${tone.bg} px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] ${tone.text}`}
+      className={`h-full w-full rounded-[20px] border border-dashed ${tone.border} ${tone.bg} px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] ${tone.text}`}
     >
       {renderHandles(id, data.handles, [...defaultHandles])}
       {data.resizable ? (

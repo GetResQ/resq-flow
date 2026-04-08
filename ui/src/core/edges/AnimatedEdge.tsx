@@ -95,10 +95,10 @@ export function AnimatedEdge({
       {label ? (
         <EdgeLabelRenderer>
           <div
-            className="pointer-events-none absolute rounded bg-slate-900/85 px-1.5 py-0.5 text-[9px] text-slate-200"
+            className="pointer-events-none absolute rounded px-2 py-0.5 text-[10px] font-mono text-[var(--text-muted)]"
             style={{
               transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              opacity: isDimmed ? 0.25 : 1,
+              opacity: isDimmed ? 0.15 : 0.55,
             }}
           >
             {label}

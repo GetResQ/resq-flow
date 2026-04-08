@@ -180,14 +180,14 @@
 
 :root[data-theme='light'] {
 
-  /* ── Palette: Apple Neutral (light) ── */
+  /* ── Palette: Warm Neutral (light) ── */
 
   /* Surfaces */
   --surface-primary: #ffffff;
   --surface-raised: #ffffff;
   --surface-overlay: #f0f0f2;
   --surface-inset: #f5f5f7;
-  --flow-surface-bg: var(--surface-primary);
+  --flow-surface-bg: #ffffff;
 
   /* Borders */
   --border-default: #e5e5ea;
@@ -276,9 +276,9 @@
   --node-detail-text: #64748b;
   --node-detail-accent: #94A3B8;
 
-  /* Group — Transparent container */
-  --node-group-border: rgba(0, 0, 0, 0.12);
-  --node-group-bg: transparent;
+  /* Group — Subtle container */
+  --node-group-border: rgba(0, 0, 0, 0.10);
+  --node-group-bg: rgba(0, 0, 0, 0.018);
   --node-group-text: #64748b;
   --node-group-accent: #94a3b8;
 
@@ -311,8 +311,8 @@
   --glow-trigger-hover:    0 0 18px rgba(22, 163, 74, 0.18);
   --glow-trigger-selected: 0 0 26px rgba(22, 163, 74, 0.25);
 
-  --node-handle-border: rgba(0, 0, 0, 0.15);
-  --node-handle-bg: #90caf9;
+  --node-handle-border: rgba(0, 0, 0, 0.12);
+  --node-handle-bg: #c4cdd6;
 
   /* Node chip tokens */
   --chip-worker-bg:    rgba(0, 122, 255, 0.07);   --chip-worker-text:    #0055cc;
@@ -328,11 +328,11 @@
 
   /* Compatibility canvas aliases */
   --canvas-bg: var(--flow-surface-bg);
-  --canvas-dot: rgba(0, 0, 0, 0.07);
+  --canvas-dot: transparent;
   --color-active: var(--status-active);
-  --color-edge: #D1D5DB;
-  --color-edge-dimmed: #E5E7EB;
-  --color-marker: #D1D5DB;
+  --color-edge: #B0B8C4;
+  --color-edge-dimmed: #D1D5DB;
+  --color-marker: #B0B8C4;
   --color-canvas-dot: var(--canvas-dot);
 }
 
@@ -379,6 +379,14 @@ body[data-theme='light'] {
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+}
+
+:root[data-theme='light'] .hud-pill {
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 1px 8px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(0, 0, 0, 0.03);
 }
 
 /*
@@ -698,212 +706,169 @@ body[data-theme='light'] {
 :root[data-theme='light'] .node-family-queue {
   --node-border-color: var(--node-queue-border);
   --node-glow-rest:
-    0 0 0 3px rgba(220, 130, 0, 0.07),
-    0 0 14px rgba(220, 130, 0, 0.16),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(220, 130, 0, 0.06),
+    0 0 0 1px rgba(220, 130, 0, 0.10);
   --node-glow-hover:
-    0 0 0 3px rgba(220, 130, 0, 0.12),
-    0 0 22px rgba(220, 130, 0, 0.26),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(220, 130, 0, 0.12),
+    0 0 0 1px rgba(220, 130, 0, 0.16);
   --node-glow-selected:
-    0 0 0 4px rgba(220, 130, 0, 0.18),
-    0 0 30px rgba(220, 130, 0, 0.28),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #fffdf7 0%, #fffbf0 100%);
+    0 0 0 2.5px rgba(220, 130, 0, 0.22),
+    0 4px 16px rgba(220, 130, 0, 0.16),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #FFF8ED 0%, #FFF2E0 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-queue { --node-border-color: rgba(220, 130, 0, 0.75); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-queue {
   --node-border-color: #DC8200;
-  background: linear-gradient(160deg, #fff8e8 0%, #fff3d4 100%);
+  background: linear-gradient(160deg, #FFF0D9 0%, #FFE8C8 100%);
 }
 
 :root[data-theme='light'] .node-family-worker {
   --node-border-color: var(--node-worker-border);
   --node-glow-rest:
-    0 0 0 3px rgba(0, 140, 240, 0.07),
-    0 0 14px rgba(0, 140, 240, 0.16),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(0, 122, 255, 0.06),
+    0 0 0 1px rgba(0, 122, 255, 0.10);
   --node-glow-hover:
-    0 0 0 3px rgba(0, 140, 240, 0.12),
-    0 0 22px rgba(0, 140, 240, 0.26),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(0, 122, 255, 0.12),
+    0 0 0 1px rgba(0, 122, 255, 0.16);
   --node-glow-selected:
-    0 0 0 4px rgba(0, 140, 240, 0.18),
-    0 0 30px rgba(0, 140, 240, 0.28),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #f8fbff 0%, #f0f7ff 100%);
+    0 0 0 2.5px rgba(0, 122, 255, 0.22),
+    0 4px 16px rgba(0, 122, 255, 0.16),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #F0F4FF 0%, #E6EEFF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-worker { --node-border-color: rgba(0, 140, 240, 0.75); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-worker {
   --node-border-color: #008CF0;
-  background: linear-gradient(160deg, #eef6ff 0%, #ddeeff 100%);
+  background: linear-gradient(160deg, #E2EAFF 0%, #D6E2FF 100%);
 }
 
 :root[data-theme='light'] .node-family-cron {
   --node-border-color: var(--node-cron-border);
   --node-glow-rest:
-    0 0 0 3px rgba(100, 116, 139, 0.07),
-    0 0 14px rgba(100, 116, 139, 0.16),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(100, 116, 139, 0.05),
+    0 0 0 1px rgba(100, 116, 139, 0.08);
   --node-glow-hover:
-    0 0 0 3px rgba(100, 116, 139, 0.12),
-    0 0 22px rgba(100, 116, 139, 0.22),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(100, 116, 139, 0.10),
+    0 0 0 1px rgba(100, 116, 139, 0.14);
   --node-glow-selected:
-    0 0 0 4px rgba(100, 116, 139, 0.16),
-    0 0 30px rgba(100, 116, 139, 0.24),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #f8fafc 0%, #f1f5f9 100%);
+    0 0 0 2.5px rgba(100, 116, 139, 0.20),
+    0 4px 16px rgba(100, 116, 139, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #F2F4F7 0%, #E8ECF0 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-cron { --node-border-color: rgba(100, 116, 139, 0.65); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-cron {
   --node-border-color: #64748B;
-  background: linear-gradient(160deg, #eef2f7 0%, #e2e8f0 100%);
+  background: linear-gradient(160deg, #E4E8EE 0%, #D8DFE8 100%);
 }
 
 :root[data-theme='light'] .node-family-process {
   --node-border-color: var(--node-process-border);
   --node-glow-rest:
-    0 0 0 2px rgba(59, 130, 246, 0.05),
-    0 0 10px rgba(59, 130, 246, 0.12),
-    0 5px 14px rgba(0, 0, 0, 0.08),
-    0 2px 4px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 4px 10px rgba(59, 130, 246, 0.05),
+    0 0 0 1px rgba(59, 130, 246, 0.07);
   --node-glow-hover:
-    0 0 0 2px rgba(59, 130, 246, 0.08),
-    0 0 16px rgba(59, 130, 246, 0.18),
-    0 8px 20px rgba(0, 0, 0, 0.11),
     0 2px 6px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 6px 16px rgba(59, 130, 246, 0.10),
+    0 0 0 1px rgba(59, 130, 246, 0.12);
   --node-glow-selected:
-    0 0 0 3px rgba(59, 130, 246, 0.12),
-    0 0 22px rgba(59, 130, 246, 0.22),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #f7fbff 0%, #ecf3ff 100%);
+    0 0 0 2.5px rgba(59, 130, 246, 0.18),
+    0 4px 16px rgba(59, 130, 246, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #EFF4FF 0%, #E4ECFF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-process { --node-border-color: rgba(59, 130, 246, 0.42); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-process {
   --node-border-color: #3B82F6;
-  background: linear-gradient(160deg, #e6f0ff 0%, #dbeafe 100%);
+  background: linear-gradient(160deg, #E0EAFF 0%, #D4E0FE 100%);
 }
 
 :root[data-theme='light'] .node-family-decision {
   --node-border-color: var(--node-decision-border);
   --node-glow-rest:
-    0 0 0 3px rgba(130, 70, 220, 0.07),
-    0 0 14px rgba(130, 70, 220, 0.16),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(130, 70, 220, 0.06),
+    0 0 0 1px rgba(130, 70, 220, 0.10);
   --node-glow-hover:
-    0 0 0 3px rgba(130, 70, 220, 0.12),
-    0 0 22px rgba(130, 70, 220, 0.26),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(130, 70, 220, 0.12),
+    0 0 0 1px rgba(130, 70, 220, 0.16);
   --node-glow-selected:
-    0 0 0 4px rgba(130, 70, 220, 0.18),
-    0 0 30px rgba(130, 70, 220, 0.28),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #faf7ff 0%, #f4eeff 100%);
+    0 0 0 2.5px rgba(130, 70, 220, 0.22),
+    0 4px 16px rgba(130, 70, 220, 0.16),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #F5F0FF 0%, #ECE4FF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-decision { --node-border-color: rgba(130, 70, 220, 0.75); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-decision {
   --node-border-color: #8246DC;
-  background: linear-gradient(160deg, #f2e8ff 0%, #e8d5ff 100%);
+  background: linear-gradient(160deg, #EAE0FF 0%, #DED0FF 100%);
 }
 
 :root[data-theme='light'] .node-family-resource {
   --node-border-color: var(--node-resource-border);
   --node-glow-rest:
-    0 0 0 2px rgba(0, 150, 150, 0.05),
-    0 0 10px rgba(0, 150, 150, 0.11),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 4px 10px rgba(0, 150, 150, 0.05),
+    0 0 0 1px rgba(0, 150, 150, 0.08);
   --node-glow-hover:
-    0 0 0 2px rgba(0, 150, 150, 0.08),
-    0 0 15px rgba(0, 150, 150, 0.18),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.07),
+    0 6px 16px rgba(0, 150, 150, 0.10),
+    0 0 0 1px rgba(0, 150, 150, 0.14);
   --node-glow-selected:
-    0 0 0 3px rgba(0, 150, 150, 0.13),
-    0 0 21px rgba(0, 150, 150, 0.20),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #f5fffe 0%, #edfcfc 100%);
+    0 0 0 2.5px rgba(0, 150, 150, 0.20),
+    0 4px 16px rgba(0, 150, 150, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #EEFAF9 0%, #E2F5F4 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-resource { --node-border-color: rgba(0, 150, 150, 0.65); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-resource {
   --node-border-color: #009696;
-  background: linear-gradient(160deg, #e5ffff 0%, #d0fefe 100%);
+  background: linear-gradient(160deg, #E0F4F3 0%, #D0ECEB 100%);
 }
 
 :root[data-theme='light'] .node-family-trigger {
   --node-border-color: var(--node-trigger-border);
   --node-glow-rest:
-    0 0 0 3px rgba(22, 163, 74, 0.07),
-    0 0 14px rgba(22, 163, 74, 0.16),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 4px 12px rgba(22, 163, 74, 0.06),
+    0 0 0 1px rgba(22, 163, 74, 0.10);
   --node-glow-hover:
-    0 0 0 3px rgba(22, 163, 74, 0.12),
-    0 0 22px rgba(22, 163, 74, 0.24),
-    0 10px 24px rgba(0, 0, 0, 0.13),
-    0 3px 7px rgba(0, 0, 0, 0.09),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    0 6px 18px rgba(22, 163, 74, 0.12),
+    0 0 0 1px rgba(22, 163, 74, 0.16);
   --node-glow-selected:
-    0 0 0 4px rgba(22, 163, 74, 0.16),
-    0 0 30px rgba(22, 163, 74, 0.22),
-    0 12px 28px rgba(0, 0, 0, 0.15),
-    0 3px 8px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
-  background: linear-gradient(160deg, #f7fff9 0%, #ecfdf3 100%);
+    0 0 0 2.5px rgba(22, 163, 74, 0.22),
+    0 4px 16px rgba(22, 163, 74, 0.16),
+    0 8px 24px rgba(0, 0, 0, 0.10);
+  background: linear-gradient(160deg, #EEFBF0 0%, #E2F7E6 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-trigger { --node-border-color: rgba(22, 163, 74, 0.65); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-trigger {
   --node-border-color: #16A34A;
-  background: linear-gradient(160deg, #e9fce9 0%, #dcfce7 100%);
+  background: linear-gradient(160deg, #E0F5E2 0%, #D2EED6 100%);
 }
 
 :root[data-theme='light'] .node-family-detail {
   --node-border-color: var(--node-detail-border);
   --node-glow-rest:
-    0 1px 4px rgba(0, 0, 0, 0.06),
-    0 1px 2px rgba(0, 0, 0, 0.04);
+    0 1px 3px rgba(0, 0, 0, 0.05),
+    0 0 0 1px rgba(100, 116, 139, 0.06);
   --node-glow-hover:
-    0 0 8px rgba(100, 116, 139, 0.14),
-    0 2px 8px rgba(0, 0, 0, 0.08),
-    0 1px 3px rgba(0, 0, 0, 0.05);
+    0 2px 6px rgba(0, 0, 0, 0.07),
+    0 0 0 1px rgba(100, 116, 139, 0.12);
   --node-glow-selected:
     0 0 0 2px rgba(100, 116, 139, 0.18),
-    0 0 14px rgba(100, 116, 139, 0.16),
-    0 2px 8px rgba(0, 0, 0, 0.08);
+    0 4px 12px rgba(100, 116, 139, 0.10),
+    0 2px 6px rgba(0, 0, 0, 0.06);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-detail   { --node-border-color: rgba(100, 116, 139, 0.50); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-detail { --node-border-color: rgba(100, 116, 139, 0.70); }
@@ -935,6 +900,12 @@ body[data-theme='light'] {
     inset 0 1px 0 rgba(0, 220, 130, 0.18);
   transition: box-shadow 300ms ease-out;
 }
+:root[data-theme='light'] .node-glow-success {
+  box-shadow:
+    0 0 0 2.5px rgba(26, 140, 58, 0.35),
+    0 0 16px rgba(26, 140, 58, 0.18),
+    0 4px 12px rgba(0, 0, 0, 0.06);
+}
 
 /* Error: full red override — semantic color suppressed, elevation preserved */
 .node-glow-error {
@@ -948,11 +919,9 @@ body[data-theme='light'] {
 }
 :root[data-theme='light'] .node-glow-error {
   box-shadow:
-    0 0 0 2px rgba(204, 34, 34, 0.15),
-    0 0 20px rgba(204, 34, 34, 0.25),
-    0 6px 18px rgba(0, 0, 0, 0.10),
-    0 2px 5px rgba(0, 0, 0, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    0 0 0 2px rgba(204, 34, 34, 0.18),
+    0 4px 16px rgba(204, 34, 34, 0.14),
+    0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
 /* Suppress React Flow's default selection box-shadow */
@@ -998,6 +967,18 @@ body[data-theme='light'] {
 @keyframes nodeDotPulse {
   0%, 100% { opacity: 0.6; }
   50%       { opacity: 1.0; }
+}
+
+/* ── Node handles: hidden by default, visible on hover ── */
+
+.react-flow__handle {
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.react-flow__node:hover .react-flow__handle,
+.react-flow__node.selected .react-flow__handle {
+  opacity: 1;
 }
 
 .react-flow.pointer-mode .react-flow__pane,
