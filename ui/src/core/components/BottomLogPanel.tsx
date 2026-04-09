@@ -29,6 +29,7 @@ interface BottomLogPanelProps {
   journeys: TraceJourney[]
   selectedTraceId?: string
   onSelectNode: (nodeId: string) => void
+  onSelectLog: (entry: LogEntry) => void
   onSelectTrace: (traceId?: string) => void
 }
 
@@ -50,6 +51,7 @@ export function BottomLogPanel({
   journeys,
   selectedTraceId,
   onSelectNode,
+  onSelectLog,
   onSelectTrace,
 }: BottomLogPanelProps) {
   const snap = useLayoutStore((state) => state.bottomPanelSnap)
@@ -65,6 +67,7 @@ export function BottomLogPanel({
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const [dragHeight, setDragHeight] = useState<number | null>(null)
   const [customHeight, setCustomHeight] = useState<number | null>(null)
+  const [isPointerDown, setIsPointerDown] = useState(false)
   const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800
 
   const isWhisper = snap === 'whisper'
@@ -221,6 +224,7 @@ export function BottomLogPanel({
       const target = event.target as HTMLElement
       if (target.closest('button, input, [role="tab"], [role="tablist"]')) return
       event.preventDefault()
+      setIsPointerDown(true)
       target.setPointerCapture(event.pointerId)
       const startHeight =
         snap === 'partial' && customHeight !== null
@@ -254,6 +258,7 @@ export function BottomLogPanel({
         )
         dragRef.current = null
         setDragHeight(null)
+        setIsPointerDown(false)
 
         if (!moved) {
           if (snap === 'whisper') {
@@ -296,12 +301,10 @@ export function BottomLogPanel({
       initial={{ y: 18, opacity: 0 }}
       animate={{ y: 0, opacity: 1, height: displayHeight }}
       transition={dragHeight !== null ? { duration: 0 } : { duration: 0.28, ease: 'easeOut' }}
-      className={`fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-[var(--border-default)] bg-[var(--surface-raised)]/96 backdrop-blur-sm ${
-        isFull ? '' : 'shadow-[0_-2px_12px_rgba(0,0,0,0.04),0_-1px_3px_rgba(0,0,0,0.03)] dark:shadow-[0_-1px_6px_rgba(0,0,0,0.15)]'
-      }`}
+      className="fixed inset-x-0 bottom-0 z-40 flex flex-col border-t border-[var(--border-default)] bg-[var(--surface-raised)]/96 backdrop-blur-sm"
     >
       <div
-        className="flex shrink-0 cursor-row-resize items-center gap-3 border-b border-[var(--border-default)] px-4 py-2 touch-none select-none transition-colors hover:bg-[var(--surface-overlay)]"
+        className={`flex shrink-0 ${isPointerDown ? 'cursor-grabbing' : 'cursor-grab'} items-center gap-3 border-b border-[var(--border-default)] px-4 py-2 touch-none select-none`}
         onPointerDown={onDragStart}
       >
         {isWhisper && dragHeight === null ? (
@@ -430,6 +433,10 @@ export function BottomLogPanel({
                   selectedTraceId={selectedTraceId}
                   liveTail={liveTail}
                   onSelectLog={(entry) => {
+                    if (entry.seq != null) {
+                      onSelectLog(entry)
+                      return
+                    }
                     const executionId = entry.runId ?? entry.traceId
                     if (executionId) {
                       onSelectTrace(executionId)
