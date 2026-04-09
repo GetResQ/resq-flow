@@ -105,10 +105,8 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         journeys={journeys}
-        pinnedTraceIds={new Set()}
         selectedTraceId="run-b"
         onSelectTrace={vi.fn()}
-        onTogglePinned={vi.fn()}
       />,
     )
 
@@ -121,27 +119,15 @@ describe('RunsTable', () => {
     expect(within(selectedRow!).getByText('billing@resq.dev')).toBeInTheDocument()
   })
 
-  it('supports pinning and row selection independently', async () => {
+  it('selects and deselects a row on click', async () => {
     const onSelectTrace = vi.fn()
-    const onTogglePinned = vi.fn()
 
     render(
       <RunsTable
         journeys={journeys}
-        pinnedTraceIds={new Set(['run-a'])}
         onSelectTrace={onSelectTrace}
-        onTogglePinned={onTogglePinned}
       />,
     )
-
-    const pinnedRow = screen.getAllByRole('row').find((row) =>
-      within(row).queryByText('support@resq.dev'),
-    )
-    expect(pinnedRow).toBeDefined()
-
-    fireEvent.click(within(pinnedRow!).getByRole('button', { name: /unpin/i }))
-    expect(onTogglePinned).toHaveBeenCalledWith('run-a')
-    expect(onSelectTrace).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByText('billing@resq.dev'))
     expect(onSelectTrace).toHaveBeenCalledWith('run-b')
@@ -152,9 +138,7 @@ describe('RunsTable', () => {
     render(
       <RunsTable
         journeys={journeys}
-        pinnedTraceIds={new Set()}
         onSelectTrace={vi.fn()}
-        onTogglePinned={vi.fn()}
       />,
     )
 

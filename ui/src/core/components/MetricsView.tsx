@@ -60,8 +60,6 @@ export function MetricsView({
   onSelectTrace,
 }: MetricsViewProps) {
   const [timeWindow, setTimeWindow] = useState<MetricsWindow>('24h')
-  const [pinnedTraceIds, setPinnedTraceIds] = useState<Set<string>>(new Set())
-
   const { data: metrics } = useQuery({
     queryKey: ['flow-metrics-view', flow.id, timeWindow],
     queryFn: async () => {
@@ -74,18 +72,6 @@ export function MetricsView({
     () => recentRunsToJourneys(flow, metrics?.recentRuns ?? []),
     [flow, metrics?.recentRuns],
   )
-
-  const togglePinnedTrace = (traceId: string) => {
-    setPinnedTraceIds((previous) => {
-      const next = new Set(previous)
-      if (next.has(traceId)) {
-        next.delete(traceId)
-      } else {
-        next.add(traceId)
-      }
-      return next
-    })
-  }
 
   if (!metrics) {
     return null
@@ -175,9 +161,7 @@ export function MetricsView({
           <RunsTable
             journeys={recentJourneys}
             selectedTraceId={selectedTraceId}
-            pinnedTraceIds={pinnedTraceIds}
             onSelectTrace={onSelectTrace}
-            onTogglePinned={togglePinnedTrace}
           />
         </CardContent>
       </Card>

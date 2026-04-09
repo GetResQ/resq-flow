@@ -60,7 +60,6 @@ export function BottomLogPanel({
   const setTab = useLayoutStore((state) => state.setBottomPanelTab)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'error'>('all')
-  const [pinnedTraceIds, setPinnedTraceIds] = useState<Set<string>>(new Set())
   const [liveTail, setLiveTail] = useState(true)
   const [showAllRuns, setShowAllRuns] = useState(false)
   const logsScrollAreaRef = useRef<HTMLDivElement | null>(null)
@@ -124,14 +123,9 @@ export function BottomLogPanel({
 
   const filteredJourneys = useMemo(() => {
     const query = search.trim().toLowerCase()
-    const ordered = [...journeys].sort((left, right) => {
-      const pinnedLeft = pinnedTraceIds.has(left.traceId)
-      const pinnedRight = pinnedTraceIds.has(right.traceId)
-      if (pinnedLeft !== pinnedRight) {
-        return pinnedLeft ? -1 : 1
-      }
-      return Date.parse(right.lastUpdatedAt) - Date.parse(left.lastUpdatedAt)
-    })
+    const ordered = [...journeys].sort(
+      (left, right) => Date.parse(right.lastUpdatedAt) - Date.parse(left.lastUpdatedAt),
+    )
 
     if (!query) {
       return showAllRuns ? ordered : ordered.filter((journey) => isDefaultVisibleJourney(journey))
@@ -149,7 +143,7 @@ export function BottomLogPanel({
         (journey.errorSummary?.toLowerCase().includes(query) ?? false)
       )
     })
-  }, [journeys, pinnedTraceIds, search, showAllRuns])
+  }, [journeys, search, showAllRuns])
 
   const logsEmptyState = useMemo(() => {
     if (flowLogs.length === 0) {
@@ -283,18 +277,6 @@ export function BottomLogPanel({
     },
     [customHeight, setSnap, snap],
   )
-
-  const togglePinnedTrace = useCallback((traceId: string) => {
-    setPinnedTraceIds((previous) => {
-      const next = new Set(previous)
-      if (next.has(traceId)) {
-        next.delete(traceId)
-      } else {
-        next.add(traceId)
-      }
-      return next
-    })
-  }, [])
 
   return (
     <motion.div
@@ -479,9 +461,7 @@ export function BottomLogPanel({
                 <RunsTable
                   journeys={filteredJourneys}
                   selectedTraceId={selectedTraceId}
-                  pinnedTraceIds={pinnedTraceIds}
                   onSelectTrace={onSelectTrace}
-                  onTogglePinned={togglePinnedTrace}
                 />
               )}
             </ScrollArea>

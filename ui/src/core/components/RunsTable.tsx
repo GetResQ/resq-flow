@@ -6,13 +6,10 @@ import {
   useReactTable,
   type ColumnDef,
   type Row,
-  type SortingFn,
   type SortingState,
 } from '@tanstack/react-table'
 
 import {
-  Badge,
-  Button,
   Table,
   TableBody,
   TableCell,
@@ -34,9 +31,7 @@ import { DurationBadge } from './DurationBadge'
 interface RunsTableProps {
   journeys: TraceJourney[]
   selectedTraceId?: string
-  pinnedTraceIds: Set<string>
   onSelectTrace: (traceId?: string) => void
-  onTogglePinned: (traceId: string) => void
 }
 
 interface RunRowData {
@@ -48,7 +43,6 @@ interface RunRowData {
   durationMs?: number
   updatedAt: string
   issue: string
-  pinned: boolean
 }
 
 function statusVariant(status: TraceStatus) {
@@ -87,21 +81,10 @@ function sortIndicator(direction: false | 'asc' | 'desc') {
   return ''
 }
 
-function pinAwareSort(compare: (left: RunRowData, right: RunRowData) => number): SortingFn<RunRowData> {
-  return (rowA: Row<RunRowData>, rowB: Row<RunRowData>) => {
-    if (rowA.original.pinned !== rowB.original.pinned) {
-      return rowA.original.pinned ? -1 : 1
-    }
-    return compare(rowA.original, rowB.original)
-  }
-}
-
 export function RunsTable({
   journeys,
   selectedTraceId,
-  pinnedTraceIds,
   onSelectTrace,
-  onTogglePinned,
 }: RunsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'updated', desc: true }])
 
@@ -118,10 +101,9 @@ export function RunsTable({
           durationMs: journey.durationMs,
           updatedAt: journey.lastUpdatedAt,
           issue: journey.errorSummary ?? '-',
-          pinned: pinnedTraceIds.has(journey.traceId),
         }
       }),
-    [journeys, pinnedTraceIds],
+    [journeys],
   )
 
   const columns = useMemo<ColumnDef<RunRowData>[]>(
@@ -130,7 +112,7 @@ export function RunsTable({
         id: 'run',
         accessorKey: 'runLabel',
         header: 'Run',
-        cell: ({ row }) => <span className="truncate">{row.original.runLabel}</span>,
+        cell: ({ row }) => <span className="truncate font-mono text-[13px] leading-5">{row.original.runLabel}</span>,
       },
       {
         id: 'latestStep',
@@ -138,7 +120,7 @@ export function RunsTable({
         header: 'Latest step',
         cell: ({ row }) => (
           <span
-            className="truncate text-[var(--text-secondary)]"
+            className="truncate font-mono text-xs text-[var(--text-secondary)]"
             title={row.original.latestStepId ?? row.original.latestStep}
           >
             {row.original.latestStep}
@@ -158,8 +140,22 @@ export function RunsTable({
             <span>{sortIndicator(column.getIsSorted())}</span>
           </button>
         ),
-        sortingFn: pinAwareSort((left, right) => statusRank(left.status) - statusRank(right.status)),
-        cell: ({ row }) => <Badge variant={statusVariant(row.original.status)}>{row.original.status}</Badge>,
+        sortingFn: (rowA: Row<RunRowData>, rowB: Row<RunRowData>) =>
+          statusRank(rowA.original.status) - statusRank(rowB.original.status),
+        cell: ({ row }) => {
+          const variant = statusVariant(row.original.status)
+          const colorMap = {
+            destructive: 'bg-[color-mix(in_srgb,var(--status-error)_12%,transparent)] text-[var(--status-error)]',
+            success: 'bg-[color-mix(in_srgb,var(--status-success)_12%,transparent)] text-[var(--status-success)]',
+            warning: 'bg-[color-mix(in_srgb,var(--status-warning)_12%,transparent)] text-[var(--status-warning)]',
+            default: 'bg-[var(--surface-inset)] text-[var(--text-muted)]',
+          }
+          return (
+            <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide ${colorMap[variant]}`}>
+              {row.original.status}
+            </span>
+          )
+        },
       },
       {
         id: 'duration',
@@ -174,7 +170,8 @@ export function RunsTable({
             <span>{sortIndicator(column.getIsSorted())}</span>
           </button>
         ),
-        sortingFn: pinAwareSort((left, right) => (left.durationMs ?? -1) - (right.durationMs ?? -1)),
+        sortingFn: (rowA: Row<RunRowData>, rowB: Row<RunRowData>) =>
+          (rowA.original.durationMs ?? -1) - (rowB.original.durationMs ?? -1),
         cell: ({ row }) => <DurationBadge durationMs={row.original.durationMs} />,
       },
       {
@@ -190,9 +187,8 @@ export function RunsTable({
             <span>{sortIndicator(column.getIsSorted())}</span>
           </button>
         ),
-        sortingFn: pinAwareSort(
-          (left, right) => Date.parse(left.updatedAt) - Date.parse(right.updatedAt),
-        ),
+        sortingFn: (rowA: Row<RunRowData>, rowB: Row<RunRowData>) =>
+          Date.parse(rowA.original.updatedAt) - Date.parse(rowB.original.updatedAt),
         cell: ({ row }) => (
           <span className="font-mono text-xs text-[var(--text-muted)]">
             {formatEasternTime(row.original.updatedAt)}
@@ -203,32 +199,17 @@ export function RunsTable({
         id: 'issue',
         accessorKey: 'issue',
         header: 'Issue',
-        cell: ({ row }) => (
-          <span className="block truncate text-[var(--status-error)]" title={row.original.issue}>
-            {row.original.issue}
-          </span>
-        ),
-      },
-      {
-        id: 'pin',
-        accessorKey: 'pinned',
-        header: 'Pin',
-        cell: ({ row }) => (
-          <Button
-            type="button"
-            variant={row.original.pinned ? 'secondary' : 'outline'}
-            size="sm"
-            onClick={(event) => {
-              event.stopPropagation()
-              onTogglePinned(row.original.traceId)
-            }}
-          >
-            {row.original.pinned ? 'Unpin' : 'Pin'}
-          </Button>
-        ),
+        cell: ({ row }) =>
+          row.original.issue !== '-' ? (
+            <span className="block truncate font-mono text-[13px] leading-5 text-[var(--status-error)]" title={row.original.issue}>
+              {row.original.issue}
+            </span>
+          ) : (
+            <span className="text-[var(--text-muted)]">-</span>
+          ),
       },
     ],
-    [onTogglePinned],
+    [],
   )
 
   const table = useReactTable({
@@ -257,7 +238,7 @@ export function RunsTable({
       <TableBody>
         {table.getRowModel().rows.length === 0 ? (
           <TableRow className="cursor-default hover:bg-transparent">
-            <TableCell colSpan={7} className="py-8 text-center text-[var(--text-secondary)]">
+            <TableCell colSpan={6} className="py-8 text-center text-[var(--text-secondary)]">
               No runs match the current filters.
             </TableCell>
           </TableRow>
