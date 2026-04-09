@@ -5,28 +5,26 @@ import {
   Badge,
   Card,
   CardContent,
-  CardDescription,
-  CardHeader,
   ScrollArea,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-
-import { formatEasternTime } from '../time'
 import type { SpanEntry, TraceJourney, TraceStep, TraceStatus } from '../types'
 import { formatStepDisplayLabel, getJourneySummaryStep, getOverviewSteps } from '../runPresentation'
 import { DurationBadge, formatDurationLabel } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { WaterfallChart } from './WaterfallChart'
 
-type TabKey = 'overview' | 'waterfall' | 'advanced'
+type TabKey = 'overview' | 'timing'
 type InsightTone = 'neutral' | 'success' | 'warning' | 'error'
 
 interface TraceDetailContentProps {
   journey: TraceJourney
   spans?: SpanEntry[]
+  initialTab?: TabKey
+  onTabChange?: (tab: TabKey) => void
   onSelectNode?: (nodeId: string) => void
 }
 
@@ -94,33 +92,21 @@ function stepErrorSummary(stage: TraceStep): string | undefined {
   return stage.errorSummary
 }
 
-function defaultSelectedStepId(journey: TraceJourney): string | undefined {
-  const summaryStage = getJourneySummaryStep(journey)
-  return (
-    summaryStage?.instanceId ??
-    summaryStage?.stepId ??
-    journey.steps.find((stage) => stage.status === 'error')?.instanceId ??
-    journey.steps.find((stage) => stage.status === 'error')?.stepId ??
-    journey.steps.at(-1)?.instanceId ??
-    journey.steps.at(-1)?.stepId
-  )
-}
-
-export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceDetailContentProps) {
-  const [tab, setTab] = useState<TabKey>('overview')
-  const [selectedStepId, setSelectedStageId] = useState<string | undefined>(defaultSelectedStepId(journey))
-
-  const selectedStep = useMemo(
-    () =>
-      journey.steps.find((stage) => (stage.instanceId ?? stage.stepId) === selectedStepId) ??
-      journey.steps.at(-1) ??
-      journey.steps[0],
-    [journey.steps, selectedStepId],
-  )
+export function TraceDetailContent({ journey, spans = [], initialTab, onTabChange, onSelectNode }: TraceDetailContentProps) {
+  const [tab, setTab] = useState<TabKey>(initialTab ?? 'overview')
+  const [expandedStepId, setExpandedStepId] = useState<string | undefined>()
 
   const overviewSteps = useMemo(() => getOverviewSteps(journey.steps), [journey.steps])
 
   const failedStep = useMemo(() => overviewSteps.find((stage) => stage.status === 'error') ?? journey.steps.find((stage) => stage.status === 'error'), [journey.steps, overviewSteps])
+
+  const errorNodeIds = useMemo(() => {
+    const ids = new Set<string>()
+    for (const step of journey.steps) {
+      if (step.status === 'error' && step.nodeId) ids.add(step.nodeId)
+    }
+    return ids
+  }, [journey.steps])
 
   const slowestStep = useMemo(
     () =>
@@ -166,61 +152,29 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
     return items.slice(0, 3)
   }, [failedStep, journey, overviewSteps, slowestStep])
 
-  const focusLabel = failedStep ? 'Failed In' : 'Slowest Step'
-  const focusValue = failedStep ? stepDisplayLabel(failedStep) : slowestStep ? stepDisplayLabel(slowestStep) : 'None yet'
-  const focusMeta = !failedStep && slowestStep?.durationMs ? formatDurationLabel(slowestStep.durationMs) : null
+  const identifierEntries = useMemo(() => [
+    ['mailbox_owner', journey.identifiers.mailboxOwner],
+    ['provider', journey.identifiers.provider],
+    ['thread_id', journey.identifiers.threadId],
+    ['reply_draft_id', journey.identifiers.replyDraftId],
+    ['job_id', journey.identifiers.jobId],
+    ['request_id', journey.identifiers.requestId],
+    ['content_hash', journey.identifiers.contentHash],
+    ['journey_key', journey.identifiers.journeyKey],
+  ].filter((entry): entry is [string, string] => Boolean(entry[1])), [journey.identifiers])
 
   return (
-    <Tabs value={tab} onValueChange={(value) => setTab(value as TabKey)} className="flex min-h-0 flex-1 flex-col">
+    <Tabs value={tab} onValueChange={(value) => { const next = value as TabKey; setTab(next); onTabChange?.(next) }} className="flex min-h-0 flex-1 flex-col">
       <div className="border-b border-[var(--border-default)] px-4 py-3">
         <TabsList className="min-h-0 border-none bg-transparent p-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="waterfall">Waterfall</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced telemetry</TabsTrigger>
+          <TabsTrigger value="timing">Timing</TabsTrigger>
         </TabsList>
       </div>
 
       <TabsContent value="overview" className="mt-0 min-h-0 flex-1 pt-0">
         <ScrollArea className="h-full">
           <div className="space-y-4 px-4 py-3">
-            <section className="grid grid-cols-1 gap-3">
-              <Card className="min-w-0">
-                <CardHeader className="pb-2">
-                  <CardDescription>Status</CardDescription>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="truncate text-2xl font-semibold capitalize text-[var(--text-primary)]">{journey.status}</p>
-                </CardContent>
-              </Card>
-              <Card className="min-w-0">
-                <CardHeader className="pb-2">
-                  <CardDescription>Duration</CardDescription>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">
-                    {typeof journey.durationMs === 'number' ? formatDurationLabel(journey.durationMs) : 'Running'}
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="min-w-0">
-                <CardHeader className="pb-2">
-                  <CardDescription>Last Updated</CardDescription>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{formatEasternTime(journey.lastUpdatedAt)}</p>
-                </CardContent>
-              </Card>
-              <Card className="min-w-0">
-                <CardHeader className="pb-2">
-                  <CardDescription>{focusLabel}</CardDescription>
-                </CardHeader>
-                <CardContent className="min-w-0">
-                  <p className="truncate text-2xl font-semibold text-[var(--text-primary)]">{focusValue}</p>
-                  {focusMeta ? <p className="mt-1 text-xs text-[var(--text-muted)]">{focusMeta}</p> : null}
-                </CardContent>
-              </Card>
-            </section>
-
             {insights.length > 0 ? (
               <section className="space-y-2">
                 <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Key Insights</h3>
@@ -252,6 +206,9 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                     const errorSummary = stepErrorSummary(stage)
                     const isError = stage.status === 'error'
                     const isActive = stage.status === 'running' || stage.status === 'partial'
+                    const stepId = stage.instanceId ?? stage.stepId
+                    const isExpanded = expandedStepId === stepId
+                    const hasAttrs = stage.attrs && Object.keys(stage.attrs).length > 0
                     const dotColor = isError
                       ? 'var(--status-error)'
                       : isActive
@@ -261,7 +218,7 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                           : 'var(--text-muted)'
 
                     return (
-                      <div key={stage.instanceId ?? `${stage.stepId}-${index}`} className="relative flex gap-3 pb-3">
+                      <div key={stepId ?? `${stage.stepId}-${index}`} className="relative flex gap-3 pb-3">
                           {/* Timeline dot */}
                         <div className="relative z-10 mt-3 flex shrink-0 items-start">
                           <div
@@ -275,7 +232,10 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                         </div>
 
                         {/* Step card */}
-                        <Card className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}>
+                        <Card
+                          className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''} ${hasAttrs ? 'cursor-pointer transition-colors hover:bg-[var(--surface-overlay)]/50' : ''}`}
+                          onClick={hasAttrs ? () => setExpandedStepId(isExpanded ? undefined : stepId) : undefined}
+                        >
                           <CardContent className="p-3">
                             <div className="mb-2 flex items-center gap-2">
                               <span className="text-sm font-medium text-[var(--text-primary)]">{stepDisplayLabel(stage)}</span>
@@ -287,9 +247,14 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                               {typeof stage.attempt === 'number' && stage.attempt > 0 ? <span>retry {stage.attempt}</span> : null}
                             </div>
                             {errorSummary ? (
-                              <div className="mt-2 rounded-lg border border-[var(--status-error)] px-3 py-2 text-xs text-[var(--text-primary)] [background-color:color-mix(in_srgb,var(--status-error)_12%,transparent)]">
-                                {errorSummary}
+                              <div className="mt-2 rounded-lg border-l-2 border-[var(--status-error)] px-3 py-2 [background-color:color-mix(in_srgb,var(--status-error)_14%,transparent)]">
+                                <p className="whitespace-pre-wrap break-all font-mono text-xs leading-5 text-[var(--text-primary)]">{errorSummary}</p>
                               </div>
+                            ) : null}
+                            {isExpanded && hasAttrs ? (
+                              <pre className="mt-3 max-w-full overflow-hidden whitespace-pre-wrap break-all rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
+                                {JSON.stringify(stage.attrs, null, 2)}
+                              </pre>
                             ) : null}
                           </CardContent>
                         </Card>
@@ -299,93 +264,28 @@ export function TraceDetailContent({ journey, spans = [], onSelectNode }: TraceD
                 </div>
               )}
             </section>
+
+            {identifierEntries.length > 0 ? (
+              <details className="min-w-0 overflow-hidden rounded-lg border border-[var(--border-default)]">
+                <summary className="cursor-pointer p-3 text-xs text-[var(--text-muted)]">Run details</summary>
+                <div className="mx-3 mb-3 space-y-1.5">
+                  {identifierEntries.map(([label, value]) => (
+                    <div key={label} className="flex items-baseline gap-2 text-xs">
+                      <span className="shrink-0 text-[var(--text-muted)]">{label}</span>
+                      <span className="min-w-0 break-all font-mono text-[var(--text-primary)]">{value}</span>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            ) : null}
           </div>
         </ScrollArea>
       </TabsContent>
 
-      <TabsContent value="waterfall" className="mt-0 min-h-0 flex-1 pt-0">
+      <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0">
         <ScrollArea className="h-full">
           <div className="px-4 py-3">
-            <WaterfallChart spans={spans} onSelectNode={onSelectNode} />
-          </div>
-        </ScrollArea>
-      </TabsContent>
-
-      <TabsContent value="advanced" className="mt-0 min-h-0 flex-1 pt-0">
-        <ScrollArea className="h-full">
-          <div className="space-y-4 px-4 py-3">
-            <Card>
-              <CardContent className="p-3">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run Telemetry</h3>
-                <div className="mt-3 grid grid-cols-2 gap-3">
-                  <Card>
-                    <CardContent className="p-3">
-                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Raw Events</div>
-                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.eventCount}</div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-3">
-                      <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Steps</div>
-                      <div className="mt-1 text-sm text-[var(--text-primary)]">{journey.steps.length}</div>
-                      <div className="mt-1 text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-                        telemetry steps
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <Card className="mt-3">
-                  <CardContent className="p-3">
-                    <div className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Run ID</div>
-                    <code className="mt-1 block break-all text-xs text-[var(--text-primary)]">{journey.traceId}</code>
-                  </CardContent>
-                </Card>
-              </CardContent>
-            </Card>
-
-            <section className="space-y-2">
-              <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Step Telemetry</h3>
-              <div className="space-y-2">
-                {journey.steps.map((stage, index) => {
-                  const stepSelectionId = stage.instanceId ?? stage.stepId
-                  const selected = (selectedStep?.instanceId ?? selectedStep?.stepId) === stepSelectionId
-                  return (
-                    <button
-                      key={stage.instanceId ?? `${stage.stepId}-${index}`}
-                      type="button"
-                      onClick={() => setSelectedStageId(stepSelectionId)}
-                      className={`w-full rounded-lg border p-3 text-left ${
-                        selected
-                          ? 'border-[var(--border-accent)] bg-[var(--accent-primary-muted)]'
-                          : 'border-[var(--border-default)] bg-[var(--surface-primary)]/40'
-                      }`}
-                    >
-                      <div className="mb-2 flex items-center gap-2">
-                        <span className="text-sm text-[var(--text-primary)]">{stepDisplayLabel(stage)}</span>
-                        <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
-                        <DurationBadge durationMs={stage.durationMs} />
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                        <span>
-                          seq {stage.startSeq} {'->'} {stage.endSeq}
-                        </span>
-                        {typeof stage.attempt === 'number' ? <span>attempt {stage.attempt}</span> : null}
-                        {stage.nodeId ? <span>node {stage.nodeId}</span> : null}
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-
-            <Card>
-              <CardContent className="p-3">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Selected Step Attributes</h3>
-                <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
-                  {JSON.stringify(selectedStep?.attrs ?? {}, null, 2)}
-                </pre>
-              </CardContent>
-            </Card>
+            <WaterfallChart spans={spans} errorNodeIds={errorNodeIds} onSelectNode={onSelectNode} />
           </div>
         </ScrollArea>
       </TabsContent>

@@ -11,6 +11,7 @@ import type { SpanEntry } from '../types'
 
 interface WaterfallChartProps {
   spans: SpanEntry[]
+  errorNodeIds?: Set<string>
   onSelectNode?: (nodeId: string) => void
 }
 
@@ -90,7 +91,7 @@ function computeCriticalPath(bars: WaterfallBar[]): Set<string> {
   return criticalIds
 }
 
-export function WaterfallChart({ spans, onSelectNode }: WaterfallChartProps) {
+export function WaterfallChart({ spans, errorNodeIds, onSelectNode }: WaterfallChartProps) {
   const { bars, totalDuration, criticalPathDuration } = useMemo(() => {
     if (spans.length === 0) {
       return { bars: [], totalDuration: 0, criticalPathDuration: 0, runStart: 0 }
@@ -146,9 +147,11 @@ export function WaterfallChart({ spans, onSelectNode }: WaterfallChartProps) {
           const leftPercent = totalDuration > 0 ? (bar.startOffset / totalDuration) * 100 : 0
           const widthPercent = totalDuration > 0 ? Math.max((bar.duration / totalDuration) * 100, 1.5) : 1.5
 
-          const statusColor =
-            bar.span.status === 'error'
-              ? 'var(--status-error)'
+          const isError = bar.span.status === 'error' || errorNodeIds?.has(bar.span.nodeId)
+          const statusColor = isError
+            ? 'var(--status-error)'
+            : bar.isCriticalPath
+              ? 'var(--status-warning)'
               : bar.span.status === 'active'
                 ? 'var(--status-active)'
                 : 'var(--status-success)'
@@ -167,7 +170,7 @@ export function WaterfallChart({ spans, onSelectNode }: WaterfallChartProps) {
                     className="shrink-0 truncate text-xs text-[var(--text-secondary)]"
                     style={{ width: `${labelWidth - bar.depth * 12}px` }}
                   >
-                    {bar.span.spanName}
+                    {bar.span.nodeId || bar.span.spanName}
                   </span>
 
                   <div className="relative h-5 flex-1 rounded bg-[var(--surface-inset)]">
@@ -185,16 +188,14 @@ export function WaterfallChart({ spans, onSelectNode }: WaterfallChartProps) {
                     />
                   </div>
 
-                  <span className="shrink-0 w-14 text-right font-mono text-xs text-[var(--text-muted)]">
+                  <span className={`shrink-0 w-14 text-right font-mono text-xs ${isError ? 'text-[var(--status-error)]' : 'text-[var(--text-muted)]'}`}>
                     {formatDuration(bar.duration)}
                   </span>
                 </button>
               </TooltipTrigger>
               <TooltipContent side="top" className="space-y-1">
-                <p className="font-semibold">{bar.span.spanName}</p>
-                <p className="text-xs">Node: {bar.span.nodeId}</p>
-                <p className="text-xs">Start: {formatTime(bar.span.startTime)}</p>
-                <p className="text-xs">End: {formatTime(bar.span.endTime)}</p>
+                <p className="font-semibold">{bar.span.nodeId || bar.span.spanName}</p>
+                {bar.span.nodeId ? <p className="text-xs text-[var(--text-muted)]">{bar.span.spanName}</p> : null}
                 <p className="text-xs">Duration: {formatDuration(bar.duration)}</p>
                 {bar.isCriticalPath ? (
                   <p className="text-xs font-semibold text-[var(--status-warning)]">Critical path</p>

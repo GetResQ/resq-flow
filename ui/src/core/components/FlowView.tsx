@@ -36,6 +36,8 @@ export function FlowView() {
     selectedNodeId,
     selectedTraceId,
     selectedLogSeq,
+    runTab,
+    panel,
     sourceMode,
     viewMode,
     updateUrlState,
@@ -392,9 +394,36 @@ export function FlowView() {
       />
 
       {(() => {
-        if (selectedJourney) {
-          const presentation = getTraceInspectorPresentation(selectedJourney)
-          const canGoBack = Boolean(selectedLogSeq || selectedNodeId)
+        // When both node and run are selected, use `panel` to decide which view is foreground.
+        // panel=run  → user clicked "View run" from a node  → show run, back returns to node
+        // otherwise  → user clicked a node from within a run → show node, back returns to run
+        if (selectedNode && selectedJourney) {
+          if (panel === 'run') {
+            const presentation = getTraceInspectorPresentation(selectedJourney)
+
+            return (
+              <AnimatePresence initial={false}>
+                <InspectorPanel
+                  title={presentation.title}
+                  description={presentation.description}
+                  headerContent={presentation.headerContent}
+                  onBack={() => updateUrlState({ run: null, runTab: null, panel: null }, { replace: true })}
+                  onClose={() => updateUrlState({ node: null, run: null, runTab: null, panel: null }, { replace: true })}
+                >
+                  <TraceDetailContent
+                    key={selectedJourney.traceId}
+                    journey={selectedJourney}
+                    spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
+                    initialTab={runTab === 'timing' ? 'timing' : 'overview'}
+                    onTabChange={(tab) => updateUrlState({ runTab: tab === 'overview' ? null : tab }, { replace: true })}
+                    onSelectNode={(nodeId) => updateUrlState({ node: nodeId, panel: null }, { replace: true })}
+                  />
+                </InspectorPanel>
+              </AnimatePresence>
+            )
+          }
+
+          const presentation = getNodeInspectorPresentation(selectedNode)
 
           return (
             <AnimatePresence initial={false}>
@@ -402,14 +431,42 @@ export function FlowView() {
                 title={presentation.title}
                 description={presentation.description}
                 headerContent={presentation.headerContent}
-                onBack={canGoBack ? () => updateUrlState({ run: null }, { replace: true }) : undefined}
-                onClose={() => setSelectedTraceId(undefined, { replace: true })}
+                onBack={() => updateUrlState({ panel: 'run' }, { replace: true })}
+                onClose={() => updateUrlState({ node: null, run: null, runTab: null, panel: null }, { replace: true })}
+              >
+                <NodeDetailContent
+                  key={selectedNode.id}
+                  node={selectedNode}
+                  status={selectedNodeStatus}
+                  logs={selectedNodeLogs}
+                  spans={selectedNodeSpans}
+                  onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run', log: null, runTab: null }, { replace: true })}
+                />
+              </InspectorPanel>
+            </AnimatePresence>
+          )
+        }
+
+        if (selectedJourney) {
+          const presentation = getTraceInspectorPresentation(selectedJourney)
+          const canGoBack = Boolean(selectedLogSeq)
+
+          return (
+            <AnimatePresence initial={false}>
+              <InspectorPanel
+                title={presentation.title}
+                description={presentation.description}
+                headerContent={presentation.headerContent}
+                onBack={canGoBack ? () => updateUrlState({ run: null, panel: null }, { replace: true }) : undefined}
+                onClose={() => updateUrlState({ run: null, runTab: null, panel: null }, { replace: true })}
               >
                 <TraceDetailContent
                   key={selectedJourney.traceId}
                   journey={selectedJourney}
                   spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
-                  onSelectNode={(nodeId) => handleSelectNode(nodeId)}
+                  initialTab={runTab === 'timing' ? 'timing' : 'overview'}
+                  onTabChange={(tab) => updateUrlState({ runTab: tab === 'overview' ? null : tab }, { replace: true })}
+                  onSelectNode={(nodeId) => updateUrlState({ node: nodeId }, { replace: true })}
                 />
               </InspectorPanel>
             </AnimatePresence>
@@ -430,7 +487,7 @@ export function FlowView() {
                 <EventDetailContent
                   entry={selectedLogEntry}
                   hasJourney={selectedLogHasJourney}
-                  onOpenRun={(traceId) => updateUrlState({ run: traceId, node: null }, { replace: true })}
+                  onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run' }, { replace: true })}
                 />
               </InspectorPanel>
             </AnimatePresence>
@@ -454,7 +511,7 @@ export function FlowView() {
                   status={selectedNodeStatus}
                   logs={selectedNodeLogs}
                   spans={selectedNodeSpans}
-                  onOpenRun={(traceId) => updateUrlState({ run: traceId, log: null }, { replace: true })}
+                  onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run', log: null }, { replace: true })}
                 />
               </InspectorPanel>
             </AnimatePresence>

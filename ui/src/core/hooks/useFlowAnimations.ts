@@ -57,6 +57,10 @@ function resolveDurationMs(event: FlowEvent, spanStarts: Map<string, number>): n
   return undefined
 }
 
+function remainingWindowMs(eventTimeMs: number, windowMs: number, currentTimeMs: number): number {
+  return Math.max(eventTimeMs + windowMs - currentTimeMs, 0)
+}
+
 function matchCandidate(spanMapping: SpanMapping, candidate: string | undefined): string | null {
   if (!candidate) {
     return null
@@ -145,34 +149,51 @@ export function useFlowAnimations({
     [],
   )
 
+  const setNodeIdle = useCallback(
+    (
+      nodeId: string,
+      updatedAt: number,
+      overrides?: Partial<Pick<NodeRuntimeStatus, 'counter' | 'durationMs' | 'durationVisibleUntil' | 'lastMessage'>>,
+    ) => {
+      updateNodeStatus(nodeId, (previous) => ({
+        status: 'idle',
+        updatedAt,
+        counter: overrides?.counter ?? previous?.counter,
+        durationMs: overrides?.durationMs ?? previous?.durationMs,
+        durationVisibleUntil: overrides?.durationVisibleUntil ?? previous?.durationVisibleUntil,
+        lastMessage: overrides?.lastMessage ?? previous?.lastMessage,
+      }))
+    },
+    [updateNodeStatus],
+  )
+
   const scheduleNodeIdle = useCallback(
-    (nodeId: string, delayMs: number) => {
+    (
+      nodeId: string,
+      delayMs: number,
+      updatedAt: number,
+      overrides?: Partial<Pick<NodeRuntimeStatus, 'counter' | 'durationMs' | 'durationVisibleUntil' | 'lastMessage'>>,
+    ) => {
       const existing = nodeResetTimersRef.current.get(nodeId)
       if (existing) {
         window.clearTimeout(existing)
       }
 
       const timer = window.setTimeout(() => {
-        updateNodeStatus(nodeId, (previous) => {
-          const nextCounter = previous?.counter
-          return {
-            status: 'idle',
-            updatedAt: nowMs(),
-            counter: nextCounter,
-            durationMs: previous?.durationMs,
-            durationVisibleUntil: previous?.durationVisibleUntil,
-            lastMessage: previous?.lastMessage,
-          }
-        })
+        setNodeIdle(nodeId, updatedAt, overrides)
         nodeResetTimersRef.current.delete(nodeId)
       }, delayMs)
 
       nodeResetTimersRef.current.set(nodeId, timer)
     },
-    [updateNodeStatus],
+    [setNodeIdle],
   )
 
-  const activateEdge = useCallback((edgeId: string) => {
+  const activateEdge = useCallback((edgeId: string, activeForMs: number) => {
+    if (activeForMs <= 0) {
+      return
+    }
+
     setActiveEdges((previous) => {
       const next = new Set(previous)
       next.add(edgeId)
@@ -191,10 +212,10 @@ export function useFlowAnimations({
         return next
       })
       edgeResetTimersRef.current.delete(edgeId)
-    }, resolvedTimings.edgeActiveMs)
+    }, activeForMs)
 
     edgeResetTimersRef.current.set(edgeId, timer)
-  }, [resolvedTimings.edgeActiveMs])
+  }, [])
 
   useEffect(() => {
     if (sessionKeyRef.current === sessionKey) {
@@ -218,6 +239,7 @@ export function useFlowAnimations({
 
     const pending = events.slice(processedIndexRef.current)
     processedIndexRef.current = events.length
+    const currentTime = nowMs()
 
     for (const event of pending) {
       const eventKind = resolveEventKind(event)
@@ -233,7 +255,8 @@ export function useFlowAnimations({
         matchCandidate(producerLookup, event.span_name) ??
         matchCandidate(spanMapping, functionName) ??
         matchCandidate(spanMapping, event.span_name)
-      const timestamp = parseTimestampMs(event.start_time ?? event.timestamp) ?? nowMs()
+      const startTimestamp = parseTimestampMs(event.start_time ?? event.timestamp) ?? currentTime
+      const eventTimestamp = parseTimestampMs(event.end_time ?? event.timestamp) ?? currentTime
       const executionKey = eventExecutionKey(event)
 
       if (executionKey && mappedNodeId) {
@@ -241,7 +264,10 @@ export function useFlowAnimations({
         if (previousNode && previousNode !== mappedNodeId) {
           const edgeId = edgeLookup.get(`${previousNode}->${mappedNodeId}`)
           if (edgeId) {
-            activateEdge(edgeId)
+            activateEdge(
+              edgeId,
+              remainingWindowMs(eventTimestamp, resolvedTimings.edgeActiveMs, currentTime),
+            )
           }
         }
         traceLastNodeRef.current.set(executionKey, mappedNodeId)
@@ -249,14 +275,14 @@ export function useFlowAnimations({
 
       if (eventKind === 'node_started') {
         if (event.span_id) {
-          spanStartRef.current.set(event.span_id, timestamp)
+          spanStartRef.current.set(event.span_id, startTimestamp)
         }
 
         if (mappedNodeId) {
           updateNodeStatus(mappedNodeId, (previous) => ({
             status: 'active',
             counter: previous?.counter,
-            updatedAt: nowMs(),
+            updatedAt: startTimestamp,
             lastMessage: event.message ?? event.span_name,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
@@ -277,17 +303,45 @@ export function useFlowAnimations({
         }
 
         const isError = inferErrorState(event)
-        updateNodeStatus(mappedNodeId, (previous) => ({
-          status: isError ? 'error' : 'active',
-          counter: previous?.counter,
-          durationMs,
-          durationVisibleUntil: nowMs() + resolvedTimings.durationVisibleMs,
-          updatedAt: nowMs(),
-          lastMessage: event.message ?? event.span_name,
-        }))
+        const durationVisibleUntil = eventTimestamp + resolvedTimings.durationVisibleMs
 
-        if (!isError) {
-          scheduleNodeIdle(mappedNodeId, resolvedTimings.nodePulseResetMs)
+        if (isError) {
+          updateNodeStatus(mappedNodeId, (previous) => ({
+            status: 'error',
+            counter: previous?.counter,
+            durationMs,
+            durationVisibleUntil,
+            updatedAt: eventTimestamp,
+            lastMessage: event.message ?? event.span_name,
+          }))
+        } else {
+          const remainingPulseMs = remainingWindowMs(
+            eventTimestamp,
+            resolvedTimings.nodePulseResetMs,
+            currentTime,
+          )
+
+          if (remainingPulseMs > 0) {
+            updateNodeStatus(mappedNodeId, (previous) => ({
+              status: 'active',
+              counter: previous?.counter,
+              durationMs,
+              durationVisibleUntil,
+              updatedAt: eventTimestamp,
+              lastMessage: event.message ?? event.span_name,
+            }))
+            scheduleNodeIdle(mappedNodeId, remainingPulseMs, eventTimestamp, {
+              durationMs,
+              durationVisibleUntil,
+              lastMessage: event.message ?? event.span_name,
+            })
+          } else {
+            setNodeIdle(mappedNodeId, eventTimestamp, {
+              durationMs,
+              durationVisibleUntil,
+              lastMessage: event.message ?? event.span_name,
+            })
+          }
         }
 
         continue
@@ -297,30 +351,47 @@ export function useFlowAnimations({
         const targetQueueNodeId = queueNodeId ?? mappedNodeId
         if (targetQueueNodeId) {
           const delta = typeof event.queue_delta === 'number' ? event.queue_delta : 1
+          const remainingPulseMs = remainingWindowMs(
+            eventTimestamp,
+            resolvedTimings.nodePulseResetMs,
+            currentTime,
+          )
+
           updateNodeStatus(targetQueueNodeId, (previous) => ({
-            status: 'active',
+            status: remainingPulseMs > 0 ? 'active' : 'idle',
             counter: Math.max((previous?.counter ?? 0) + delta, 0),
-            updatedAt: nowMs(),
+            updatedAt: eventTimestamp,
             lastMessage: event.message ?? queueName,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          scheduleNodeIdle(targetQueueNodeId, resolvedTimings.nodePulseResetMs)
+          if (remainingPulseMs > 0) {
+            scheduleNodeIdle(targetQueueNodeId, remainingPulseMs, eventTimestamp, {
+              lastMessage: event.message ?? queueName,
+            })
+          }
 
           if (producerNodeId && producerNodeId !== targetQueueNodeId) {
             updateNodeStatus(producerNodeId, (previous) => ({
-              status: 'active',
+              status: remainingPulseMs > 0 ? 'active' : 'idle',
               counter: previous?.counter,
-              updatedAt: nowMs(),
+              updatedAt: eventTimestamp,
               lastMessage: event.message ?? functionName ?? event.span_name,
               durationMs: previous?.durationMs,
               durationVisibleUntil: previous?.durationVisibleUntil,
             }))
-            scheduleNodeIdle(producerNodeId, resolvedTimings.nodePulseResetMs)
+            if (remainingPulseMs > 0) {
+              scheduleNodeIdle(producerNodeId, remainingPulseMs, eventTimestamp, {
+                lastMessage: event.message ?? functionName ?? event.span_name,
+              })
+            }
 
             const edgeId = edgeLookup.get(`${producerNodeId}->${targetQueueNodeId}`)
             if (edgeId) {
-              activateEdge(edgeId)
+              activateEdge(
+                edgeId,
+                remainingWindowMs(eventTimestamp, resolvedTimings.edgeActiveMs, currentTime),
+              )
             }
           }
         }
@@ -329,35 +400,51 @@ export function useFlowAnimations({
       }
 
       if (eventKind === 'queue_picked') {
+        const remainingPulseMs = remainingWindowMs(
+          eventTimestamp,
+          resolvedTimings.nodePulseResetMs,
+          currentTime,
+        )
         if (queueNodeId) {
           const delta = typeof event.queue_delta === 'number' ? event.queue_delta : -1
           updateNodeStatus(queueNodeId, (previous) => ({
-            status: 'active',
+            status: remainingPulseMs > 0 ? 'active' : 'idle',
             counter: Math.max((previous?.counter ?? 0) + delta, 0),
-            updatedAt: nowMs(),
+            updatedAt: eventTimestamp,
             lastMessage: event.message ?? queueName,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          scheduleNodeIdle(queueNodeId, resolvedTimings.nodePulseResetMs)
+          if (remainingPulseMs > 0) {
+            scheduleNodeIdle(queueNodeId, remainingPulseMs, eventTimestamp, {
+              lastMessage: event.message ?? queueName,
+            })
+          }
         }
 
         const targetWorkerNodeId = workerNodeId ?? mappedNodeId
         if (targetWorkerNodeId) {
           updateNodeStatus(targetWorkerNodeId, (previous) => ({
-            status: 'active',
+            status: remainingPulseMs > 0 ? 'active' : 'idle',
             counter: previous?.counter,
-            updatedAt: nowMs(),
+            updatedAt: eventTimestamp,
             lastMessage: event.message ?? workerName ?? event.span_name,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          scheduleNodeIdle(targetWorkerNodeId, resolvedTimings.nodePulseResetMs)
+          if (remainingPulseMs > 0) {
+            scheduleNodeIdle(targetWorkerNodeId, remainingPulseMs, eventTimestamp, {
+              lastMessage: event.message ?? workerName ?? event.span_name,
+            })
+          }
 
           if (queueNodeId) {
             const edgeId = edgeLookup.get(`${queueNodeId}->${targetWorkerNodeId}`)
             if (edgeId) {
-              activateEdge(edgeId)
+              activateEdge(
+                edgeId,
+                remainingWindowMs(eventTimestamp, resolvedTimings.edgeActiveMs, currentTime),
+              )
             }
           }
         }
@@ -366,15 +453,25 @@ export function useFlowAnimations({
       }
 
       if (mappedNodeId) {
+        const remainingPulseMs = remainingWindowMs(
+          eventTimestamp,
+          resolvedTimings.nodePulseResetMs,
+          currentTime,
+        )
+
         updateNodeStatus(mappedNodeId, (previous) => ({
-          status: 'active',
+          status: remainingPulseMs > 0 ? 'active' : 'idle',
           counter: previous?.counter,
-          updatedAt: nowMs(),
+          updatedAt: eventTimestamp,
           lastMessage: event.message ?? event.span_name,
           durationMs: previous?.durationMs,
           durationVisibleUntil: previous?.durationVisibleUntil,
         }))
-        scheduleNodeIdle(mappedNodeId, resolvedTimings.nodePulseResetMs)
+        if (remainingPulseMs > 0) {
+          scheduleNodeIdle(mappedNodeId, remainingPulseMs, eventTimestamp, {
+            lastMessage: event.message ?? event.span_name,
+          })
+        }
       }
     }
   }, [

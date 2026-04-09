@@ -8,9 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
 } from '@/components/ui'
 
 import type { ThemeMode } from '../types'
@@ -34,23 +31,18 @@ export function HudControlsPill({
 
   return (
     <div className="flex items-center gap-1">
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8"
-            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            onClick={onToggleTheme}
-          >
-            {theme === 'dark'
-              ? <SunMedium className="size-4 transition-transform duration-150 ease-out" />
-              : <MoonStar className="size-4 transition-transform duration-150 ease-out" />}
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</TooltipContent>
-      </Tooltip>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="size-8"
+        aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        onClick={onToggleTheme}
+      >
+        {theme === 'dark'
+          ? <SunMedium className="size-4 transition-transform duration-150 ease-out" />
+          : <MoonStar className="size-4 transition-transform duration-150 ease-out" />}
+      </Button>
 
       <DropdownMenu open={settingsOpen} onOpenChange={setSettingsOpen}>
         <DropdownMenuTrigger asChild>

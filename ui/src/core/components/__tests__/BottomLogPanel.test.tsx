@@ -95,6 +95,7 @@ describe('BottomLogPanel', () => {
         globalLogs={logs}
         journeys={journeys}
         onSelectNode={vi.fn()}
+        onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
       />,
     )
@@ -117,6 +118,7 @@ describe('BottomLogPanel', () => {
         globalLogs={logs}
         journeys={journeys}
         onSelectNode={vi.fn()}
+        onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
       />,
     )
@@ -145,6 +147,7 @@ describe('BottomLogPanel', () => {
         ]}
         journeys={journeys}
         onSelectNode={vi.fn()}
+        onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
       />,
     )
@@ -153,5 +156,40 @@ describe('BottomLogPanel', () => {
 
     expect(screen.getByText(/provider timeout/i)).toBeInTheDocument()
     expect(screen.queryByText(/mail_incoming worker picked up job/i)).not.toBeInTheDocument()
+  })
+
+  it('routes log rows with a seq through onSelectLog instead of trace and node selection', () => {
+    const onSelectLog = vi.fn()
+    const onSelectTrace = vi.fn()
+    const onSelectNode = vi.fn()
+    const entryWithSeq: LogEntry = {
+      timestamp: '2026-03-24T16:00:03.000Z',
+      seq: 42,
+      level: 'error',
+      nodeId: 'incoming-worker',
+      message: 'provider timeout',
+      signal: 'critical',
+      defaultVisible: true,
+      eventType: 'log',
+      traceId: 'run-2',
+      runId: 'run-2',
+    }
+
+    render(
+      <BottomLogPanel
+        flow={flow}
+        globalLogs={[entryWithSeq]}
+        journeys={journeys}
+        onSelectNode={onSelectNode}
+        onSelectLog={onSelectLog}
+        onSelectTrace={onSelectTrace}
+      />,
+    )
+
+    fireEvent.click(screen.getByText('provider timeout'))
+
+    expect(onSelectLog).toHaveBeenCalledWith(entryWithSeq)
+    expect(onSelectTrace).not.toHaveBeenCalled()
+    expect(onSelectNode).not.toHaveBeenCalled()
   })
 })

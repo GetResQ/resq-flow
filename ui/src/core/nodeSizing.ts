@@ -17,12 +17,12 @@ const shapeSizeDefaults: Partial<Record<NodeShape, NodeSize>> = {
 }
 
 const roleSizeDefaults: Partial<Record<NodeSemanticRole, NodeSize>> = {
-  trigger: { width: 180, height: 52 },
-  queue: { width: 180, height: 72 },
-  worker: { width: 180, height: 72 },
-  scheduler: { width: 180, height: 72 },
-  process: { width: 180, height: 72 },
-  detail: { width: 150, height: 52 },
+  trigger: { width: 240, height: 44 },
+  queue: { width: 240, height: 72 },
+  worker: { width: 240, height: 72 },
+  scheduler: { width: 240, height: 72 },
+  process: { width: 200, height: 72 },
+  detail: { width: 200, height: 44 },
   decision: { width: 144, height: 144 },
   resource: { width: 112, height: 128 },
 }

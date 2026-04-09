@@ -35,9 +35,9 @@ describe('WaterfallChart', () => {
 
     expect(screen.getByTestId('waterfall-chart')).toBeInTheDocument()
     expect(screen.getAllByTestId('waterfall-bar')).toHaveLength(3)
-    expect(screen.getByText('parse-headers')).toBeInTheDocument()
+    expect(screen.getByText('parse')).toBeInTheDocument()
     expect(screen.getByText('analyze')).toBeInTheDocument()
-    expect(screen.getByText('send-reply')).toBeInTheDocument()
+    expect(screen.getByText('send')).toBeInTheDocument()
   })
 
   it('shows total and critical path duration', () => {
@@ -72,7 +72,7 @@ describe('WaterfallChart', () => {
 
     render(<WaterfallChart spans={spans} />)
 
-    expect(screen.getByText('fail-span')).toBeInTheDocument()
+    expect(screen.getByText('node-1')).toBeInTheDocument()
     expect(screen.getByText('200ms')).toBeInTheDocument()
   })
 })

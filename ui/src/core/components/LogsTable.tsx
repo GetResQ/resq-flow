@@ -167,11 +167,11 @@ export function LogsTable({
           <span className="flex min-w-0 items-center gap-3" title={row.original.messageTitle}>
             <span className="min-w-0 truncate">
               {row.original.messagePrefix && (
-                <span className="mr-1 font-mono text-[10px] text-[var(--text-muted)]">
+                <span className="mr-1 font-mono text-[11px] text-[var(--text-muted)]">
                   {row.original.messagePrefix}:
                 </span>
               )}
-              <span className="text-[var(--text-primary)]">{row.original.messageBody}</span>
+              <span className="font-mono text-[13px] leading-5 text-[var(--text-primary)]">{row.original.messageBody}</span>
             </span>
             {typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000 && (
               <DurationBadge durationMs={row.original.entry.durationMs} className="flex-shrink-0" />

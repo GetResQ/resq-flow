@@ -1,5 +1,5 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { mailPipelineFlow } from '../../../flows/mail-pipeline'
 import type { FlowEvent } from '../../types'
@@ -11,7 +11,15 @@ function sleep(ms: number): Promise<void> {
   })
 }
 
+function setNow(iso: string) {
+  vi.spyOn(Date, 'now').mockReturnValue(Date.parse(iso))
+}
+
 describe('useFlowAnimations', () => {
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
   it('activates a node on span_start then marks active on finish and clears to idle', async () => {
     const start: FlowEvent = {
       type: 'span_start',
@@ -56,12 +64,14 @@ describe('useFlowAnimations', () => {
       },
     )
 
+    setNow('2026-03-03T12:00:00.010Z')
     act(() => {
       rerender({ events: [start] })
     })
 
     expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
 
+    setNow('2026-03-03T12:00:01.210Z')
     act(() => {
       rerender({ events: [start, end] })
     })
@@ -126,12 +136,14 @@ describe('useFlowAnimations', () => {
       },
     )
 
+    setNow('2026-03-03T12:00:00.010Z')
     act(() => {
       rerender({ events: [start] })
     })
 
     expect(result.current.nodeStatuses.get('incoming-worker')?.status).toBe('active')
 
+    setNow('2026-03-03T12:00:00.260Z')
     act(() => {
       rerender({ events: [start, end] })
     })
@@ -167,6 +179,7 @@ describe('useFlowAnimations', () => {
       },
     ]
 
+    setNow('2026-03-03T12:00:00.910Z')
     const { result } = renderHook(() =>
       useFlowAnimations({
         events,
@@ -227,12 +240,14 @@ describe('useFlowAnimations', () => {
       },
     )
 
+    setNow('2026-03-03T12:00:00.010Z')
     act(() => {
       rerender({ events: [start] })
     })
 
     expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
 
+    setNow('2026-03-03T12:00:00.510Z')
     act(() => {
       rerender({ events: [start, end] })
     })
@@ -273,6 +288,7 @@ describe('useFlowAnimations', () => {
       },
     }
 
+    setNow('2026-03-03T12:00:00.010Z')
     const { result, rerender } = renderHook(
       ({ events }) =>
         useFlowAnimations({
@@ -290,6 +306,7 @@ describe('useFlowAnimations', () => {
       expect(result.current.nodeStatuses.get('analyze-queue')?.counter).toBe(1)
     })
 
+    setNow('2026-03-03T12:00:00.210Z')
     act(() => {
       rerender({ events: [enqueueEvent, pickupEvent] })
     })
@@ -358,6 +375,7 @@ describe('useFlowAnimations', () => {
       },
     }
 
+    setNow('2026-03-03T12:00:00.025Z')
     const { result, rerender } = renderHook(
       ({ events }) =>
         useFlowAnimations({
@@ -378,6 +396,7 @@ describe('useFlowAnimations', () => {
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
+    setNow('2026-03-03T12:00:00.026Z')
     act(() => {
       rerender({ events: [draftInserted, autoApproved, executeEnqueued, sendHandoffDetail] })
     })
@@ -387,6 +406,7 @@ describe('useFlowAnimations', () => {
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
+    setNow('2026-03-03T12:00:00.031Z')
     act(() => {
       rerender({
         events: [draftInserted, autoApproved, executeEnqueued, sendHandoffDetail, sendQueueEnqueued],
@@ -414,6 +434,7 @@ describe('useFlowAnimations', () => {
       message: 'rrq:queue:mail-backfill: job enqueued (handle_mail_backfill_start)',
     }
 
+    setNow('2026-03-03T12:00:00.010Z')
     const { result } = renderHook(() =>
       useFlowAnimations({
         events: [enqueueEvent],
@@ -431,6 +452,73 @@ describe('useFlowAnimations', () => {
       expect(result.current.nodeStatuses.get('trigger-oauth')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('active')
       expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(true)
+    })
+  })
+
+  it('does not replay stale snapshot queue activity as fresh glow', async () => {
+    const enqueueEvent: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-stale-1',
+      span_id: 'log-stale-1',
+      attributes: {
+        action: 'enqueue',
+        queue_name: 'rrq:queue:mail-backfill',
+        function_name: 'handle_mail_backfill_start',
+      },
+      message: 'rrq:queue:mail-backfill: job enqueued (handle_mail_backfill_start)',
+    }
+
+    setNow('2026-03-03T12:00:10.000Z')
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [enqueueEvent],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        timings: {
+          nodePulseResetMs: 50,
+          edgeActiveMs: 50,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('trigger-oauth')?.status).toBe('idle')
+      expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('idle')
+      expect(result.current.nodeStatuses.get('backfill-queue')?.counter).toBe(1)
+      expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(false)
+    })
+  })
+
+  it('keeps snapshot spans active when they are still running', async () => {
+    const runningStart: FlowEvent = {
+      type: 'span_start',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      span_name: 'handle_mail_extract',
+      trace_id: 'trace-running-1',
+      span_id: 'span-running-1',
+      attributes: {
+        function_name: 'handle_mail_extract',
+      },
+    }
+
+    setNow('2026-03-03T12:00:10.000Z')
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [runningStart],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        timings: {
+          nodePulseResetMs: 50,
+          edgeActiveMs: 50,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
     })
   })
 })

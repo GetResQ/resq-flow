@@ -1,6 +1,6 @@
 import { useId, type ReactNode } from 'react'
 import { motion } from 'motion/react'
-import { X } from 'lucide-react'
+import { ArrowLeft, X } from 'lucide-react'
 
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/utils'
@@ -11,6 +11,7 @@ interface InspectorPanelProps {
   headerContent?: ReactNode
   className?: string
   children: ReactNode
+  onBack?: () => void
   onClose: () => void
 }
 
@@ -20,6 +21,7 @@ export function InspectorPanel({
   headerContent,
   className,
   children,
+  onBack,
   onClose,
 }: InspectorPanelProps) {
   const titleId = useId()
@@ -40,21 +42,34 @@ export function InspectorPanel({
       )}
     >
       <header className="border-b border-[var(--border-default)] px-4 py-3">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h2 id={titleId} className="text-base font-semibold text-[var(--text-primary)]">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {onBack ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="size-6 shrink-0 cursor-pointer"
+                onClick={onBack}
+                aria-label="Back"
+              >
+                <ArrowLeft className="size-4" />
+              </Button>
+            ) : null}
+            <h2 id={titleId} className="min-w-0 text-base font-semibold text-[var(--text-primary)]">
               {title}
             </h2>
-            {description ? (
-              <p id={descriptionId} className="mt-1 text-sm text-[var(--text-secondary)]">
-                {description}
-              </p>
-            ) : null}
           </div>
           <Button type="button" variant="ghost" size="icon" className="size-7 shrink-0" onClick={onClose} aria-label="Close">
             <X className="size-4" />
           </Button>
         </div>
+
+        {description ? (
+          <p id={descriptionId} className="mt-1 text-sm text-[var(--text-secondary)]">
+            {description}
+          </p>
+        ) : null}
 
         {headerContent ? <div className="mt-3">{headerContent}</div> : null}
       </header>

@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { describe, expect, it, vi } from 'vitest'
 
 import { NodeDetailContent } from '../NodeDetailPanel'
 import type { FlowNodeConfig, LogEntry } from '../../types'
@@ -93,7 +93,7 @@ describe('NodeDetailContent', () => {
 
     expect(screen.getByText('most recent first')).toBeInTheDocument()
     expect(screen.getByText('latest activity')).toBeInTheDocument()
-    expect(screen.getByText('activity 1')).toBeInTheDocument()
+    expect(screen.queryByText('activity 1')).not.toBeInTheDocument()
   })
 
   it('shows the latest meaningful entry per run and labels activity when multiple runs are present', () => {
@@ -153,5 +153,76 @@ describe('NodeDetailContent', () => {
     expect(screen.getByText('latest activity')).toBeInTheDocument()
     expect(screen.getByText('other run activity')).toBeInTheDocument()
     expect(screen.queryByText('older activity same run')).not.toBeInTheDocument()
+  })
+
+  it('shows the latest failure block with the error message when a recent error is present', () => {
+    render(
+      <NodeDetailContent
+        node={node}
+        logs={[
+          {
+            timestamp: '2026-03-23T12:00:06.000Z',
+            level: 'error',
+            nodeId: 'incoming-queue',
+            message: 'fallback failure',
+            displayMessage: 'fallback failure',
+            signal: 'critical',
+            defaultVisible: true,
+            eventType: 'log',
+            traceId: 'run-latest',
+            runId: 'run-latest',
+            attributes: { error_message: 'Provider timed out after 30s' },
+          },
+        ]}
+        spans={[]}
+      />,
+    )
+
+    expect(screen.getByText('Provider timed out after 30s')).toBeInTheDocument()
+  })
+
+  it('does not show the latest failure block when no error logs are present', () => {
+    render(<NodeDetailContent node={node} logs={logs} spans={[]} />)
+
+    expect(screen.queryByText('Provider timed out after 30s')).not.toBeInTheDocument()
+  })
+
+  it('opens the latest failure run when the link is clicked', () => {
+    const onOpenRun = vi.fn()
+
+    render(
+      <NodeDetailContent
+        node={node}
+        logs={[
+          {
+            timestamp: '2026-03-23T12:00:06.000Z',
+            level: 'error',
+            nodeId: 'incoming-queue',
+            message: 'failure',
+            displayMessage: 'failure',
+            signal: 'critical',
+            defaultVisible: true,
+            eventType: 'log',
+            traceId: 'trace-latest',
+            runId: 'run-latest',
+            attributes: { error_message: 'Provider timed out after 30s' },
+          },
+        ]}
+        spans={[]}
+        onOpenRun={onOpenRun}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'View run' }))
+
+    expect(onOpenRun).toHaveBeenCalledWith('run-latest')
+  })
+
+  it('caps recent activity at five entries', () => {
+    render(<NodeDetailContent node={node} logs={logs} spans={[]} />)
+
+    expect(screen.getByText('latest activity')).toBeInTheDocument()
+    expect(screen.getByText('activity 2')).toBeInTheDocument()
+    expect(screen.queryByText('activity 1')).not.toBeInTheDocument()
   })
 })

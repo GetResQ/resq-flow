@@ -1,12 +1,8 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
+import { AlertTriangle, Info, XCircle } from 'lucide-react'
 
 import {
-  Badge,
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
+  Button,
   ScrollArea,
   Tabs,
   TabsContent,
@@ -32,10 +28,11 @@ interface NodeDetailContentProps {
   status?: NodeDetailStatus
   logs: LogEntry[]
   spans: SpanEntry[]
+  onOpenRun?: (traceId: string) => void
 }
 
-type TabKey = 'overview' | 'timing'
-type InsightTone = 'neutral' | 'success' | 'warning' | 'error'
+type TabKey = 'overview' | 'debug'
+type InsightTone = 'neutral' | 'warning' | 'error'
 
 interface InsightItem {
   tone: InsightTone
@@ -147,6 +144,14 @@ function activityExecutionLabel(entry: LogEntry): string | null {
   return null
 }
 
+function truncateInsightText(value: string, maxLength = 80): string {
+  if (value.length <= maxLength) {
+    return value
+  }
+
+  return `${value.slice(0, maxLength - 1)}…`
+}
+
 function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
   const depth = new Map<string, number>()
 
@@ -180,28 +185,23 @@ function computeDepthMap(spans: SpanEntry[]): Map<string, number> {
 }
 
 function insightToneClasses(tone: InsightTone): string {
-  if (tone === 'success') {
-    return 'border-l-[var(--status-success)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-success)_8%,transparent)] text-[var(--text-primary)]'
-  }
   if (tone === 'warning') {
     return 'border-l-[var(--status-warning)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-warning)_8%,transparent)] text-[var(--text-primary)]'
   }
   if (tone === 'error') {
-    return 'border-l-[var(--status-error)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-error)_8%,transparent)] text-[var(--text-primary)]'
+    return 'border-l-[var(--status-error)] border-[var(--border-default)] [background-color:color-mix(in_srgb,var(--status-error)_14%,transparent)] text-[var(--text-primary)]'
   }
   return 'border-l-[var(--text-muted)] border-[var(--border-default)] bg-[var(--surface-raised)] text-[var(--text-primary)]'
 }
 
 function insightIcon(tone: InsightTone) {
-  if (tone === 'success') return <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-[var(--status-success)]" />
   if (tone === 'warning') return <AlertTriangle className="mt-0.5 size-4 shrink-0 text-[var(--status-warning)]" />
   if (tone === 'error') return <XCircle className="mt-0.5 size-4 shrink-0 text-[var(--status-error)]" />
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-export function NodeDetailContent({ node, status, logs, spans }: NodeDetailContentProps) {
+export function NodeDetailContent({ node, status, logs, spans, onOpenRun }: NodeDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
-  const showTimingTab = new Set(['queue', 'worker', 'scheduler', 'process', 'decision']).has(node.semanticRole ?? '')
   const showRuntimeCards = new Set(['queue', 'worker', 'scheduler', 'process', 'decision']).has(node.semanticRole ?? '')
 
   const sortedLogs = useMemo(
@@ -245,12 +245,21 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
   const latestSpan = sortedSpans[0]
   const latestAttributes = latestLog?.attributes ?? latestSpan?.attributes
   const latestErrorLog = sortedLogs.find((entry) => entry.level === 'error')
+  const latestErrorMessage =
+    (typeof latestErrorLog?.attributes?.error_message === 'string'
+      ? latestErrorLog.attributes.error_message
+      : undefined) ?? latestErrorLog?.message
+  const latestSpanErrorMessage =
+    (typeof latestSpan?.attributes?.error_message === 'string'
+      ? latestSpan.attributes.error_message
+      : undefined) ?? latestErrorMessage
   const failedSpanCount = spans.filter((span) => span.status === 'error').length
   const lastSeenTimestamp = Math.max(
     latestLog ? parseIsoTime(latestLog.timestamp) : 0,
     latestSpan ? spanSortTime(latestSpan) : 0,
   )
   const lastSeenLabel = formatRelativeTime(lastSeenTimestamp)
+  const errorExecutionId = latestErrorLog?.runId ?? latestErrorLog?.traceId
   const recentActivity = useMemo(() => {
     const latestPerExecution = new Map<string, LogEntry>()
 
@@ -261,8 +270,15 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
       }
     }
 
-    return [...latestPerExecution.values()].slice(0, 50)
-  }, [defaultVisibleLogs])
+    // When the error block is visible, exclude the activity entry from the same
+    // execution — it's already surfaced above. Different executions still show.
+    const entries = [...latestPerExecution.values()]
+    const filtered = errorExecutionId
+      ? entries.filter((entry) => (entry.runId ?? entry.traceId) !== errorExecutionId)
+      : entries
+
+    return filtered.slice(0, 5)
+  }, [defaultVisibleLogs, errorExecutionId])
   const recentActivityHasMultipleRuns = useMemo(() => {
     const distinct = new Set(recentActivity.map((entry) => activityExecutionLabel(entry) ?? entry.runId ?? entry.traceId))
     return distinct.size > 1
@@ -273,7 +289,7 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
 
     if (logs.length === 0 && spans.length === 0) {
       items.push({
-        tone: 'warning',
+        tone: 'neutral',
         text: 'No telemetry has reached this node yet.',
       })
     }
@@ -291,19 +307,11 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
       if (latestSpan.status === 'error') {
         items.push({
           tone: 'error',
-          text: latestDuration
-            ? `The latest execution failed after ${latestDuration}.`
-            : 'The latest execution failed.',
-        })
-      } else if (typeof latestSpan.durationMs === 'number' && latestSpan.durationMs >= 5_000 && latestDuration) {
-        items.push({
-          tone: 'warning',
-          text: `The latest execution was slow at ${latestDuration}.`,
-        })
-      } else if (latestDuration) {
-        items.push({
-          tone: 'neutral',
-          text: `The latest execution completed in ${latestDuration}.`,
+          text: latestSpanErrorMessage
+            ? `Failed: ${truncateInsightText(latestSpanErrorMessage)}`
+            : latestDuration
+              ? `The latest execution failed after ${latestDuration}.`
+              : 'The latest execution failed.',
         })
       }
     } else if (latestErrorLog) {
@@ -326,7 +334,7 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
     }
 
     return items.slice(0, 2)
-  }, [failedSpanCount, latestErrorLog, latestSpan, logs.length, spans.length, status])
+  }, [failedSpanCount, latestErrorLog, latestSpan, latestSpanErrorMessage, logs.length, spans.length, status])
 
   return (
     <Tabs
@@ -337,7 +345,7 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
       <div className="border-b border-[var(--border-default)] px-4 py-3">
         <TabsList className="border-0">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          {showTimingTab ? <TabsTrigger value="timing">Timing</TabsTrigger> : null}
+          <TabsTrigger value="debug">Debug</TabsTrigger>
         </TabsList>
       </div>
 
@@ -345,26 +353,10 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
         <div className="flex h-full min-h-0 flex-col px-4 py-3">
           <div className="shrink-0 space-y-4">
             {showRuntimeCards ? (
-              <section className="grid grid-cols-2 gap-3">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Latest Run</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">
-                      {formatDurationText(latestSpan?.durationMs) ?? 'None yet'}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardDescription>Last Seen</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-semibold text-[var(--text-primary)]">{lastSeenLabel ?? 'Waiting'}</p>
-                  </CardContent>
-                </Card>
-              </section>
+              <div className="flex items-center gap-3 text-sm text-[var(--text-secondary)]">
+                <span>{formatDurationText(latestSpan?.durationMs) ?? 'No runs yet'}</span>
+                <span className="text-[var(--text-muted)]">{lastSeenLabel ?? ''}</span>
+              </div>
             ) : null}
 
             {insights.length > 0 ? (
@@ -381,112 +373,126 @@ export function NodeDetailContent({ node, status, logs, spans }: NodeDetailConte
                 ))}
               </section>
             ) : null}
+
+            {latestErrorLog && latestErrorMessage ? (
+              <section className="space-y-3">
+                <div className="rounded-lg border-l-2 border-[var(--status-error)] px-3 py-3 [background-color:color-mix(in_srgb,var(--status-error)_14%,transparent)]">
+                  <div className="flex items-center justify-between gap-2">
+                    <h3 className="text-xs uppercase tracking-wide text-[var(--status-error)]">Error</h3>
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {formatRelativeTime(parseIsoTime(latestErrorLog.timestamp)) ?? 'just now'}
+                    </span>
+                  </div>
+                  <p className="mt-2 whitespace-pre-wrap break-all font-mono text-xs leading-5 text-[var(--text-primary)]">{latestErrorMessage}</p>
+                </div>
+                {onOpenRun && (latestErrorLog.runId ?? latestErrorLog.traceId) ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full cursor-pointer border-[var(--border-default)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-overlay)]"
+                    onClick={() => onOpenRun(latestErrorLog.runId ?? latestErrorLog.traceId!)}
+                  >
+                    View run
+                  </Button>
+                ) : null}
+              </section>
+            ) : null}
           </div>
 
-          <section className="mt-4 flex min-h-0 flex-1 flex-col gap-2">
-            <div className="flex items-center justify-between gap-2">
-              <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Recent Activity</h3>
-              <span className="truncate text-xs text-[var(--text-muted)]">most recent first</span>
-            </div>
-            {recentActivity.length === 0 ? (
-              <Card>
-                <CardContent className="p-3">
-                  <p className="text-sm leading-6 text-[var(--text-secondary)]">
-                    No meaningful activity has been surfaced for this node yet.
-                  </p>
-                </CardContent>
-              </Card>
-            ) : (
+          {recentActivity.length > 0 ? (
+            <section className="mt-4 flex min-h-0 flex-1 flex-col gap-2">
+              <div className="flex items-center justify-between gap-2">
+                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Recent Activity</h3>
+                <span className="truncate text-xs text-[var(--text-muted)]">most recent first</span>
+              </div>
               <ScrollArea className="min-h-0 flex-1">
-                <div className="space-y-3 pr-3">
+                <div className="divide-y divide-[var(--border-subtle)] pr-3">
                   {recentActivity.map((entry, index) => (
-                    <Card key={`${entry.timestamp}-${entry.message}-${index}`}>
-                      <CardContent className="space-y-2 p-3">
-                        <div className="flex items-center gap-2">
-                          <Badge variant={entry.signal === 'critical' ? 'warning' : 'secondary'}>
-                            {entry.signal}
-                          </Badge>
-                          <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
-                          {recentActivityHasMultipleRuns ? (
-                            <span className="truncate text-xs text-[var(--text-muted)]">
-                              {activityExecutionLabel(entry) ?? 'unknown run'}
-                            </span>
-                          ) : null}
-                          <DurationBadge className="ml-auto" durationMs={entry.durationMs} />
-                        </div>
-                        <p className="text-sm leading-6 text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
-                      </CardContent>
-                    </Card>
+                    <div key={`${entry.timestamp}-${entry.message}-${index}`} className="py-3 first:pt-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-[var(--text-muted)]">{formatRelativeTime(parseIsoTime(entry.timestamp)) ?? 'just now'}</span>
+                        {recentActivityHasMultipleRuns ? (
+                          <span className="truncate text-xs text-[var(--text-muted)]">
+                            {activityExecutionLabel(entry) ?? 'unknown run'}
+                          </span>
+                        ) : null}
+                      </div>
+                      <p className="mt-1 text-sm leading-6 text-[var(--text-primary)]">{getLogDisplayMessage(entry)}</p>
+                    </div>
                   ))}
                 </div>
               </ScrollArea>
-            )}
-          </section>
+            </section>
+          ) : defaultVisibleLogs.length === 0 ? (
+            <section className="mt-4">
+              <p className="py-2 text-sm leading-6 text-[var(--text-muted)]">
+                No meaningful activity has been surfaced for this node yet.
+              </p>
+            </section>
+          ) : null}
         </div>
       </TabsContent>
 
-      <TabsContent value="timing" className="mt-0 min-h-0 flex-1 pt-0" hidden={!showTimingTab}>
+      <TabsContent value="debug" className="mt-0 min-h-0 flex-1 pt-0">
         <ScrollArea className="h-full">
           <div className="space-y-4 px-4 py-3">
-            <Card>
-              <CardContent className="p-3">
-                <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Timing View</h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                  This view keeps the raw timing detail for deeper debugging. Each group below is one recent run seen at this node.
-                </p>
-              </CardContent>
-            </Card>
-
-            {tracesByTraceId.length === 0 ? (
-              <PanelSkeleton lines={3} />
-            ) : (
-              tracesByTraceId.map(([traceId, traceSpans]) => {
-                const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
-                const depthMap = computeDepthMap(traceSpans)
-
-                return (
-                  <details key={traceId} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/50 p-3" open>
-                    <summary className="cursor-pointer text-sm text-[var(--text-primary)]">
-                      run: {traceId.slice(0, 12)}…
-                    </summary>
-
-                    <div className="mt-2 space-y-2">
-                      {traceSpans.map((span) => {
-                        const depth = depthMap.get(span.spanId) ?? 0
-                        const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
-                        const seenLabel = formatRelativeTime(spanSortTime(span))
-
-                        return (
-                          <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
-                            <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
-                              <span>{span.spanName}</span>
-                              <DurationBadge durationMs={span.durationMs} />
-                              {seenLabel ? <span className="text-[var(--text-muted)]">{seenLabel}</span> : null}
-                            </div>
-                            <div className="h-2 rounded bg-[var(--surface-inset)]">
-                              <div
-                                className="h-2 rounded"
-                                style={{
-                                  width: `${widthPercent}%`,
-                                  backgroundColor: span.status === 'error' ? 'var(--status-error)' : 'var(--accent-primary)',
-                                  opacity: 0.7,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </details>
-                )
-              })
-            )}
-
-            <details className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/60 p-3">
-              <summary className="cursor-pointer text-sm text-[var(--text-primary)]">Latest telemetry attributes</summary>
-              <pre className="mt-3 overflow-x-auto rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
+            <details
+              className="min-w-0 overflow-hidden rounded-lg border border-[var(--border-default)]"
+              open={Boolean(latestErrorLog || latestSpan?.status === 'error')}
+            >
+              <summary className="cursor-pointer p-3 text-sm text-[var(--text-primary)]">Latest telemetry attributes</summary>
+              <pre className="mx-3 mb-3 max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
                 {JSON.stringify(latestAttributes ?? {}, null, 2)}
               </pre>
+            </details>
+
+            <details className="min-w-0 overflow-hidden rounded-lg border border-[var(--border-default)]">
+              <summary className="cursor-pointer p-3 text-sm text-[var(--text-primary)]">Span timing</summary>
+
+              <div className="mx-3 mb-3 space-y-4">
+                {tracesByTraceId.length === 0 ? (
+                  <PanelSkeleton lines={3} />
+                ) : (
+                  tracesByTraceId.map(([traceId, traceSpans]) => {
+                    const maxDuration = Math.max(...traceSpans.map((span) => span.durationMs ?? 1), 1)
+                    const depthMap = computeDepthMap(traceSpans)
+
+                    return (
+                      <div key={traceId} className="rounded-lg border border-[var(--border-default)] bg-[var(--surface-raised)]/70 p-3">
+                        <div className="text-sm text-[var(--text-primary)]">run: {traceId.slice(0, 12)}…</div>
+
+                        <div className="mt-2 space-y-2">
+                          {traceSpans.map((span) => {
+                            const depth = depthMap.get(span.spanId) ?? 0
+                            const widthPercent = Math.max(((span.durationMs ?? 1) / maxDuration) * 100, 8)
+                            const seenLabel = formatRelativeTime(spanSortTime(span))
+
+                            return (
+                              <div key={span.spanId} style={{ marginLeft: `${depth * 14}px` }}>
+                                <div className="mb-2 flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                                  <span>{span.spanName}</span>
+                                  <DurationBadge durationMs={span.durationMs} />
+                                  {seenLabel ? <span className="text-[var(--text-muted)]">{seenLabel}</span> : null}
+                                </div>
+                                <div className="h-2 rounded bg-[var(--surface-inset)]">
+                                  <div
+                                    className="h-2 rounded"
+                                    style={{
+                                      width: `${widthPercent}%`,
+                                      backgroundColor: span.status === 'error' ? 'var(--status-error)' : 'var(--accent-primary)',
+                                      opacity: 0.7,
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )
+                  })
+                )}
+              </div>
             </details>
           </div>
         </ScrollArea>

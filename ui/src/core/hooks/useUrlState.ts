@@ -8,6 +8,9 @@ export type SourceMode = 'live' | 'history'
 interface UrlStateUpdate {
   node?: string | null
   run?: string | null
+  log?: string | null
+  runTab?: string | null
+  panel?: string | null
   mode?: SourceMode | null
   view?: FlowViewMode | null
 }
@@ -44,6 +47,9 @@ export function useUrlState() {
   const hasViewParam = searchParams.has('view')
   const selectedNodeId = searchParams.get('node') ?? undefined
   const selectedTraceId = searchParams.get('run') ?? undefined
+  const selectedLogSeq = searchParams.get('log') ?? undefined
+  const runTab = searchParams.get('runTab') ?? undefined
+  const panel = searchParams.get('panel') ?? undefined
   const sourceMode = resolveSourceMode(searchParams.get('mode'))
   const viewMode = resolveViewMode(searchParams.get('view'))
 
@@ -59,6 +65,15 @@ export function useUrlState() {
           }
           if ('run' in updates) {
             setOrDeleteParam(next, 'run', updates.run)
+          }
+          if ('log' in updates) {
+            setOrDeleteParam(next, 'log', updates.log)
+          }
+          if ('runTab' in updates) {
+            setOrDeleteParam(next, 'runTab', updates.runTab)
+          }
+          if ('panel' in updates) {
+            setOrDeleteParam(next, 'panel', updates.panel)
           }
           if ('mode' in updates) {
             setOrDeleteParam(next, 'mode', updates.mode)
@@ -89,6 +104,13 @@ export function useUrlState() {
     [updateUrlState],
   )
 
+  const setSelectedLogSeq = useCallback(
+    (logSeq?: string, options?: UrlStateOptions) => {
+      updateUrlState({ log: logSeq ?? null }, options)
+    },
+    [updateUrlState],
+  )
+
   const setSourceMode = useCallback(
     (mode: SourceMode, options?: UrlStateOptions) => {
       updateUrlState({ mode }, options)
@@ -108,11 +130,15 @@ export function useUrlState() {
     hasViewParam,
     selectedNodeId,
     selectedTraceId,
+    selectedLogSeq,
+    runTab,
+    panel,
     sourceMode,
     viewMode,
     updateUrlState,
     setSelectedNodeId,
     setSelectedTraceId,
+    setSelectedLogSeq,
     setSourceMode,
     setViewMode,
   }
