@@ -380,7 +380,7 @@ export function BottomLogPanel({
               ) : null}
               <Button
                 type="button"
-                variant="ghost"
+                variant="hud"
                 size="icon"
                 className="size-7"
                 onClick={() => { setSnap(isFull ? 'partial' : 'full'); setCustomHeight(null) }}

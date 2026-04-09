@@ -1,6 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
 
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui'
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui'
 
 interface HudIdentityPillProps {
   flowName: string
@@ -30,14 +30,16 @@ export function HudIdentityPill({
 
   return (
     <div className="flex items-center gap-1.5">
-      <button
+      <Button
         type="button"
-        onClick={onNavigateBack}
-        className="flex size-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-colors hover:bg-[var(--surface-inset)] hover:text-[var(--text-secondary)]"
+        variant="hud"
+        size="icon"
+        className="size-7"
         aria-label="Back to flows"
+        onClick={onNavigateBack}
       >
         <ChevronLeft className="size-4" />
-      </button>
+      </Button>
 
       <span className="max-w-[180px] truncate text-sm font-medium text-[var(--text-primary)]">
         {flowName}

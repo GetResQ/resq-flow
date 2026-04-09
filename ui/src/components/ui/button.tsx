@@ -19,6 +19,7 @@ const buttonVariants = cva(
           'bg-[var(--surface-overlay)] text-[var(--text-primary)] hover:opacity-90',
         ghost:
           'text-[var(--text-secondary)] hover:bg-[var(--surface-overlay)] hover:text-[var(--text-primary)]',
+        hud: 'text-[var(--text-primary)] hover:bg-[var(--surface-overlay)]',
         link: 'text-[var(--accent-primary)] underline-offset-4 hover:underline',
       },
       size: {
