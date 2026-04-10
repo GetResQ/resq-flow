@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 
 import {
+  ScrollArea,
   Table,
   TableBody,
   TableCell,
@@ -33,6 +34,7 @@ interface LogsTableProps {
   selectedLogSeq?: string
   liveTail?: boolean
   onSelectLog: (entry: LogEntry) => void
+  scrollAreaRef?: React.RefObject<HTMLDivElement | null>
 }
 
 interface LogRowData {
@@ -57,6 +59,7 @@ export function LogsTable({
   selectedLogSeq,
   liveTail,
   onSelectLog,
+  scrollAreaRef,
 }: LogsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'time', desc: true }])
   const containerRef = useRef<HTMLDivElement>(null)
@@ -225,7 +228,7 @@ export function LogsTable({
   )
 
   return (
-    <div ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown} className="outline-none">
+    <div ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown} className="flex min-h-0 flex-1 flex-col outline-none">
       <Table className="table-fixed">
         <colgroup>
           <col className="w-[160px]" />
@@ -243,46 +246,55 @@ export function LogsTable({
             </TableRow>
           ))}
         </TableHeader>
-        <TableBody>
-          {rows.length === 0 ? (
-            <TableRow className="cursor-default hover:bg-transparent">
-              <TableCell colSpan={3} className="py-8 text-center text-[var(--text-secondary)]">
-                No logs match the current filters.
-              </TableCell>
-            </TableRow>
-          ) : (
-            rows.map((row) => {
-              const selected = isRowSelected(row)
-              const isFresh = typeof row.original.entry.seq === 'number' && freshSeqs.has(row.original.entry.seq)
-              const severity =
-                row.original.entry.level === 'error' || row.original.entry.signal === 'critical'
-                  ? 'error'
-                  : typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000
-                    ? 'warning'
-                    : undefined
-              return (
-                <TableRow
-                  key={row.id}
-                  data-state={selected ? 'selected' : undefined}
-                  data-level={row.original.entry.level}
-                  data-severity={severity}
-                  data-fresh={isFresh ? '' : undefined}
-                  onClick={() => {
-                    onSelectLog(row.original.entry)
-                    containerRef.current?.focus({ preventScroll: true })
-                  }}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              )
-            })
-          )}
-        </TableBody>
       </Table>
+      <ScrollArea ref={scrollAreaRef} className="flex-1">
+        <Table className="table-fixed">
+          <colgroup>
+            <col className="w-[160px]" />
+            <col className="w-[200px]" />
+            <col />
+          </colgroup>
+          <TableBody>
+            {rows.length === 0 ? (
+              <TableRow className="cursor-default hover:bg-transparent">
+                <TableCell colSpan={3} className="py-8 text-center text-[var(--text-secondary)]">
+                  No logs match the current filters.
+                </TableCell>
+              </TableRow>
+            ) : (
+              rows.map((row) => {
+                const selected = isRowSelected(row)
+                const isFresh = typeof row.original.entry.seq === 'number' && freshSeqs.has(row.original.entry.seq)
+                const severity =
+                  row.original.entry.level === 'error' || row.original.entry.signal === 'critical'
+                    ? 'error'
+                    : typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000
+                      ? 'warning'
+                      : undefined
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={selected ? 'selected' : undefined}
+                    data-level={row.original.entry.level}
+                    data-severity={severity}
+                    data-fresh={isFresh ? '' : undefined}
+                    onClick={() => {
+                      onSelectLog(row.original.entry)
+                      containerRef.current?.focus({ preventScroll: true })
+                    }}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </ScrollArea>
     </div>
   )
 }

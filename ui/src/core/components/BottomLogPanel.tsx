@@ -5,7 +5,6 @@ import { Inbox, Maximize2, Minimize2, Radio, Search } from 'lucide-react'
 import {
   Button,
   Input,
-  ScrollArea,
   Tabs,
   TabsContent,
 } from '@/components/ui'
@@ -129,11 +128,13 @@ export function BottomLogPanel({
       (left, right) => Date.parse(right.lastUpdatedAt) - Date.parse(left.lastUpdatedAt),
       )
 
-    if (!query) {
-      return ordered
-    }
-
     return ordered.filter((journey) => {
+      if (statusFilter !== 'all' && journey.status !== 'error') {
+        return false
+      }
+      if (!query) {
+        return true
+      }
       const stage = journey.steps.at(-1)
       return (
         journey.traceId.toLowerCase().includes(query) ||
@@ -142,7 +143,7 @@ export function BottomLogPanel({
         (journey.errorSummary?.toLowerCase().includes(query) ?? false)
       )
     })
-  }, [journeys, search])
+  }, [journeys, search, statusFilter])
 
   const logsEmptyState = useMemo(() => {
     if (flowLogs.length === 0) {
@@ -306,7 +307,7 @@ export function BottomLogPanel({
         ) : (
           <div className="flex flex-1 items-center gap-6">
             <div className="flex shrink-0 items-center gap-1 rounded-lg bg-[var(--surface-inset)] p-1">
-              {([['logs', 'Logs', filteredLogs.length], ['traces', 'Runs', filteredJourneys.length]] as const).map(([value, label, count]) => (
+              {([['logs', 'Logs', flowLogs.length], ['traces', 'Runs', journeys.filter(isRunBackedJourney).length]] as const).map(([value, label, count]) => (
                 <button
                   key={value}
                   type="button"
@@ -325,34 +326,31 @@ export function BottomLogPanel({
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
-                <Input
-                  placeholder={tab === 'logs' ? 'Search logs…' : 'Search runs…'}
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  className="h-8 w-44 border-0 bg-[var(--surface-inset)] pl-8 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-              </div>
-              {tab === 'logs' ? (
-                <div className="flex items-center overflow-hidden rounded-lg bg-[var(--surface-inset)]">
-                  {(['all', 'error'] as const).map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      className={`px-3 py-1 text-[10px] font-medium capitalize ${
-                        statusFilter === status
-                          ? 'rounded-lg bg-[var(--text-primary)] text-[var(--surface-primary)]'
-                          : 'bg-transparent text-[var(--text-muted)]'
-                      }`}
-                      onClick={() => setStatusFilter(status)}
-                    >
-                      {status}
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+            <div className="flex shrink-0 items-center rounded-lg bg-[var(--surface-inset)] p-1">
+              {(['all', 'error'] as const).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  className={`rounded-md px-3 py-1 text-xs font-medium capitalize transition-colors ${
+                    statusFilter === status
+                      ? 'bg-[var(--text-primary)] text-[var(--surface-primary)]'
+                      : 'bg-transparent text-[var(--text-muted)]'
+                  }`}
+                  onClick={() => setStatusFilter(status)}
+                >
+                  {status}
+                </button>
+              ))}
+            </div>
+
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[var(--text-muted)]" />
+              <Input
+                placeholder={tab === 'logs' ? 'Search logs…' : 'Search runs…'}
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="h-8 w-44 border-0 bg-[var(--surface-inset)] pl-8 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              />
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -394,37 +392,36 @@ export function BottomLogPanel({
           className="flex min-h-0 flex-1 flex-col"
         >
           <TabsContent value="logs" className="mt-0 flex min-h-0 flex-1 flex-col pt-0">
-            <ScrollArea ref={logsScrollAreaRef} className="flex-1">
-              {filteredLogs.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                  <Radio className="size-8 text-[var(--text-muted)]" />
-                  <p className="text-sm text-[var(--text-secondary)]">{logsEmptyState.title}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{logsEmptyState.body}</p>
-                </div>
-              ) : (
-                <LogsTable
-                  logs={filteredLogs}
-                  nodeLabels={nodeLabels}
-                  nodeFamilies={nodeFamilies}
-                  selectedTraceId={selectedTraceId}
-                  selectedLogSeq={selectedLogSeq}
-                  liveTail={liveTail}
-                  onSelectLog={(entry) => {
-                    if (entry.seq != null) {
-                      onSelectLog(entry)
-                      return
-                    }
-                    const executionId = entry.runId ?? entry.traceId
-                    if (executionId) {
-                      onSelectTrace(executionId)
-                    }
-                    if (entry.nodeId) {
-                      onSelectNode(entry.nodeId)
-                    }
-                  }}
-                />
-              )}
-            </ScrollArea>
+            {filteredLogs.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+                <Radio className="size-8 text-[var(--text-muted)]" />
+                <p className="text-sm text-[var(--text-secondary)]">{logsEmptyState.title}</p>
+                <p className="text-xs text-[var(--text-muted)]">{logsEmptyState.body}</p>
+              </div>
+            ) : (
+              <LogsTable
+                logs={filteredLogs}
+                nodeLabels={nodeLabels}
+                nodeFamilies={nodeFamilies}
+                selectedTraceId={selectedTraceId}
+                selectedLogSeq={selectedLogSeq}
+                liveTail={liveTail}
+                scrollAreaRef={logsScrollAreaRef}
+                onSelectLog={(entry) => {
+                  if (entry.seq != null) {
+                    onSelectLog(entry)
+                    return
+                  }
+                  const executionId = entry.runId ?? entry.traceId
+                  if (executionId) {
+                    onSelectTrace(executionId)
+                  }
+                  if (entry.nodeId) {
+                    onSelectNode(entry.nodeId)
+                  }
+                }}
+              />
+            )}
 
             {!liveTail ? (
               <Button
@@ -445,21 +442,19 @@ export function BottomLogPanel({
           </TabsContent>
 
           <TabsContent value="traces" className="mt-0 flex min-h-0 flex-1 flex-col pt-0">
-            <ScrollArea className="flex-1">
-              {filteredJourneys.length === 0 ? (
-                <div className="flex flex-col items-center justify-center gap-2 py-8 text-center">
-                  <Inbox className="size-8 text-[var(--text-muted)]" />
-                  <p className="text-sm text-[var(--text-secondary)]">{runsEmptyState.title}</p>
-                  <p className="text-xs text-[var(--text-muted)]">{runsEmptyState.body}</p>
-                </div>
-              ) : (
-                <RunsTable
-                  journeys={filteredJourneys}
-                  selectedTraceId={selectedTraceId}
-                  onSelectTrace={onSelectTrace}
-                />
-              )}
-            </ScrollArea>
+            {filteredJourneys.length === 0 ? (
+              <div className="flex flex-1 flex-col items-center justify-center gap-2 py-8 text-center">
+                <Inbox className="size-8 text-[var(--text-muted)]" />
+                <p className="text-sm text-[var(--text-secondary)]">{runsEmptyState.title}</p>
+                <p className="text-xs text-[var(--text-muted)]">{runsEmptyState.body}</p>
+              </div>
+            ) : (
+              <RunsTable
+                journeys={filteredJourneys}
+                selectedTraceId={selectedTraceId}
+                onSelectTrace={onSelectTrace}
+              />
+            )}
           </TabsContent>
         </Tabs>
       ) : null}

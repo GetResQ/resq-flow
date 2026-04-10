@@ -9,6 +9,7 @@ import {
 } from '@tanstack/react-table'
 
 import {
+  ScrollArea,
   Table,
   TableBody,
   TableCell,
@@ -199,44 +200,66 @@ export function RunsTable({
   })
 
   return (
-    <Table>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="cursor-default hover:bg-transparent">
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.length === 0 ? (
-          <TableRow className="cursor-default hover:bg-transparent">
-            <TableCell colSpan={6} className="py-8 text-center text-[var(--text-secondary)]">
-              No runs match the current filters.
-            </TableCell>
-          </TableRow>
-        ) : (
-          table.getRowModel().rows.map((row) => {
-            const selected = selectedTraceId === row.original.traceId
-            return (
-              <TableRow
-                key={row.id}
-                data-state={selected ? 'selected' : undefined}
-                onClick={() => onSelectTrace(selected ? undefined : row.original.traceId)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
+    <div className="flex min-h-0 flex-1 flex-col">
+      <Table className="table-fixed">
+        <colgroup>
+          <col className="w-[20%]" />
+          <col className="w-[20%]" />
+          <col className="w-[10%]" />
+          <col className="w-[10%]" />
+          <col className="w-[15%]" />
+          <col className="w-[25%]" />
+        </colgroup>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="cursor-default hover:bg-transparent">
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+      </Table>
+      <ScrollArea className="flex-1">
+        <Table className="table-fixed">
+          <colgroup>
+            <col className="w-[20%]" />
+            <col className="w-[20%]" />
+            <col className="w-[10%]" />
+            <col className="w-[10%]" />
+            <col className="w-[15%]" />
+            <col className="w-[25%]" />
+          </colgroup>
+          <TableBody>
+            {table.getRowModel().rows.length === 0 ? (
+              <TableRow className="cursor-default hover:bg-transparent">
+                <TableCell colSpan={6} className="py-8 text-center text-[var(--text-secondary)]">
+                  No runs match the current filters.
+                </TableCell>
               </TableRow>
-            )
-          })
-        )}
-      </TableBody>
-    </Table>
+            ) : (
+              table.getRowModel().rows.map((row) => {
+                const selected = selectedTraceId === row.original.traceId
+                return (
+                  <TableRow
+                    key={row.id}
+                    data-state={selected ? 'selected' : undefined}
+                    onClick={() => onSelectTrace(selected ? undefined : row.original.traceId)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                )
+              })
+            )}
+          </TableBody>
+        </Table>
+      </ScrollArea>
+    </div>
   )
 }
