@@ -179,6 +179,48 @@ describe('LogsTable', () => {
     expect(within(selectedRow!).getByText('Send')).toBeInTheDocument()
   })
 
+  it('selects a row by selectedLogSeq when the log has a seq', () => {
+    const logsWithSeq: LogEntry[] = [
+      {
+        timestamp: '2026-03-17T13:10:00.000Z',
+        level: 'info',
+        nodeId: 'node-a',
+        message: 'First log',
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-1',
+        seq: 1,
+      },
+      {
+        timestamp: '2026-03-17T13:11:00.000Z',
+        level: 'info',
+        nodeId: 'node-b',
+        message: 'Second log',
+        signal: 'meaningful',
+        defaultVisible: true,
+        eventType: 'log',
+        traceId: 'run-2',
+        seq: 2,
+      },
+    ]
+
+    render(
+      <LogsTable
+        logs={logsWithSeq}
+        nodeLabels={nodeLabels}
+        nodeFamilies={nodeFamilies}
+        selectedLogSeq="2"
+        onSelectLog={vi.fn()}
+      />,
+    )
+
+    // Default sort is time descending, so seq:2 (newer) is first
+    const rows = screen.getAllByRole('row').slice(1)
+    expect(rows[0].getAttribute('data-state')).toBe('selected')
+    expect(rows[1].getAttribute('data-state')).toBeNull()
+  })
+
   it('shows summary-first messages when a display message is present', () => {
     render(
       <LogsTable

@@ -204,7 +204,7 @@
   /* Accent */
   --accent-primary: #1565c0;
   --accent-primary-hover: #1976d2;
-  --accent-primary-muted: rgba(21, 101, 192, 0.08);
+  --accent-primary-muted: rgba(21, 101, 192, 0.14);
 
   /* Status */
   --status-success: #1a8c3a;

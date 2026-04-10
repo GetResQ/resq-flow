@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   flexRender,
   getCoreRowModel,
@@ -30,6 +30,7 @@ interface LogsTableProps {
   nodeLabels: Map<string, string>
   nodeFamilies: Map<string, string>
   selectedTraceId?: string
+  selectedLogSeq?: string
   liveTail?: boolean
   onSelectLog: (entry: LogEntry) => void
 }
@@ -53,10 +54,12 @@ export function LogsTable({
   nodeLabels,
   nodeFamilies,
   selectedTraceId,
+  selectedLogSeq,
   liveTail,
   onSelectLog,
 }: LogsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([{ id: 'time', desc: true }])
+  const containerRef = useRef<HTMLDivElement>(null)
 
   const prevMaxSeqRef = useRef<number | null>(null)
 
@@ -185,60 +188,101 @@ export function LogsTable({
     getRowId: (row) => row.id,
   })
 
+  const rows = table.getRowModel().rows
+
+  const isRowSelected = useCallback(
+    (row: (typeof rows)[number]) => {
+      if (selectedLogSeq != null && row.original.entry.seq != null && String(row.original.entry.seq) === selectedLogSeq) return true
+      if (selectedTraceId != null && row.original.executionId === selectedTraceId) return true
+      return false
+    },
+    [selectedLogSeq, selectedTraceId],
+  )
+
+  const selectedRowIndex = useMemo(
+    () => rows.findIndex(isRowSelected),
+    [rows, isRowSelected],
+  )
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return
+      e.preventDefault()
+
+      if (rows.length === 0) return
+
+      const direction = e.key === 'ArrowDown' ? 1 : -1
+      const current = selectedRowIndex >= 0 ? selectedRowIndex : (direction === 1 ? -1 : rows.length)
+      const next = Math.max(0, Math.min(current + direction, rows.length - 1))
+
+      onSelectLog(rows[next].original.entry)
+
+      const rowEls = containerRef.current?.querySelectorAll('tbody tr')
+      const targetEl = rowEls?.[next] as HTMLElement | undefined
+      targetEl?.scrollIntoView({ block: 'nearest' })
+    },
+    [rows, selectedRowIndex, onSelectLog],
+  )
+
   return (
-    <Table className="table-fixed">
-      <colgroup>
-        <col className="w-[160px]" />
-        <col className="w-[200px]" />
-        <col />
-      </colgroup>
-      <TableHeader>
-        {table.getHeaderGroups().map((headerGroup) => (
-          <TableRow key={headerGroup.id} className="cursor-default hover:bg-transparent">
-            {headerGroup.headers.map((header) => (
-              <TableHead key={header.id}>
-                {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-              </TableHead>
-            ))}
-          </TableRow>
-        ))}
-      </TableHeader>
-      <TableBody>
-        {table.getRowModel().rows.length === 0 ? (
-          <TableRow className="cursor-default hover:bg-transparent">
-            <TableCell colSpan={5} className="py-8 text-center text-[var(--text-secondary)]">
-              No logs match the current filters.
-            </TableCell>
-          </TableRow>
-        ) : (
-          table.getRowModel().rows.map((row) => {
-            const selected = selectedTraceId && row.original.executionId === selectedTraceId
-            const isFresh = typeof row.original.entry.seq === 'number' && freshSeqs.has(row.original.entry.seq)
-            const severity =
-              row.original.entry.level === 'error' || row.original.entry.signal === 'critical'
-                ? 'error'
-                : typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000
-                  ? 'warning'
-                  : undefined
-            return (
-              <TableRow
-                key={row.id}
-                data-state={selected ? 'selected' : undefined}
-                data-level={row.original.entry.level}
-                data-severity={severity}
-                data-fresh={isFresh ? '' : undefined}
-                onClick={() => onSelectLog(row.original.entry)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            )
-          })
-        )}
-      </TableBody>
-    </Table>
+    <div ref={containerRef} tabIndex={0} onKeyDown={handleKeyDown} className="outline-none">
+      <Table className="table-fixed">
+        <colgroup>
+          <col className="w-[160px]" />
+          <col className="w-[200px]" />
+          <col />
+        </colgroup>
+        <TableHeader>
+          {table.getHeaderGroups().map((headerGroup) => (
+            <TableRow key={headerGroup.id} className="cursor-default hover:bg-transparent">
+              {headerGroup.headers.map((header) => (
+                <TableHead key={header.id}>
+                  {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                </TableHead>
+              ))}
+            </TableRow>
+          ))}
+        </TableHeader>
+        <TableBody>
+          {rows.length === 0 ? (
+            <TableRow className="cursor-default hover:bg-transparent">
+              <TableCell colSpan={3} className="py-8 text-center text-[var(--text-secondary)]">
+                No logs match the current filters.
+              </TableCell>
+            </TableRow>
+          ) : (
+            rows.map((row) => {
+              const selected = isRowSelected(row)
+              const isFresh = typeof row.original.entry.seq === 'number' && freshSeqs.has(row.original.entry.seq)
+              const severity =
+                row.original.entry.level === 'error' || row.original.entry.signal === 'critical'
+                  ? 'error'
+                  : typeof row.original.entry.durationMs === 'number' && row.original.entry.durationMs >= 1000
+                    ? 'warning'
+                    : undefined
+              return (
+                <TableRow
+                  key={row.id}
+                  data-state={selected ? 'selected' : undefined}
+                  data-level={row.original.entry.level}
+                  data-severity={severity}
+                  data-fresh={isFresh ? '' : undefined}
+                  onClick={() => {
+                    onSelectLog(row.original.entry)
+                    containerRef.current?.focus({ preventScroll: true })
+                  }}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              )
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

@@ -8,11 +8,10 @@ import {
   ScrollArea,
   Tabs,
   TabsContent,
-  Toggle,
 } from '@/components/ui'
 
 import type { FlowConfig, LogEntry, TraceJourney } from '../types'
-import { formatRunLabel, formatStepDisplayLabel, isDefaultVisibleJourney } from '../runPresentation'
+import { formatRunLabel, formatStepDisplayLabel, isRunBackedJourney } from '../runPresentation'
 import { useLayoutStore } from '../../stores/layout'
 import { buildLogSearchText } from '../logPresentation'
 import {
@@ -28,6 +27,7 @@ interface BottomLogPanelProps {
   globalLogs: LogEntry[]
   journeys: TraceJourney[]
   selectedTraceId?: string
+  selectedLogSeq?: string
   onSelectNode: (nodeId: string) => void
   onSelectLog: (entry: LogEntry) => void
   onSelectTrace: (traceId?: string) => void
@@ -50,6 +50,7 @@ export function BottomLogPanel({
   globalLogs,
   journeys,
   selectedTraceId,
+  selectedLogSeq,
   onSelectNode,
   onSelectLog,
   onSelectTrace,
@@ -61,7 +62,6 @@ export function BottomLogPanel({
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'error'>('all')
   const [liveTail, setLiveTail] = useState(true)
-  const [showAllRuns, setShowAllRuns] = useState(false)
   const logsScrollAreaRef = useRef<HTMLDivElement | null>(null)
   const dragRef = useRef<{ startY: number; startHeight: number } | null>(null)
   const [dragHeight, setDragHeight] = useState<number | null>(null)
@@ -123,18 +123,17 @@ export function BottomLogPanel({
 
   const filteredJourneys = useMemo(() => {
     const query = search.trim().toLowerCase()
-    const ordered = [...journeys].sort(
+    const ordered = [...journeys]
+      .filter((journey) => isRunBackedJourney(journey))
+      .sort(
       (left, right) => Date.parse(right.lastUpdatedAt) - Date.parse(left.lastUpdatedAt),
-    )
+      )
 
     if (!query) {
-      return showAllRuns ? ordered : ordered.filter((journey) => isDefaultVisibleJourney(journey))
+      return ordered
     }
 
     return ordered.filter((journey) => {
-      if (!showAllRuns && !isDefaultVisibleJourney(journey)) {
-        return false
-      }
       const stage = journey.steps.at(-1)
       return (
         journey.traceId.toLowerCase().includes(query) ||
@@ -143,7 +142,7 @@ export function BottomLogPanel({
         (journey.errorSummary?.toLowerCase().includes(query) ?? false)
       )
     })
-  }, [journeys, search, showAllRuns])
+  }, [journeys, search])
 
   const logsEmptyState = useMemo(() => {
     if (flowLogs.length === 0) {
@@ -167,10 +166,10 @@ export function BottomLogPanel({
       }
     }
 
-    if (!showAllRuns) {
+    if (!journeys.some((journey) => isRunBackedJourney(journey))) {
       return {
-        title: 'No lifecycle runs yet',
-        body: 'Turn on Show all to inspect queue and worker runs.',
+        title: 'No runs yet',
+        body: 'Ambient flow activity still appears in Logs until a run-backed execution starts.',
       }
     }
 
@@ -178,7 +177,7 @@ export function BottomLogPanel({
       title: 'No runs match the current filters',
       body: 'Try clearing search to see more runs.',
     }
-  }, [journeys.length, showAllRuns])
+  }, [journeys])
 
   useEffect(() => {
     if (!liveTail || isWhisper || tab !== 'logs') {
@@ -354,11 +353,6 @@ export function BottomLogPanel({
                   ))}
                 </div>
               ) : null}
-              {tab === 'traces' ? (
-                <Toggle pressed={showAllRuns} size="sm" onPressedChange={setShowAllRuns} aria-label="Show all runs">
-                  Show all
-                </Toggle>
-              ) : null}
             </div>
 
             <div className="ml-auto flex shrink-0 items-center gap-2">
@@ -413,6 +407,7 @@ export function BottomLogPanel({
                   nodeLabels={nodeLabels}
                   nodeFamilies={nodeFamilies}
                   selectedTraceId={selectedTraceId}
+                  selectedLogSeq={selectedLogSeq}
                   liveTail={liveTail}
                   onSelectLog={(entry) => {
                     if (entry.seq != null) {

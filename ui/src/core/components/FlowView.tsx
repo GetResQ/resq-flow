@@ -388,6 +388,7 @@ export function FlowView() {
         globalLogs={logStream.globalLogs}
         journeys={traceJourney.journeys}
         selectedTraceId={selectedTraceId}
+        selectedLogSeq={selectedLogSeq}
         onSelectNode={handleSelectNode}
         onSelectLog={handleSelectLog}
         onSelectTrace={handleSelectTrace}
