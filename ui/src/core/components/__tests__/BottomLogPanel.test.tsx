@@ -64,7 +64,7 @@ const logs: LogEntry[] = [
   },
 ]
 
-const journeys: TraceJourney[] = [
+const runBackedJourneys: TraceJourney[] = [
   {
     traceId: 'run-1',
     startedAt: '2026-03-24T16:00:00.000Z',
@@ -73,6 +73,21 @@ const journeys: TraceJourney[] = [
     nodePath: ['incoming-worker'],
     lastUpdatedAt: '2026-03-24T16:00:01.000Z',
     eventCount: 2,
+    identifiers: {
+      runId: 'run-1',
+    },
+  },
+]
+
+const ambientJourneys: TraceJourney[] = [
+  {
+    traceId: 'ambient-1',
+    startedAt: '2026-03-24T16:00:00.000Z',
+    status: 'success',
+    steps: [],
+    nodePath: ['incoming-worker'],
+    lastUpdatedAt: '2026-03-24T16:00:01.000Z',
+    eventCount: 1,
     identifiers: {},
   },
 ]
@@ -88,12 +103,12 @@ describe('BottomLogPanel', () => {
     })
   })
 
-  it('shows emitted flow logs by default on the logs tab and keeps show all for runs only', () => {
+  it('shows emitted flow logs by default and only lists run-backed journeys on the runs tab', () => {
     render(
       <BottomLogPanel
         flow={flow}
         globalLogs={logs}
-        journeys={journeys}
+        journeys={runBackedJourneys}
         onSelectNode={vi.fn()}
         onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
@@ -102,11 +117,32 @@ describe('BottomLogPanel', () => {
 
     expect(screen.getByText(/mail_incoming worker picked up job/i)).toBeInTheDocument()
     expect(screen.queryByText('span completed: rrq.job')).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /show all runs/i })).not.toBeInTheDocument()
 
     fireEvent.click(screen.getByRole('button', { name: /runs/i }))
 
-    expect(screen.getByRole('button', { name: /show all runs/i })).toBeInTheDocument()
+    expect(screen.getByText('Run run-1')).toBeInTheDocument()
+  })
+
+  it('shows the empty state when journeys are ambient-only and have no explicit run id', () => {
+    render(
+      <BottomLogPanel
+        flow={flow}
+        globalLogs={logs}
+        journeys={ambientJourneys}
+        onSelectNode={vi.fn()}
+        onSelectLog={vi.fn()}
+        onSelectTrace={vi.fn()}
+      />,
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: /runs/i }))
+
+    expect(screen.getByText('No runs yet')).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        'Ambient flow activity still appears in Logs until a run-backed execution starts.',
+      ),
+    ).toBeInTheDocument()
   })
 
   it('shows whisper state with minimal content', () => {
@@ -116,7 +152,7 @@ describe('BottomLogPanel', () => {
       <BottomLogPanel
         flow={flow}
         globalLogs={logs}
-        journeys={journeys}
+        journeys={runBackedJourneys}
         onSelectNode={vi.fn()}
         onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
@@ -145,7 +181,7 @@ describe('BottomLogPanel', () => {
             traceId: 'run-2',
           },
         ]}
-        journeys={journeys}
+        journeys={runBackedJourneys}
         onSelectNode={vi.fn()}
         onSelectLog={vi.fn()}
         onSelectTrace={vi.fn()}
@@ -179,7 +215,7 @@ describe('BottomLogPanel', () => {
       <BottomLogPanel
         flow={flow}
         globalLogs={[entryWithSeq]}
-        journeys={journeys}
+        journeys={runBackedJourneys}
         onSelectNode={onSelectNode}
         onSelectLog={onSelectLog}
         onSelectTrace={onSelectTrace}

@@ -78,22 +78,8 @@ export function formatRunLabel(journey: TraceJourney): string {
   return preferredRunIdentity(journey) ?? `Run ${journey.traceId.slice(0, 8)}…`
 }
 
-export function isDefaultVisibleJourney(journey: TraceJourney): boolean {
-  if (journey.status === 'error') {
-    return true
-  }
-
-  if (
-    normalizeTraceIdentifierValue(journey.identifiers.threadId) ||
-    normalizeTraceIdentifierValue(journey.identifiers.replyDraftId)
-  ) {
-    return true
-  }
-
-  return journey.steps.some((stage) => {
-    const stepId = normalizeTraceIdentifierValue(stage.stepId)
-    return isLifecycleTerminalStep(stepId)
-  })
+export function isRunBackedJourney(journey: TraceJourney): boolean {
+  return Boolean(normalizeTraceIdentifierValue(journey.identifiers.runId))
 }
 
 export function canonicalStepId(stage: Pick<TraceStep, 'nodeId' | 'stepId'>): string | undefined {

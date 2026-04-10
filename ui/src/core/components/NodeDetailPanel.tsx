@@ -385,12 +385,16 @@ export function NodeDetailContent({ node, status, logs, spans, onOpenRun }: Node
                   </div>
                   <p className="mt-2 whitespace-pre-wrap break-all font-mono text-xs leading-5 text-[var(--text-primary)]">{latestErrorMessage}</p>
                 </div>
-                {onOpenRun && (latestErrorLog.runId ?? latestErrorLog.traceId) ? (
+                {onOpenRun && latestErrorLog.runId ? (
                   <Button
                     type="button"
                     variant="outline"
                     className="w-full cursor-pointer border-[var(--border-default)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-overlay)]"
-                    onClick={() => onOpenRun(latestErrorLog.runId ?? latestErrorLog.traceId!)}
+                    onClick={() => {
+                      if (latestErrorLog.runId) {
+                        onOpenRun(latestErrorLog.runId)
+                      }
+                    }}
                   >
                     View run
                   </Button>

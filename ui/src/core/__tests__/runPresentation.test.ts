@@ -7,7 +7,7 @@ import {
   formatStepLabel,
   getJourneySummaryStep,
   getOverviewSteps,
-  isDefaultVisibleJourney,
+  isRunBackedJourney,
 } from '../runPresentation'
 
 function makeJourney(overrides: Partial<TraceJourney> = {}): TraceJourney {
@@ -77,44 +77,21 @@ describe('runPresentation', () => {
     ).toBe('sent')
   })
 
-  it('shows lifecycle runs by default and hides pure sidecars', () => {
-    const lifecycleJourney = makeJourney({
+  it('treats only explicit run_id journeys as run-backed', () => {
+    const runBackedJourney = makeJourney({
       identifiers: {
+        runId: 'mail-pipeline_123',
         threadId: 'thread-1',
       },
-      steps: [
-        {
-          stepId: 'final-result',
-          label: 'final-result',
-          nodeId: 'send-process',
-          startSeq: 1,
-          endSeq: 1,
-          startTs: '2026-03-24T12:00:00.000Z',
-          durationMs: 0,
-          status: 'success',
-        },
-      ],
     })
-    const sidecarJourney = makeJourney({
+    const ambientJourney = makeJourney({
       identifiers: {
         requestId: 'request-1',
       },
-      steps: [
-        {
-          stepId: 'cursor-update',
-          label: 'cursor-update',
-          nodeId: 'cron-scheduler',
-          startSeq: 1,
-          endSeq: 1,
-          startTs: '2026-03-24T12:00:00.000Z',
-          durationMs: 0,
-          status: 'success',
-        },
-      ],
     })
 
-    expect(isDefaultVisibleJourney(lifecycleJourney)).toBe(true)
-    expect(isDefaultVisibleJourney(sidecarJourney)).toBe(false)
+    expect(isRunBackedJourney(runBackedJourney)).toBe(true)
+    expect(isRunBackedJourney(ambientJourney)).toBe(false)
   })
 
   it('prefers the last lifecycle stage over generic worker wrappers for run summaries', () => {

@@ -34,12 +34,6 @@ function formatDuration(ms: number): string {
   return `${(ms / 1_000).toFixed(1)}s`
 }
 
-function formatTime(iso?: string): string {
-  if (!iso) return '—'
-  const date = new Date(iso)
-  return date.toLocaleTimeString(undefined, { hour12: false, fractionalSecondDigits: 3 })
-}
-
 function computeDepth(span: SpanEntry, spanMap: Map<string, SpanEntry>): number {
   if (!span.parentSpanId) return 0
   const parent = spanMap.get(span.parentSpanId)

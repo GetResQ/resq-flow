@@ -19,7 +19,7 @@ export function EventDetailContent({
   const errorMessage = typeof entry.attributes?.error_message === 'string' ? entry.attributes.error_message : undefined
   const showErrorBlock = entry.level === 'error' || Boolean(errorMessage)
   const errorSummary = errorMessage ?? entry.message
-  const executionId = entry.runId ?? entry.traceId
+  const runId = entry.runId
   // Error events: the error block IS the content, message would be redundant.
   // Non-error events: the message IS the content — it's why the user clicked.
   const showMessage = !showErrorBlock
@@ -38,12 +38,12 @@ export function EventDetailContent({
           <p className="text-sm leading-6 text-[var(--text-primary)]">{displayMessage}</p>
         ) : null}
 
-        {hasJourney && executionId && onOpenRun ? (
+        {hasJourney && runId && onOpenRun ? (
           <Button
             type="button"
             variant="outline"
             className="w-full cursor-pointer border-[var(--border-default)] text-sm text-[var(--text-primary)] hover:bg-[var(--surface-overlay)]"
-            onClick={() => onOpenRun(executionId)}
+            onClick={() => onOpenRun(runId)}
           >
             View run
           </Button>

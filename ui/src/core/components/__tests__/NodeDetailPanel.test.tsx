@@ -218,6 +218,33 @@ describe('NodeDetailContent', () => {
     expect(onOpenRun).toHaveBeenCalledWith('run-latest')
   })
 
+  it('does not show view run for a trace-only ambient error', () => {
+    render(
+      <NodeDetailContent
+        node={node}
+        logs={[
+          {
+            timestamp: '2026-03-23T12:00:06.000Z',
+            level: 'error',
+            nodeId: 'incoming-queue',
+            message: 'failure',
+            displayMessage: 'failure',
+            signal: 'critical',
+            defaultVisible: true,
+            eventType: 'log',
+            traceId: 'trace-latest',
+            runId: undefined,
+            attributes: { error_message: 'Provider timed out after 30s' },
+          },
+        ]}
+        spans={[]}
+        onOpenRun={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByRole('button', { name: 'View run' })).not.toBeInTheDocument()
+  })
+
   it('caps recent activity at five entries', () => {
     render(<NodeDetailContent node={node} logs={logs} spans={[]} />)
 

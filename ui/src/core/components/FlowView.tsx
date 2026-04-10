@@ -394,17 +394,18 @@ export function FlowView() {
         onSelectTrace={handleSelectTrace}
       />
 
-      {(() => {
-        // When both node and run are selected, use `panel` to decide which view is foreground.
-        // panel=run  → user clicked "View run" from a node  → show run, back returns to node
-        // otherwise  → user clicked a node from within a run → show node, back returns to run
-        if (selectedNode && selectedJourney) {
-          if (panel === 'run') {
-            const presentation = getTraceInspectorPresentation(selectedJourney)
+      <AnimatePresence>
+        {(() => {
+          // When both node and run are selected, use `panel` to decide which view is foreground.
+          // panel=run  → user clicked "View run" from a node  → show run, back returns to node
+          // otherwise  → user clicked a node from within a run → show node, back returns to run
+          if (selectedNode && selectedJourney) {
+            if (panel === 'run') {
+              const presentation = getTraceInspectorPresentation(selectedJourney)
 
-            return (
-              <AnimatePresence initial={false}>
+              return (
                 <InspectorPanel
+                  key="inspector"
                   title={presentation.title}
                   description={presentation.description}
                   headerContent={presentation.headerContent}
@@ -420,15 +421,14 @@ export function FlowView() {
                     onSelectNode={(nodeId) => updateUrlState({ node: nodeId, panel: null }, { replace: true })}
                   />
                 </InspectorPanel>
-              </AnimatePresence>
-            )
-          }
+              )
+            }
 
-          const presentation = getNodeInspectorPresentation(selectedNode)
+            const presentation = getNodeInspectorPresentation(selectedNode)
 
-          return (
-            <AnimatePresence initial={false}>
+            return (
               <InspectorPanel
+                key="inspector"
                 title={presentation.title}
                 description={presentation.description}
                 headerContent={presentation.headerContent}
@@ -444,17 +444,16 @@ export function FlowView() {
                   onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run', log: null, runTab: null }, { replace: true })}
                 />
               </InspectorPanel>
-            </AnimatePresence>
-          )
-        }
+            )
+          }
 
-        if (selectedJourney) {
-          const presentation = getTraceInspectorPresentation(selectedJourney)
-          const canGoBack = Boolean(selectedLogSeq)
+          if (selectedJourney) {
+            const presentation = getTraceInspectorPresentation(selectedJourney)
+            const canGoBack = Boolean(selectedLogSeq)
 
-          return (
-            <AnimatePresence initial={false}>
+            return (
               <InspectorPanel
+                key="inspector"
                 title={presentation.title}
                 description={presentation.description}
                 headerContent={presentation.headerContent}
@@ -470,16 +469,15 @@ export function FlowView() {
                   onSelectNode={(nodeId) => updateUrlState({ node: nodeId }, { replace: true })}
                 />
               </InspectorPanel>
-            </AnimatePresence>
-          )
-        }
+            )
+          }
 
-        if (selectedLogEntry) {
-          const presentation = getEventInspectorPresentation(selectedLogEntry, selectedLogNode?.label)
+          if (selectedLogEntry) {
+            const presentation = getEventInspectorPresentation(selectedLogEntry, selectedLogNode?.label)
 
-          return (
-            <AnimatePresence initial={false}>
+            return (
               <InspectorPanel
+                key="inspector"
                 title={presentation.title}
                 description={presentation.description}
                 headerContent={presentation.headerContent}
@@ -491,16 +489,15 @@ export function FlowView() {
                   onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run' }, { replace: true })}
                 />
               </InspectorPanel>
-            </AnimatePresence>
-          )
-        }
+            )
+          }
 
-        if (selectedNode) {
-          const presentation = getNodeInspectorPresentation(selectedNode)
+          if (selectedNode) {
+            const presentation = getNodeInspectorPresentation(selectedNode)
 
-          return (
-            <AnimatePresence initial={false}>
+            return (
               <InspectorPanel
+                key="inspector"
                 title={presentation.title}
                 description={presentation.description}
                 headerContent={presentation.headerContent}
@@ -515,12 +512,12 @@ export function FlowView() {
                   onOpenRun={(traceId) => updateUrlState({ run: traceId, panel: 'run', log: null }, { replace: true })}
                 />
               </InspectorPanel>
-            </AnimatePresence>
-          )
-        }
+            )
+          }
 
-        return null
-      })()}
+          return null
+        })()}
+      </AnimatePresence>
 
     </div>
   )

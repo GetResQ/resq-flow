@@ -56,10 +56,10 @@ describe('EventDetailContent', () => {
     expect(onOpenRun).toHaveBeenCalledWith('run-1')
   })
 
-  it('hides the view run button when there is no run or trace id', () => {
+  it('hides the view run button when there is no run id', () => {
     render(
       <EventDetailContent
-        entry={{ ...baseEntry, runId: undefined, traceId: undefined }}
+        entry={{ ...baseEntry, runId: undefined, traceId: 'trace-only' }}
         hasJourney
       />,
     )
