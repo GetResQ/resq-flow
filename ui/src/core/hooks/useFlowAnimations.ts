@@ -11,13 +11,18 @@ import type {
 } from '../types'
 
 const NODE_SUCCESS_RESET_MS = 3_000
-const NODE_PULSE_RESET_MS = 1_500
+const NODE_PULSE_RESET_MS = 3_000
+const MIN_VISUAL_PULSE_MS = 2_000
+/** Events older than this are treated as historical (snapshot replay) and don't glow. */
+const STALENESS_THRESHOLD_MS = 5_000
 const DURATION_VISIBLE_MS = 5_000
 const EDGE_ACTIVE_MS = 1_200
 
 interface FlowAnimationTimings {
   nodeSuccessResetMs: number
   nodePulseResetMs: number
+  minVisualPulseMs: number
+  stalenessThresholdMs: number
   durationVisibleMs: number
   edgeActiveMs: number
 }
@@ -61,6 +66,27 @@ function remainingWindowMs(eventTimeMs: number, windowMs: number, currentTimeMs:
   return Math.max(eventTimeMs + windowMs - currentTimeMs, 0)
 }
 
+/**
+ * Compute the visual pulse duration for an event:
+ *   - Within the natural window: use the remaining window, but at least `minMs`
+ *   - Slightly past the window but within `staleThresholdMs`: use `minMs` (latency tolerance)
+ *   - Beyond `staleThresholdMs`: return 0 (truly historical, no glow)
+ */
+function visualPulseMs(
+  eventTimeMs: number,
+  windowMs: number,
+  currentTimeMs: number,
+  minMs: number,
+  staleThresholdMs: number,
+): number {
+  const age = currentTimeMs - eventTimeMs
+  if (age > staleThresholdMs) {
+    return 0
+  }
+  const remaining = eventTimeMs + windowMs - currentTimeMs
+  return Math.max(remaining, minMs)
+}
+
 function matchCandidate(spanMapping: SpanMapping, candidate: string | undefined): string | null {
   if (!candidate) {
     return null
@@ -100,14 +126,18 @@ export function useFlowAnimations({
     () => ({
       nodeSuccessResetMs: timings?.nodeSuccessResetMs ?? NODE_SUCCESS_RESET_MS,
       nodePulseResetMs: timings?.nodePulseResetMs ?? NODE_PULSE_RESET_MS,
+      minVisualPulseMs: timings?.minVisualPulseMs ?? MIN_VISUAL_PULSE_MS,
+      stalenessThresholdMs: timings?.stalenessThresholdMs ?? STALENESS_THRESHOLD_MS,
       durationVisibleMs: timings?.durationVisibleMs ?? DURATION_VISIBLE_MS,
       edgeActiveMs: timings?.edgeActiveMs ?? EDGE_ACTIVE_MS,
     }),
     [
       timings?.durationVisibleMs,
       timings?.edgeActiveMs,
+      timings?.minVisualPulseMs,
       timings?.nodePulseResetMs,
       timings?.nodeSuccessResetMs,
+      timings?.stalenessThresholdMs,
     ],
   )
   const [nodeStatuses, setNodeStatuses] = useState<Map<string, NodeRuntimeStatus>>(new Map())
@@ -315,13 +345,15 @@ export function useFlowAnimations({
             lastMessage: event.message ?? event.span_name,
           }))
         } else {
-          const remainingPulseMs = remainingWindowMs(
+          const pulseMs = visualPulseMs(
             eventTimestamp,
             resolvedTimings.nodePulseResetMs,
             currentTime,
+            resolvedTimings.minVisualPulseMs,
+            resolvedTimings.stalenessThresholdMs,
           )
 
-          if (remainingPulseMs > 0) {
+          if (pulseMs > 0) {
             updateNodeStatus(mappedNodeId, (previous) => ({
               status: 'active',
               counter: previous?.counter,
@@ -330,7 +362,7 @@ export function useFlowAnimations({
               updatedAt: eventTimestamp,
               lastMessage: event.message ?? event.span_name,
             }))
-            scheduleNodeIdle(mappedNodeId, remainingPulseMs, eventTimestamp, {
+            scheduleNodeIdle(mappedNodeId, pulseMs, eventTimestamp, {
               durationMs,
               durationVisibleUntil,
               lastMessage: event.message ?? event.span_name,
@@ -351,37 +383,40 @@ export function useFlowAnimations({
         const targetQueueNodeId = queueNodeId ?? mappedNodeId
         if (targetQueueNodeId) {
           const delta = typeof event.queue_delta === 'number' ? event.queue_delta : 1
-          const remainingPulseMs = remainingWindowMs(
+          const pulseMs = visualPulseMs(
             eventTimestamp,
             resolvedTimings.nodePulseResetMs,
             currentTime,
+            resolvedTimings.minVisualPulseMs,
+            resolvedTimings.stalenessThresholdMs,
           )
+          const isFresh = pulseMs > 0
 
           updateNodeStatus(targetQueueNodeId, (previous) => ({
-            status: remainingPulseMs > 0 ? 'active' : 'idle',
+            status: isFresh ? 'active' : 'idle',
             counter: Math.max((previous?.counter ?? 0) + delta, 0),
             updatedAt: eventTimestamp,
             lastMessage: event.message ?? queueName,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          if (remainingPulseMs > 0) {
-            scheduleNodeIdle(targetQueueNodeId, remainingPulseMs, eventTimestamp, {
+          if (isFresh) {
+            scheduleNodeIdle(targetQueueNodeId, pulseMs, eventTimestamp, {
               lastMessage: event.message ?? queueName,
             })
           }
 
           if (producerNodeId && producerNodeId !== targetQueueNodeId) {
             updateNodeStatus(producerNodeId, (previous) => ({
-              status: remainingPulseMs > 0 ? 'active' : 'idle',
+              status: isFresh ? 'active' : 'idle',
               counter: previous?.counter,
               updatedAt: eventTimestamp,
               lastMessage: event.message ?? functionName ?? event.span_name,
               durationMs: previous?.durationMs,
               durationVisibleUntil: previous?.durationVisibleUntil,
             }))
-            if (remainingPulseMs > 0) {
-              scheduleNodeIdle(producerNodeId, remainingPulseMs, eventTimestamp, {
+            if (isFresh) {
+              scheduleNodeIdle(producerNodeId, pulseMs, eventTimestamp, {
                 lastMessage: event.message ?? functionName ?? event.span_name,
               })
             }
@@ -400,23 +435,27 @@ export function useFlowAnimations({
       }
 
       if (eventKind === 'queue_picked') {
-        const remainingPulseMs = remainingWindowMs(
+        const pulseMs = visualPulseMs(
           eventTimestamp,
           resolvedTimings.nodePulseResetMs,
           currentTime,
+          resolvedTimings.minVisualPulseMs,
+          resolvedTimings.stalenessThresholdMs,
         )
+        const isFresh = pulseMs > 0
+
         if (queueNodeId) {
           const delta = typeof event.queue_delta === 'number' ? event.queue_delta : -1
           updateNodeStatus(queueNodeId, (previous) => ({
-            status: remainingPulseMs > 0 ? 'active' : 'idle',
+            status: isFresh ? 'active' : 'idle',
             counter: Math.max((previous?.counter ?? 0) + delta, 0),
             updatedAt: eventTimestamp,
             lastMessage: event.message ?? queueName,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          if (remainingPulseMs > 0) {
-            scheduleNodeIdle(queueNodeId, remainingPulseMs, eventTimestamp, {
+          if (isFresh) {
+            scheduleNodeIdle(queueNodeId, pulseMs, eventTimestamp, {
               lastMessage: event.message ?? queueName,
             })
           }
@@ -425,15 +464,15 @@ export function useFlowAnimations({
         const targetWorkerNodeId = workerNodeId ?? mappedNodeId
         if (targetWorkerNodeId) {
           updateNodeStatus(targetWorkerNodeId, (previous) => ({
-            status: remainingPulseMs > 0 ? 'active' : 'idle',
+            status: isFresh ? 'active' : 'idle',
             counter: previous?.counter,
             updatedAt: eventTimestamp,
             lastMessage: event.message ?? workerName ?? event.span_name,
             durationMs: previous?.durationMs,
             durationVisibleUntil: previous?.durationVisibleUntil,
           }))
-          if (remainingPulseMs > 0) {
-            scheduleNodeIdle(targetWorkerNodeId, remainingPulseMs, eventTimestamp, {
+          if (isFresh) {
+            scheduleNodeIdle(targetWorkerNodeId, pulseMs, eventTimestamp, {
               lastMessage: event.message ?? workerName ?? event.span_name,
             })
           }
@@ -453,22 +492,25 @@ export function useFlowAnimations({
       }
 
       if (mappedNodeId) {
-        const remainingPulseMs = remainingWindowMs(
+        const pulseMs = visualPulseMs(
           eventTimestamp,
           resolvedTimings.nodePulseResetMs,
           currentTime,
+          resolvedTimings.minVisualPulseMs,
+          resolvedTimings.stalenessThresholdMs,
         )
+        const isFresh = pulseMs > 0
 
         updateNodeStatus(mappedNodeId, (previous) => ({
-          status: remainingPulseMs > 0 ? 'active' : 'idle',
+          status: isFresh ? 'active' : 'idle',
           counter: previous?.counter,
           updatedAt: eventTimestamp,
           lastMessage: event.message ?? event.span_name,
           durationMs: previous?.durationMs,
           durationVisibleUntil: previous?.durationVisibleUntil,
         }))
-        if (remainingPulseMs > 0) {
-          scheduleNodeIdle(mappedNodeId, remainingPulseMs, eventTimestamp, {
+        if (isFresh) {
+          scheduleNodeIdle(mappedNodeId, pulseMs, eventTimestamp, {
             lastMessage: event.message ?? event.span_name,
           })
         }
@@ -480,8 +522,11 @@ export function useFlowAnimations({
     edges,
     events,
     resolvedTimings.durationVisibleMs,
+    resolvedTimings.minVisualPulseMs,
     resolvedTimings.nodePulseResetMs,
     resolvedTimings.nodeSuccessResetMs,
+    resolvedTimings.stalenessThresholdMs,
+    setNodeIdle,
     scheduleNodeIdle,
     producerMapping,
     spanMapping,

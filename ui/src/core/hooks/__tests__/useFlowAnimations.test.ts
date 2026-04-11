@@ -17,6 +17,7 @@ function setNow(iso: string) {
 
 describe('useFlowAnimations', () => {
   afterEach(() => {
+    vi.useRealTimers()
     vi.restoreAllMocks()
   })
 
@@ -55,6 +56,7 @@ describe('useFlowAnimations', () => {
           timings: {
             nodeSuccessResetMs: 30,
             nodePulseResetMs: 30,
+            minVisualPulseMs: 30,
             durationVisibleMs: 50,
             edgeActiveMs: 30,
           },
@@ -127,6 +129,7 @@ describe('useFlowAnimations', () => {
           timings: {
             nodeSuccessResetMs: 30,
             nodePulseResetMs: 30,
+            minVisualPulseMs: 30,
             durationVisibleMs: 50,
             edgeActiveMs: 30,
           },
@@ -195,6 +198,9 @@ describe('useFlowAnimations', () => {
   })
 
   it('animates recompute steps on the shared extract-worker lane', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(Date.parse('2026-03-03T12:00:00.510Z'))
+
     const start: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -221,47 +227,27 @@ describe('useFlowAnimations', () => {
       },
     }
 
-    const { result, rerender } = renderHook(
-      ({ events }) =>
-        useFlowAnimations({
-          events,
-          spanMapping: mailPipelineFlow.spanMapping,
-          producerMapping: mailPipelineFlow.producerMapping,
-          edges: mailPipelineFlow.edges,
-          timings: {
-            nodeSuccessResetMs: 30,
-            nodePulseResetMs: 30,
-            durationVisibleMs: 50,
-            edgeActiveMs: 30,
-          },
-        }),
-      {
-        initialProps: { events: [] as FlowEvent[] },
-      },
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [start, end],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        timings: {
+          nodePulseResetMs: 30,
+          minVisualPulseMs: 30,
+          stalenessThresholdMs: 1_000,
+        },
+      }),
     )
-
-    setNow('2026-03-03T12:00:00.010Z')
-    act(() => {
-      rerender({ events: [start] })
-    })
 
     expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
 
-    setNow('2026-03-03T12:00:00.510Z')
-    act(() => {
-      rerender({ events: [start, end] })
-    })
-
-    const status = result.current.nodeStatuses.get('extract-worker')
-    expect(status?.status).toBe('active')
-
     await act(async () => {
-      await sleep(50)
+      await vi.advanceTimersByTimeAsync(50)
     })
 
-    await waitFor(() => {
-      expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('idle')
-    })
+    expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('idle')
   })
 
   it('increments queue counter on enqueue and decrements on worker pickup', async () => {
@@ -469,6 +455,7 @@ describe('useFlowAnimations', () => {
       message: 'rrq:queue:mail-backfill: job enqueued (handle_mail_backfill_start)',
     }
 
+    // Event is 10s old — well past the staleness threshold (5s default)
     setNow('2026-03-03T12:00:10.000Z')
     const { result } = renderHook(() =>
       useFlowAnimations({
@@ -486,6 +473,7 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('trigger-oauth')?.status).toBe('idle')
       expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('idle')
+      // Counter still updates so the queue depth is accurate after replay
       expect(result.current.nodeStatuses.get('backfill-queue')?.counter).toBe(1)
       expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(false)
     })

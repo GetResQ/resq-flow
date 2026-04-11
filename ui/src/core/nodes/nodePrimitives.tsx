@@ -116,7 +116,7 @@ export function resolveIcon(icon: string | undefined): string | null {
 
 export function statusGlowClass(status: NodeStatus | undefined): string {
   if (status === 'active') {
-    return 'node-glow-active node-ping-active'
+    return 'node-glow-active'
   }
 if (status === 'error') {
     return 'node-glow-error'

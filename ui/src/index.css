@@ -456,10 +456,10 @@ body[data-theme='light'] {
 @keyframes nodePing {
   0% {
     transform: scale(1);
-    opacity: 0.7;
+    opacity: 0.55;
   }
   100% {
-    transform: scale(1.45);
+    transform: scale(1.5);
     opacity: 0;
   }
 }
@@ -469,6 +469,7 @@ body[data-theme='light'] {
 .node-transition {
   transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
 }
+
 
 /* ── Node family classes — full depth stack per Design Contract v1.1 ── */
 /*
@@ -717,9 +718,9 @@ body[data-theme='light'] {
     0 8px 22px rgba(200, 120, 0, 0.16),
     0 0 0 1px rgba(200, 120, 0, 0.20);
   --node-glow-selected:
-    0 0 0 2.5px rgba(200, 120, 0, 0.26),
-    0 6px 20px rgba(200, 120, 0, 0.20),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(200, 120, 0, 0.40),
+    0 4px 16px rgba(200, 120, 0, 0.35),
+    0 10px 32px rgba(200, 120, 0, 0.18);
   background: linear-gradient(160deg, #FFF5E1 0%, #FFEDCC 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-queue { --node-border-color: rgba(200, 120, 0, 0.80); }
@@ -739,9 +740,9 @@ body[data-theme='light'] {
     0 8px 22px rgba(0, 110, 220, 0.16),
     0 0 0 1px rgba(0, 110, 220, 0.20);
   --node-glow-selected:
-    0 0 0 2.5px rgba(0, 110, 220, 0.26),
-    0 6px 20px rgba(0, 110, 220, 0.20),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(0, 110, 220, 0.40),
+    0 4px 16px rgba(0, 110, 220, 0.35),
+    0 10px 32px rgba(0, 110, 220, 0.18);
   background: linear-gradient(160deg, #EBF0FF 0%, #DFEBFF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-worker { --node-border-color: rgba(0, 120, 220, 0.80); }
@@ -761,9 +762,9 @@ body[data-theme='light'] {
     0 8px 22px rgba(100, 116, 139, 0.14),
     0 0 0 1px rgba(100, 116, 139, 0.18);
   --node-glow-selected:
-    0 0 0 2.5px rgba(100, 116, 139, 0.22),
-    0 6px 20px rgba(100, 116, 139, 0.16),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(100, 116, 139, 0.36),
+    0 4px 16px rgba(100, 116, 139, 0.28),
+    0 10px 32px rgba(100, 116, 139, 0.14);
   background: linear-gradient(160deg, #EDEEF2 0%, #E4E7ED 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-cron { --node-border-color: rgba(100, 116, 139, 0.70); }
@@ -783,9 +784,9 @@ body[data-theme='light'] {
     0 8px 20px rgba(59, 130, 246, 0.14),
     0 0 0 1px rgba(59, 130, 246, 0.16);
   --node-glow-selected:
-    0 0 0 2.5px rgba(59, 130, 246, 0.22),
-    0 6px 20px rgba(59, 130, 246, 0.18),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(59, 130, 246, 0.40),
+    0 4px 16px rgba(59, 130, 246, 0.32),
+    0 10px 32px rgba(59, 130, 246, 0.16);
   background: linear-gradient(160deg, #EAF0FF 0%, #DDE8FF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-process { --node-border-color: rgba(59, 130, 246, 0.55); }
@@ -805,9 +806,9 @@ body[data-theme='light'] {
     0 8px 22px rgba(130, 70, 220, 0.16),
     0 0 0 1px rgba(130, 70, 220, 0.20);
   --node-glow-selected:
-    0 0 0 2.5px rgba(130, 70, 220, 0.26),
-    0 6px 20px rgba(130, 70, 220, 0.20),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(130, 70, 220, 0.40),
+    0 4px 16px rgba(130, 70, 220, 0.35),
+    0 10px 32px rgba(130, 70, 220, 0.18);
   background: linear-gradient(160deg, #F0E8FF 0%, #E6DAFF 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-decision { --node-border-color: rgba(130, 70, 220, 0.80); }
@@ -827,9 +828,9 @@ body[data-theme='light'] {
     0 8px 20px rgba(0, 140, 140, 0.14),
     0 0 0 1px rgba(0, 140, 140, 0.18);
   --node-glow-selected:
-    0 0 0 2.5px rgba(0, 140, 140, 0.22),
-    0 6px 20px rgba(0, 140, 140, 0.16),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(0, 140, 140, 0.40),
+    0 4px 16px rgba(0, 140, 140, 0.32),
+    0 10px 32px rgba(0, 140, 140, 0.16);
   background: linear-gradient(160deg, #E8F7F6 0%, #DCF2F0 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-resource { --node-border-color: rgba(0, 140, 140, 0.70); }
@@ -849,9 +850,9 @@ body[data-theme='light'] {
     0 8px 22px rgba(22, 150, 70, 0.16),
     0 0 0 1px rgba(22, 150, 70, 0.20);
   --node-glow-selected:
-    0 0 0 2.5px rgba(22, 150, 70, 0.26),
-    0 6px 20px rgba(22, 150, 70, 0.20),
-    0 10px 28px rgba(0, 0, 0, 0.10);
+    0 0 0 2.5px rgba(22, 150, 70, 0.40),
+    0 4px 16px rgba(22, 150, 70, 0.35),
+    0 10px 32px rgba(22, 150, 70, 0.18);
   background: linear-gradient(160deg, #E8F8EA 0%, #DCF3E0 100%);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-trigger { --node-border-color: rgba(22, 150, 70, 0.72); }
@@ -881,22 +882,28 @@ body[data-theme='light'] {
 
 /* ── Node glow classes ── */
 
+/* Idle: slow fade-out so the glow breathes away gracefully */
 .node-glow-idle {
   box-shadow: var(--node-glow-rest, none);
-  transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition: box-shadow 1.4s ease-out, border-color 1.4s ease-out, background 1.4s ease-out;
 }
 
 .react-flow__node:hover .node-glow-idle {
   box-shadow: var(--node-glow-hover, none);
 }
 
-/* Active/running: selected-intensity glow */
+/* Active/running: fast snap-on — border + glow match the selected state.
+   Two rules so we beat both default and light-mode family selectors on specificity. */
 .node-glow-active {
+  --node-border-color: var(--node-accent);
   box-shadow: var(--node-glow-selected, none);
-  transition: box-shadow 160ms ease, border-color 160ms ease, background 160ms ease;
+  transition: box-shadow 120ms ease-in, border-color 120ms ease-in, background 120ms ease-in;
+}
+:root[data-theme='light'] .node-glow-active {
+  --node-border-color: var(--node-accent);
 }
 
-/* Error: full red override — semantic color suppressed, elevation preserved */
+/* Error: fast snap-on, same as active */
 .node-glow-error {
   box-shadow:
     0 0 0 2px rgba(255, 68, 68, 0.30),
@@ -904,7 +911,7 @@ body[data-theme='light'] {
     0 6px 20px rgba(0, 0, 0, 0.55),
     0 2px 6px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 68, 68, 0.15);
-  transition: box-shadow 160ms ease;
+  transition: box-shadow 120ms ease-in;
 }
 :root[data-theme='light'] .node-glow-error {
   box-shadow:
@@ -934,7 +941,13 @@ body[data-theme='light'] {
 .node-glow-svg {
   box-shadow: none !important;
   filter: drop-shadow(0 0 4px color-mix(in srgb, var(--node-accent, #38B6FF), transparent 78%));
-  transition: filter 160ms ease;
+  transition: filter 1.4s ease-out;
+}
+.node-glow-svg.node-glow-active {
+  filter:
+    drop-shadow(0 0 3px var(--node-accent, #38B6FF))
+    drop-shadow(0 0 10px var(--node-accent, #38B6FF));
+  transition: filter 120ms ease-in;
 }
 .react-flow__node:hover .node-glow-svg {
   filter: drop-shadow(0 0 8px color-mix(in srgb, var(--node-accent, #38B6FF), transparent 60%));
