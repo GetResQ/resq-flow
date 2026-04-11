@@ -154,6 +154,20 @@ History keeps the same flow semantics as live mode:
 - the relay applies the same contract model used for live ingest
 - UI history views reuse the same normalized event/journey model
 
+## Run-backed vs flow-visible activity
+
+A Run is one coherent execution story inside a flow.
+
+The relay keeps one normalized flow event model whether or not a record has `run_id`.
+
+That means:
+
+- producer-owned `run_id` marks one concrete execution story
+- `run_id` exists so the producer, not the UI, decides which events belong to that story
+- the Runs surface is built from run-backed events
+- logs, canvas detail, and history can still show flow-visible events without `run_id`
+- the UI should not synthesize fake run IDs just to force scheduler, polling, or mailbox-level activity into Runs
+
 ## Source-Agnostic Core
 
 The current live path is Vector-backed by design, but the normalized model should stay source-agnostic enough that future adapters can feed history/detail experiences without a redesign.

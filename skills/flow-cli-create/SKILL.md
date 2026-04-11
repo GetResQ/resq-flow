@@ -69,6 +69,7 @@ Figure out the minimum flow definition:
 2. what should the flow be called
 3. what are the main nodes or components
 4. what execution identity scopes the flow, such as thread, run, job, or request
+5. if this flow should support Runs, what concrete unit of work gets one producer-owned `run_id`
 
 Infer these from context when the codebase already makes them obvious. If something important is still unclear, ask one short question.
 
@@ -109,7 +110,7 @@ The user should not have to split that request up manually. Do the decomposition
    - `schema.rs`
    - `tracing_emit.rs`
    - optional `touchpoints.rs`
-4. Add the producer-side flow context and core node logs.
+4. Add the producer-side flow context, core node logs, and run identity shape when the flow should support Runs.
 5. Add one or more initial step logs only when they were clearly requested or obviously useful.
 6. Create the matching `resq-flow` contract.
 7. Validate the new flow with `resq-flow`.
@@ -122,6 +123,8 @@ The user should not have to split that request up manually. Do the decomposition
 - Keep flow scope explicit.
 - Keep `flow_id` simple and stable.
 - Keep node ownership explicit.
+- Keep run ownership explicit. If the flow should support Runs, the producer should mint and carry `run_id` across one coherent execution.
+- A Run is one coherent execution story, not every event the flow emits.
 - Treat node logs as the default for new-flow scaffolding.
 - Use step logs only for smaller local visibility points, not as a replacement for the flow backbone.
 
@@ -151,6 +154,34 @@ If the flow includes a natural run identifier, use it to narrow inspection:
 ```bash
 resq-flow logs list --flow <flow-id> --attr run_id=<run-id> --jsonl
 ```
+
+If the flow should support Runs in the UI, also validate that one producer-emitted `run_id` stays stable across the full lifecycle you expect to group together.
+
+## Run ID implementation recipe
+
+If the flow should support Runs, follow this exact producer-side pattern:
+
+1. decide the one concrete unit of work that should become a Run
+2. mint one `run_id` exactly once when that work starts
+3. store that `run_id` on the top-level job or request payload
+4. carry the same `run_id` unchanged through downstream jobs, worker handoffs, and emitted flow events
+5. leave `run_id` absent for flow-visible activity that should not become a top-level Run
+6. validate in `resq-flow` that one execution produces one Run row
+
+Use the shared helper in the producer runtime:
+
+- `mint_flow_run_id(flow_id)`
+
+The current mail flow wraps that helper as:
+
+- `mint_mail_run_id() -> "mail-pipeline_<uuid-v4>"`
+
+Keep the pattern generic:
+
+- flow-specific wrapper around the shared mint helper
+- one mint point in the producer
+- optional `run_id` field on job payloads when some flow-visible activity should stay outside Runs
+- downstream propagation by reusing the existing `run_id`, not re-minting
 
 ## Mail-focused first pass
 

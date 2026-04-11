@@ -37,11 +37,19 @@ Which run or journey this record belongs to.
 
 Use it to group one concrete execution path across multiple nodes.
 
+A run is one coherent execution story inside a flow.
+
+`run_id` exists so the producer can say "these events belong to one story" without making the UI guess.
+
 This is required for run-backed events.
 
-It may be absent for ambient flow-visible activity that belongs to the flow but
+It may be absent for flow-visible activity that belongs to the flow but
 does not represent a concrete top-level run, such as polling, scheduler
 activity, or other pre-work checks.
+
+`resq-flow` uses `run_id` to shape the Runs surface.
+
+Logs, canvas detail, and history can still show flow-visible events that do not carry `run_id`.
 
 ### `component_id`
 

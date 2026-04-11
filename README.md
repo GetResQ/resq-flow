@@ -148,6 +148,12 @@ The JSON contract is the stable shared boundary. It defines:
 - context retention rules
 - the flow identity and name used by the relay and UI
 
+`run_id` is producer-owned.
+
+If the producer emits and carries one coherent `run_id`, `resq-flow` can show that execution as a top-level Run.
+
+Flow-visible events without `run_id` can still appear in logs, canvas detail, and history, but they do not become top-level Runs.
+
 The TypeScript flow config is optional. It provides rich UI concerns such as:
 
 - React Flow nodes and edges
@@ -156,6 +162,20 @@ The TypeScript flow config is optional. It provides rich UI concerns such as:
 - layout metadata such as lanes, grouping, and branch behavior
 
 If a flow has no TypeScript view config yet, it still exists as a headless flow for history, logs, run detail, and future non-graph views.
+
+## What a Run is
+
+A Run is one coherent execution story inside a flow.
+
+In plain terms:
+
+- one Run should answer "what happened for this one piece of work"
+- not every flow-visible event should become a Run
+- mailbox polling, scheduler activity, and other pre-work checks can still matter without becoming top-level Runs
+
+`run_id` is how the producer tells `resq-flow` which events belong to that one story.
+
+Without `run_id`, the UI would have to guess which events belong together.
 
 ## Relay behavior
 
