@@ -243,7 +243,7 @@ function mapFlowNodes(
       draggable: node.draggable ?? defaultDraggable,
       data: {
         label: node.label,
-        semanticRole: node.semanticRole,
+        eyebrow: node.eyebrow,
         sublabel: node.sublabel,
         description: node.description,
         notes: node.notes,
@@ -258,7 +258,7 @@ function mapFlowNodes(
       },
       style: {
         width: layoutGeometry?.width ?? node.size?.width,
-        height: layoutGeometry?.height ?? (node.type === 'group' ? node.size?.height : undefined),
+        height: layoutGeometry?.height ?? node.size?.height,
         zIndex: node.type === 'group' ? 0 : selected ? 20 : 10,
         opacity: dimmed ? (node.type === 'group' ? 0.08 : 0.22) : 1,
         filter: dimmed ? 'saturate(0.5)' : undefined,

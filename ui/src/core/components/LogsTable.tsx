@@ -148,8 +148,8 @@ export function LogsTable({
           <span
             className="inline-block rounded-[5px] px-1.5 py-0.5 text-[10px] font-medium"
             style={{
-              background: `var(--chip-${row.original.nodeFamily ?? 'cron'}-bg)`,
-              color: `var(--chip-${row.original.nodeFamily ?? 'cron'}-text)`,
+              background: `var(--chip-${row.original.nodeFamily ?? 'slate'}-bg)`,
+              color: `var(--chip-${row.original.nodeFamily ?? 'slate'}-text)`,
             }}
             title={row.original.nodeId ?? row.original.nodeLabel}
           >

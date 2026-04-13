@@ -15,6 +15,7 @@ import { DurationBadge } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { isDefaultVisibleLogEntry } from '../telemetryClassification'
 import { normalizeTraceIdentifierValue } from '../traceIdentifiers'
+import { firstClassColors } from '../nodes/nodePrimitives'
 import type { FlowNodeConfig, LogEntry, NodeStatus, SpanEntry } from '../types'
 
 export interface NodeDetailStatus {
@@ -202,7 +203,7 @@ function insightIcon(tone: InsightTone) {
 
 export function NodeDetailContent({ node, status, logs, spans, onOpenRun }: NodeDetailContentProps) {
   const [tab, setTab] = useState<TabKey>('overview')
-  const showRuntimeCards = new Set(['queue', 'worker', 'scheduler', 'process', 'decision']).has(node.semanticRole ?? '')
+  const showRuntimeCards = firstClassColors.has(node.style?.color ?? '')
 
   const sortedLogs = useMemo(
     () => [...logs].sort(compareLogEntriesDescending),

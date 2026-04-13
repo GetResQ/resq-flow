@@ -17,7 +17,7 @@ export function RoundedRectNode({ id, data }: NodeProps<FlowNode>) {
       className={`${nodeContainerClass({
         color: data.style?.color,
         status,
-      })} rounded-xl`}
+      })} h-full rounded-xl`}
     >
       {renderHandles(id, data.handles, [...defaultHandles])}
       <StandardNodeContent data={data} />

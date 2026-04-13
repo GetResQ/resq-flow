@@ -1,7 +1,7 @@
 import type { NodeProps } from '@xyflow/react'
 
 import { NodeStatusBadge } from '../components/NodeStatusBadge'
-import { nodeContainerClass, renderHandles, resolveIcon } from './nodePrimitives'
+import { nodeContainerClass, renderHandles } from './nodePrimitives'
 import type { FlowNode } from './types'
 
 const defaultHandles = [
@@ -13,7 +13,7 @@ const defaultHandles = [
 
 export function CircleNode({ id, data }: NodeProps<FlowNode>) {
   const status = data.status?.status ?? 'idle'
-  const icon = resolveIcon(data.style?.icon)
+  const icon = data.style?.icon ? data.style.icon.toUpperCase().slice(0, 3) : null
 
   return (
     <div className="relative h-28 w-28">

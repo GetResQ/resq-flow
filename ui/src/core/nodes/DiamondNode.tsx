@@ -14,16 +14,17 @@ export function DiamondNode({ id, data }: NodeProps<FlowNode>) {
   const status = data.status?.status ?? 'idle'
 
   return (
-    <div className="relative h-32 w-32">
+    <div className="relative h-full w-full">
       {renderHandles(id, data.handles, [...defaultHandles])}
       <div
         className={`${nodeContainerClass({
-          color: data.style?.color ?? 'decision',
+          color: data.style?.color ?? 'violet',
           status,
-        })} flex h-full w-full rotate-45 items-center justify-center`}
+        })} flex h-full w-full rotate-45 items-center justify-center rounded-[14px]`}
+        style={{ borderWidth: 2 }}
       >
         <div className="-rotate-45 px-2 text-center">
-          <p className="text-[11px] font-medium leading-tight">{data.label}</p>
+          <p className="node-title-clamp text-[11px] font-medium leading-tight">{data.label}</p>
         </div>
       </div>
     </div>

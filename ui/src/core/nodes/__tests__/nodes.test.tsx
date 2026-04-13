@@ -10,7 +10,6 @@ import { CylinderNode } from '../CylinderNode'
 import { DiamondNode } from '../DiamondNode'
 import { GroupNode } from '../GroupNode'
 import { OctagonNode } from '../OctagonNode'
-import { PillNode } from '../PillNode'
 import { RectangleNode } from '../RectangleNode'
 import { RoundedRectNode } from '../RoundedRectNode'
 import type { FlowNode, FlowNodeData } from '../types'
@@ -52,19 +51,18 @@ function renderNode(component: ReactElement) {
 
 describe('shape nodes', () => {
   it('renders rectangle node content', () => {
-    renderNode(<RectangleNode {...baseNodeProps({ style: { color: 'worker' } })} />)
+    renderNode(<RectangleNode {...baseNodeProps({ style: { color: 'ocean' } })} />)
 
     expect(screen.getByText('Node Label')).toBeInTheDocument()
     expect(screen.getByText('Node sublabel')).toBeInTheDocument()
   })
 
-  it('renders rounded rectangle, diamond, circle, pill, badge, octagon, group, and annotation nodes', () => {
+  it('renders rounded rectangle, diamond, circle, badge, octagon, group, and annotation nodes', () => {
     renderNode(
       <>
         <RoundedRectNode {...baseNodeProps({ label: 'Rounded' })} />
         <DiamondNode {...baseNodeProps({ label: 'Decision' })} />
         <CircleNode {...baseNodeProps({ label: 'Storage' })} />
-        <PillNode {...baseNodeProps({ label: 'Trigger' })} />
         <BadgeNode {...baseNodeProps({ label: 'Badge' })} />
         <OctagonNode {...baseNodeProps({ label: 'Stop' })} />
         <GroupNode {...baseNodeProps({ label: 'Group Boundary' })} />
@@ -75,7 +73,6 @@ describe('shape nodes', () => {
     expect(screen.getByText('Rounded')).toBeInTheDocument()
     expect(screen.getByText('Decision')).toBeInTheDocument()
     expect(screen.getByText('Storage')).toBeInTheDocument()
-    expect(screen.getByText('Trigger')).toBeInTheDocument()
     expect(screen.getByText('Badge')).toBeInTheDocument()
     expect(screen.getByText('Stop')).toBeInTheDocument()
     expect(screen.getByText('Group Boundary')).toBeInTheDocument()
@@ -83,18 +80,17 @@ describe('shape nodes', () => {
   })
 
   it('renders nodes for each status without error', () => {
-    const withWorker = (status: Parameters<typeof baseNodeProps>[0]) =>
-      baseNodeProps({ style: { color: 'worker' }, ...status })
+    const withOcean = (status: Parameters<typeof baseNodeProps>[0]) =>
+      baseNodeProps({ style: { color: 'ocean' }, ...status })
 
     renderNode(
       <>
-        <RectangleNode {...withWorker({ status: { status: 'idle', updatedAt: Date.now() } })} />
-        <RectangleNode {...withWorker({ status: { status: 'active', updatedAt: Date.now() } })} />
-        <RectangleNode {...withWorker({ status: { status: 'error', updatedAt: Date.now() } })} />
+        <RectangleNode {...withOcean({ status: { status: 'idle', updatedAt: Date.now() } })} />
+        <RectangleNode {...withOcean({ status: { status: 'active', updatedAt: Date.now() } })} />
+        <RectangleNode {...withOcean({ status: { status: 'error', updatedAt: Date.now() } })} />
       </>,
     )
 
-    // Glow is applied via CSS classes on the container — just verify the nodes render
     expect(screen.getAllByText('Node Label')).toHaveLength(3)
   })
 
@@ -104,7 +100,7 @@ describe('shape nodes', () => {
         <CylinderNode
           {...baseNodeProps({
             label: 'S3',
-            style: { color: 'resource', icon: 's3' },
+            style: { color: 'teal', icon: 's3' },
             status: { status: 'idle', updatedAt: Date.now() },
           })}
         />
@@ -112,7 +108,7 @@ describe('shape nodes', () => {
           {...baseNodeProps({
             id: 'node-2',
             label: 'postgres',
-            style: { color: 'resource', icon: 'postgres' },
+            style: { color: 'teal', icon: 'postgres' },
             status: { status: 'idle', updatedAt: Date.now() },
           })}
         />

@@ -1,31 +1,5 @@
-import type { FlowNodeConfig, NodeSemanticRole, NodeShape, NodeStyle } from '../core/types'
-import { defaultNodeSizeForRole } from '../core/nodeSizing'
-
-const roleColorMap: Record<NodeSemanticRole, string> = {
-  trigger:   'trigger',
-  queue:     'queue',
-  worker:    'worker',
-  scheduler: 'cron',
-  process:   'process',
-  decision:  'decision',
-  resource:  'resource',
-  detail:    'detail',
-  group:     'group',
-  note:      'detail',
-}
-
-const roleShapeMap: Record<NodeSemanticRole, NodeShape> = {
-  trigger: 'pill',
-  queue: 'roundedRect',
-  worker: 'roundedRect',
-  scheduler: 'roundedRect',
-  process: 'roundedRect',
-  decision: 'diamond',
-  resource: 'cylinder',
-  detail: 'roundedRect',
-  group: 'group',
-  note: 'annotation',
-}
+import type { FlowNodeConfig, NodeColor, NodeShape } from '../core/types'
+import { defaultNodeSizeForShape } from '../core/nodeSizing'
 
 export function normalizeTechnicalAlias(value: string | undefined): string | undefined {
   const trimmed = value?.trim()
@@ -44,75 +18,18 @@ export function normalizeTechnicalAlias(value: string | undefined): string | und
   return normalized.replaceAll('_', '-')
 }
 
-function inferSemanticRole(node: FlowNodeConfig): NodeSemanticRole {
-  if (node.semanticRole) {
-    return node.semanticRole
-  }
-
-  if (node.type === 'pill') {
-    return 'trigger'
-  }
-  if (node.type === 'diamond') {
-    return 'decision'
-  }
-  if (node.type === 'cylinder') {
-    return 'resource'
-  }
-  if (node.type === 'group') {
-    return 'group'
-  }
-  if (node.type === 'annotation') {
-    return 'note'
-  }
-  if (node.style?.icon === 'queue') {
-    return 'queue'
-  }
-  if (node.style?.icon === 'worker' || node.sublabel?.trim().toLowerCase() === 'workers') {
-    return 'worker'
-  }
-  if (node.style?.icon === 'cron') {
-    return 'scheduler'
-  }
-  if (node.type === 'badge') {
-    return 'detail'
-  }
-  if (node.parentId) {
-    return 'detail'
-  }
-
-  return 'process'
+function normalizeType(type: string): NodeShape {
+  if (type === 'rectangle') return 'roundedRect'
+  return type as NodeShape
 }
 
-function normalizeStyle(node: FlowNodeConfig, semanticRole: NodeSemanticRole): NodeStyle | undefined {
-  const nextStyle = { ...(node.style ?? {}) }
-
-  if (semanticRole === 'queue' && !nextStyle.icon) {
-    nextStyle.icon = 'queue'
-  }
-  if (semanticRole === 'worker' && !nextStyle.icon) {
-    nextStyle.icon = 'worker'
-  }
-  if (semanticRole === 'scheduler' && !nextStyle.icon) {
-    nextStyle.icon = 'cron'
-  }
-
-  if (!nextStyle.color) {
-    nextStyle.color = roleColorMap[semanticRole]
-  }
-
-  return Object.keys(nextStyle).length > 0 ? nextStyle : undefined
-}
-
-export function withNodeVisualDefaults(node: FlowNodeConfig): FlowNodeConfig {
-  const semanticRole = inferSemanticRole(node)
-  const normalizedType = roleShapeMap[semanticRole]
-  const defaultSize = defaultNodeSizeForRole(semanticRole, normalizedType)
+function withDefaults(node: FlowNodeConfig): FlowNodeConfig {
+  const normalizedType = normalizeType(node.type)
+  const defaultSize = defaultNodeSizeForShape(normalizedType)
 
   return {
     ...node,
-    semanticRole,
     type: normalizedType,
-    style: normalizeStyle(node, semanticRole),
     size: defaultSize
       ? {
           width: node.size?.width ?? defaultSize.width,
@@ -123,43 +40,69 @@ export function withNodeVisualDefaults(node: FlowNodeConfig): FlowNodeConfig {
 }
 
 export function withNodeVisualDefaultsForFlow(nodes: FlowNodeConfig[]): FlowNodeConfig[] {
-  return nodes.map((node) => withNodeVisualDefaults(node))
+  return nodes.map((node) => withDefaults(node))
 }
 
-type SemanticNodeInput = Omit<FlowNodeConfig, 'type' | 'semanticRole'>
+type NodeInput = Omit<FlowNodeConfig, 'type'> & { type?: NodeShape }
 
-export function triggerNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'pill', semanticRole: 'trigger' })
+function applyPreset(
+  input: NodeInput,
+  preset: { type: NodeShape; color: NodeColor; eyebrow?: string; icon?: string },
+): FlowNodeConfig {
+  return withDefaults({
+    ...input,
+    type: preset.type,
+    eyebrow: input.eyebrow ?? preset.eyebrow,
+    style: {
+      ...input.style,
+      color: input.style?.color ?? preset.color,
+      icon: input.style?.icon ?? preset.icon,
+    },
+  })
 }
 
-export function queueNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'roundedRect', semanticRole: 'queue' })
+export function triggerNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'roundedRect', color: 'emerald' })
 }
 
-export function workerNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'roundedRect', semanticRole: 'worker' })
+export function queueNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'roundedRect', color: 'amber', eyebrow: 'QUEUE', icon: 'queue' })
 }
 
-export function processNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'roundedRect', semanticRole: 'process' })
+export function workerNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'roundedRect', color: 'ocean', eyebrow: 'WORKER', icon: 'worker' })
 }
 
-export function decisionNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'diamond', semanticRole: 'decision' })
+export function schedulerNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'roundedRect', color: 'slate', eyebrow: 'CRON', icon: 'cron' })
 }
 
-export function resourceNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'cylinder', semanticRole: 'resource' })
+export function stepNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'roundedRect', color: 'sky' })
 }
 
-export function detailGroup(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'group', semanticRole: 'group' })
+export function decisionNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'diamond', color: 'violet' })
 }
 
-export function detailNode(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'roundedRect', semanticRole: 'detail' })
+export function resourceNode(input: NodeInput): FlowNodeConfig {
+  return applyPreset(input, { type: 'cylinder', color: 'teal' })
 }
 
-export function note(input: SemanticNodeInput): FlowNodeConfig {
-  return withNodeVisualDefaults({ ...input, type: 'annotation', semanticRole: 'note' })
+export function detailGroup(input: NodeInput): FlowNodeConfig {
+  return withDefaults({ ...input, type: 'group' })
+}
+
+export function detailNode(input: NodeInput): FlowNodeConfig {
+  const node = applyPreset(input, { type: 'roundedRect', color: 'muted' })
+  return { ...node, size: { width: node.size?.width ?? 184, height: input.size?.height ?? 44 } }
+}
+
+export function note(input: NodeInput): FlowNodeConfig {
+  return withDefaults({ ...input, type: 'annotation' })
+}
+
+/** @deprecated Kept for backward compat during migration. Use preset functions directly. */
+export function withNodeVisualDefaults(node: FlowNodeConfig): FlowNodeConfig {
+  return withDefaults(node)
 }

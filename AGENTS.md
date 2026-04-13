@@ -96,9 +96,37 @@ Useful focused checks:
 ## UI rules worth keeping in mind
 
 - Use shadcn components from `@/components/ui/` for standard UI primitives.
-- Use `ui/DESIGN-SYSTEM.md` for palette, spacing, and language rules.
-- Keep graph block titles short. Process blocks should usually be title-only; use subtitles only when a short technical alias clearly helps. Put longer explanation in sidebar `description` instead of on the block face.
-- Keep graph block sizes on the shared width tiers; do not hand-tune one-off widths unless a real layout need survives after title cleanup.
-- Inside groups, default child nodes to the `detail` family unless they truly need to stand on their own as first-class steps.
+- Read `ui/DESIGN-SYSTEM.md` before touching the frontend — it has palette, spacing, sizing, and language rules.
+
+### Canvas node system
+
+The node system uses **closed visual primitives** (4 shapes + 7 colors) with **open content** (eyebrow text and titles are free strings). There are no semantic roles — the system does not know what a "queue" or "worker" is.
+
+**Adding nodes to a flow:** use the preset functions in `ui/src/flows/nodeFactory.ts`:
+
+```ts
+queueNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+workerNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+stepNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+detailNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+decisionNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+resourceNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+triggerNode({ id: '...', label: '...', position: { x: 0, y: 0 } })
+```
+
+For custom nodes that don't fit a preset, compose directly: `{ type: 'roundedRect', style: { color: 'sky' }, eyebrow: 'HANDLER', label: '...' }`.
+
+**Do not:**
+- Use `semanticRole` — it no longer exists
+- Use `type: 'pill'` — it no longer exists
+- Hardcode dimensions on node components — sizes come from `ui/src/core/nodeSizing.ts`
+- Add new entries to `firstClassColors` without updating CSS tokens in `index.css` and `theme.ts`
+
+**Sizing (do not override):** standard rect `184 × 64`, detail rect `184 × 44`, diamond `92 × 92`, cylinder `88 × 104`.
+
+**Titles:** aim for ≤22 characters (1 line). Up to ~44 wraps to 2 lines. Beyond that truncates with a tooltip. If a title truncates, shorten it.
+
+### General UI language
+
 - Prefer `Flow`, `Run`, `Node`, `Logs`, `Status`, and `Timing` in the main UI.
 - Reserve lower-level telemetry words like `trace`, `span`, and `event` for advanced views.

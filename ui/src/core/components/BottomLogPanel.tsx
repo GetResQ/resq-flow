@@ -43,10 +43,8 @@ function getScrollViewport(root: HTMLDivElement | null) {
   return root?.querySelector('[data-radix-scroll-area-viewport]') as HTMLDivElement | null
 }
 
-function resolveSemanticFamily(semanticRole: string | undefined): string | undefined {
-  if (!semanticRole) return undefined
-  if (semanticRole === 'scheduler') return 'cron'
-  return semanticRole
+function resolveNodeFamily(color: string | undefined): string | undefined {
+  return color ?? undefined
 }
 
 export function BottomLogPanel({
@@ -102,7 +100,7 @@ export function BottomLogPanel({
   const nodeFamilies = useMemo(() => {
     const map = new Map<string, string>()
     for (const node of flow.nodes) {
-      const family = resolveSemanticFamily(node.semanticRole)
+      const family = resolveNodeFamily(node.style?.color)
       if (family) map.set(node.id, family)
     }
     return map

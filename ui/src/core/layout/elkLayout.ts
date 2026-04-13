@@ -62,17 +62,16 @@ const lanePriority: Record<LayoutLane, number> = {
   note: 4,
 }
 
-const rolePriority: Record<string, number> = {
-  trigger: 0,
-  queue: 1,
-  worker: 2,
-  scheduler: 2,
-  process: 3,
-  decision: 4,
-  detail: 5,
-  resource: 6,
-  group: 7,
-  note: 8,
+const shapePriority: Record<string, number> = {
+  roundedRect: 1,
+  rectangle: 1,
+  diamond: 2,
+  cylinder: 3,
+  badge: 4,
+  octagon: 4,
+  circle: 4,
+  group: 5,
+  annotation: 6,
 }
 
 function sortedLayoutNodes(nodes: FlowNodeConfig[]) {
@@ -89,10 +88,10 @@ function sortedLayoutNodes(nodes: FlowNodeConfig[]) {
       return leftLane - rightLane
     }
 
-    const leftRole = rolePriority[left.semanticRole ?? 'detail'] ?? 99
-    const rightRole = rolePriority[right.semanticRole ?? 'detail'] ?? 99
-    if (leftRole !== rightRole) {
-      return leftRole - rightRole
+    const leftShape = shapePriority[left.type] ?? 99
+    const rightShape = shapePriority[right.type] ?? 99
+    if (leftShape !== rightShape) {
+      return leftShape - rightShape
     }
 
     return left.id.localeCompare(right.id)

@@ -1,49 +1,27 @@
 import type { ReactNode } from 'react'
 
-import type { FlowNodeConfig, NodeSemanticRole } from '../types'
+import type { FlowNodeConfig } from '../types'
 
-const semanticRoleLabels: Record<NodeSemanticRole, string | null> = {
-  trigger: 'Trigger',
-  queue: 'Queue',
-  worker: 'Worker',
-  scheduler: 'Scheduler',
-  process: 'Process',
-  decision: 'Decision',
-  resource: 'Resource',
-  detail: 'Detail',
-  group: null,
-  note: null,
+const shapeLabels: Record<string, string> = {
+  diamond: 'Decision',
+  cylinder: 'Resource',
 }
 
 function resolveNodeRole(node: FlowNodeConfig): string | null {
-  if (node.semanticRole) {
-    return semanticRoleLabels[node.semanticRole]
+  if (node.eyebrow) {
+    return node.eyebrow.charAt(0) + node.eyebrow.slice(1).toLowerCase()
   }
 
-  if (node.style?.icon === 'worker') {
-    return 'Worker'
-  }
-  if (node.style?.icon === 'queue') {
-    return 'Queue'
-  }
-  if (node.style?.icon === 'cron') {
-    return 'Scheduler'
-  }
-  if (node.type === 'diamond') {
-    return 'Decision'
-  }
-  if (node.type === 'cylinder') {
-    return 'Resource'
-  }
+  const shapeLabel = shapeLabels[node.type]
+  if (shapeLabel) return shapeLabel
+
+  if (node.style?.icon === 'worker') return 'Worker'
+  if (node.style?.icon === 'queue') return 'Queue'
+  if (node.style?.icon === 'cron') return 'Scheduler'
+
   const sublabel = node.sublabel?.trim()
-  if (!sublabel) {
-    return null
-  }
-
-  if (sublabel.toLowerCase() === 'workers') {
-    return 'Worker'
-  }
-
+  if (!sublabel) return null
+  if (sublabel.toLowerCase() === 'workers') return 'Worker'
   return sublabel.replace(/^\(/, '').replace(/\)$/, '')
 }
 

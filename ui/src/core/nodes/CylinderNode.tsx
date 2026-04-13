@@ -20,14 +20,14 @@ const resourceRoleTags: Record<string, string> = {
 export function CylinderNode({ id, data }: NodeProps<FlowNode>) {
   const status = data.status?.status ?? 'idle'
   const svgTone = resolveSvgTone(data.style?.color)
-  const familyClass = `node-family-${data.style?.color ?? 'resource'}`
+  const familyClass = `node-family-${data.style?.color ?? 'teal'}`
   const roleTag = data.style?.icon ? (resourceRoleTags[data.style.icon] ?? data.style.icon.toUpperCase()) : 'STORE'
   const normalizedRoleTag = roleTag.trim().toLowerCase()
   const normalizedLabel = data.label.trim().toLowerCase()
   const showTitle = normalizedLabel !== normalizedRoleTag
 
   return (
-    <div className={`relative h-28 w-24 ${familyClass}`} style={{ '--node-accent': svgTone.accent, background: 'transparent' } as React.CSSProperties}>
+    <div className={`relative h-full w-full ${familyClass}`} style={{ '--node-accent': svgTone.accent, background: 'transparent' } as React.CSSProperties}>
       {renderHandles(id, data.handles, [...defaultHandles])}
       <svg
         viewBox="0 0 96 112"

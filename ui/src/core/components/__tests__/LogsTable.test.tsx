@@ -10,8 +10,8 @@ const nodeLabels = new Map([
 ])
 
 const nodeFamilies = new Map([
-  ['node-a', 'worker'],
-  ['node-b', 'queue'],
+  ['node-a', 'ocean'],
+  ['node-b', 'amber'],
 ])
 
 const logs: LogEntry[] = [
@@ -257,7 +257,7 @@ describe('LogsTable', () => {
     const chips = screen.getAllByText('Analyze')
     expect(chips.length).toBeGreaterThan(0)
     const style = chips[0].getAttribute('style') ?? ''
-    expect(style).toContain('--chip-worker-bg')
+    expect(style).toContain('--chip-ocean-bg')
   })
 
   it('splits message prefix from body when a colon is present', () => {
