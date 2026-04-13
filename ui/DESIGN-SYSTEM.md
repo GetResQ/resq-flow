@@ -81,8 +81,6 @@ Graph blocks should stay short and easy to scan.
 
 - block face = short title + optional short subtitle only
 - titles should usually be 1 to 3 words
-- process titles should usually be verb-first
-- process blocks should usually omit subtitles
 - decision titles should usually be short questions
 - subtitles are optional and should show a short normalized technical alias when they add value
 - do not put long business-rule sentences on the face of a block
@@ -105,31 +103,44 @@ Examples:
   - `rrq:queue:mail-analyze`
   - `mail_reply_drafts`
 
+## Eyebrow Labels
+
+Eyebrows are optional, free-form category labels shown above the title on first-class rects. They are **not** derived from a type enum — flow authors write whatever text they want.
+
+- eyebrows only appear on first-class standard rects (not detail rects, diamonds, or cylinders)
+- omit the eyebrow when the title or color already communicates the category (e.g., a green trigger node needs no "TRIGGER" label)
+- eyebrow text should be 1 word, uppercase, ≤10 characters
+- the preset functions (`queueNode`, `workerNode`, etc.) set default eyebrows; authors can override via the `eyebrow` field
+
 ## Graph Block Sizing
 
-Use a small size system, not one-off widths.
+Four shapes, one size each. No one-off widths.
 
-- queue / worker / scheduler blocks: `240 × 72`
-- process blocks: `200 × 72`
-- detail / badge blocks: `200 × 44`
-- trigger pills: `240 × 44`
-- keep semantic exceptions:
-  - decision nodes stay diamonds
-  - datastore nodes stay cylinders
+| Shape | Dimensions | Use |
+|---|---|---|
+| Standard rect | `184 × 64` | All first-class nodes (queue, worker, scheduler, trigger, step) |
+| Detail rect | `184 × 44` | Branch outcomes, group children, terminal states |
+| Decision diamond | `92 × 92` | Conditional branches |
+| Resource cylinder | `88 × 104` | Data stores, external resources |
+
+Title overflow strategy:
+
+- aim for ≤22 characters (clean single line)
+- up to ~44 characters wraps gracefully to two lines via `node-title-clamp`
+- beyond 44 characters truncates with `…` — a hover tooltip shows the full title
+- truncation is a safety net, not a license — if a title truncates, shorten it
 
 Rules:
 
 - do not widen blocks to fit long prose — shorten the title first
-- queue / worker / scheduler titles should be ≤28 characters
-- process titles should be ≤24 characters
 - use `description` in the sidebar for longer explanation
 - use explicit per-node widths only when a real layout need remains after label cleanup
-- branch outcome nodes (terminal states, simple write operations, error fallbacks) should use `detail`, not `process` — they should visually recede so the primary flow spine stands out
+- branch outcome nodes should use `detailNode()` — they visually recede so the primary flow spine stands out
 
 Grouped internals:
 
-- inside groups, default child nodes to the detail family
-- only promote a grouped child to a first-class process when users truly need to reason about it as a standalone step
+- inside groups, default child nodes to `detailNode()`
+- only promote a grouped child to a first-class step when users truly need to reason about it as a standalone step
 
 ---
 
@@ -232,62 +243,70 @@ Status transitions should use Motion's `animate` over 300ms — never abrupt cla
 
 ---
 
-## Canvas Shape Language
+## Canvas Primitives
 
-Default mapping:
+The visual system has two closed vocabularies: **shapes** and **colors**. Content (eyebrow text, title) is open — flow authors write whatever they want.
 
-| Semantic role | Default shape |
-|---|---|
-| Trigger | Pill |
-| Queue | Rounded rectangle |
-| Worker | Rounded rectangle |
-| Scheduler / process | Rounded rectangle |
-| Decision | Diamond |
-| Resource | Cylinder |
-| Visible detail | Rounded rectangle inside a group when possible |
-| Note | Annotation |
+### Shapes (closed)
 
-Rules:
+| Shape | Component | Default handles | Notes |
+|---|---|---|---|
+| `roundedRect` | `RoundedRectNode` | top-in, bottom-out | Standard rect for all first-class and detail nodes |
+| `diamond` | `DiamondNode` | top-in, right/bottom/left-out | Rotated 45°, rounded-[14px], 2px border |
+| `cylinder` | `CylinderNode` | all four sides, both | SVG-rendered with ellipse cap |
+| `group` | `GroupNode` | none | Dashed container boundary |
+| `annotation` | `AnnotationNode` | none | Text-only, no box |
 
-- Option D remains the base palette for all node families.
-- Queue, worker, and process nodes should feel like one rounded-rectangle
-  family, not unrelated widget types.
-- Use pills only for external starting conditions.
-- Avoid badges in the main graph unless a tiny inline callout is clearly the
-  best choice.
+Legacy shapes (`rectangle`, `badge`, `octagon`, `circle`) are kept for backward compatibility but should not be used in new flows. The factory normalizes `rectangle` → `roundedRect`.
+
+### Preset Functions
+
+The factory in `ui/src/flows/nodeFactory.ts` provides preset functions that set shape + color + eyebrow:
+
+| Function | Shape | Color | Eyebrow | Icon |
+|---|---|---|---|---|
+| `triggerNode()` | roundedRect | emerald | — | — |
+| `queueNode()` | roundedRect | amber | QUEUE | queue |
+| `workerNode()` | roundedRect | ocean | WORKER | worker |
+| `schedulerNode()` | roundedRect | slate | CRON | cron |
+| `stepNode()` | roundedRect | sky | — | — |
+| `decisionNode()` | diamond | violet | — | — |
+| `resourceNode()` | cylinder | teal | — | — |
+| `detailNode()` | roundedRect | muted | — | — |
+| `detailGroup()` | group | — | — | — |
+| `note()` | annotation | — | — | — |
+
+These are convenience presets, not system-level types. Flow authors can override any field or drop to raw `{ type, style: { color }, eyebrow, label }` for custom nodes.
 
 ---
 
-## Node Color Roles
+## Node Colors
 
-Colors are assigned **by semantic role**, not per-node. The factory in `ui/src/flows/nodeFactory.ts` derives `style.color` from `semanticRole` automatically — flow files should never set `color` manually.
+Colors are assigned **by the flow author** via preset functions or explicit `style.color`. There are no semantic roles — the system knows shapes and colors, not domain concepts.
 
-### Role → Color Token Mapping
+### Color Palette (closed)
 
-| Semantic Role | Color Token | Visual Intent |
-|---|---|---|
-| `trigger` | `trigger` | Green — external starting condition |
-| `queue` | `queue` | Amber — queue boundary / backlog visibility |
-| `worker` | `worker` | Ocean blue — worker execution family |
-| `scheduler` | `cron` | Neutral slate — temporal scheduler boundary |
-| `process` | `process` | Quieter blue — first-class business process |
-| `decision` | `decision` | Violet — branching / conditional |
-| `resource` | `resource` | Slate-teal — concrete storage/resource boundary |
-| `detail` | `detail` | Muted subordinate row / child detail |
-| `group` | `group` | Muted container |
-| `note` | `detail` | Muted slate — annotations |
+| Color name | CSS prefix | Accent | Visual intent |
+|---|---|---|---|
+| `emerald` | `--node-emerald-*` | `#22C55E` | Entry point, success |
+| `amber` | `--node-amber-*` | `#FFA800` | Pending, waiting, backlog |
+| `ocean` | `--node-ocean-*` | `#38B6FF` | Active, in-flight, working |
+| `slate` | `--node-slate-*` | `#94A3B8` | Temporal, neutral, scheduled |
+| `sky` | `--node-sky-*` | `#60A5FA` | General action step |
+| `violet` | `--node-violet-*` | `#A064FF` | Branch, conditional, choice |
+| `teal` | `--node-teal-*` | `#00B4B4` | Storage, resource, concrete |
+| `muted` | `--node-muted-*` | `#94a3b8` | Subordinate detail row |
 
-### Notes And Inspector Rules
+First-class colors (`emerald`, `amber`, `ocean`, `slate`, `sky`, `violet`, `teal`) get 1.5px border + color glow. The `muted` color gets 1px border + elevation shadow only.
+
+The canonical set is exported as `firstClassColors` from `ui/src/core/nodes/nodePrimitives.tsx`.
+
+### Inspector Rules
 
 - Notes default to the sidebar, not the canvas.
 - Canvas annotations should be rare and reserved for graph-critical context.
-- Process inspectors should be meaning-first:
-  - purpose
-  - notes / caveats
-  - related resources / side effects
-  - logs and timing after that
-- Detail nodes should stay visually and semantically subordinate to process
-  nodes.
+- Inspectors should be meaning-first: purpose → notes → resources → logs.
+- Detail nodes should stay visually subordinate to first-class nodes.
 
 ### Resource Label Rules
 

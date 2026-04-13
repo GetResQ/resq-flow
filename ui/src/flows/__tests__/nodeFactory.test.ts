@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { normalizeTechnicalAlias, withNodeVisualDefaults } from '../nodeFactory'
+import { normalizeTechnicalAlias, queueNode, workerNode, stepNode, detailNode, withNodeVisualDefaults } from '../nodeFactory'
 
 describe('normalizeTechnicalAlias', () => {
   it('strips queue prefixes and normalizes underscores', () => {
@@ -18,56 +18,91 @@ describe('normalizeTechnicalAlias', () => {
   })
 })
 
-describe('withNodeVisualDefaults', () => {
-  it('applies shared primary actor sizing to queue and worker nodes', () => {
-    const queueNode = withNodeVisualDefaults({
+describe('preset functions', () => {
+  it('applies standard sizing to queue and worker presets', () => {
+    const queue = queueNode({
       id: 'analyze-queue',
-      type: 'roundedRect',
       label: 'Analyze Queue',
       position: { x: 0, y: 0 },
-      style: { icon: 'queue' },
     })
 
-    const workerNode = withNodeVisualDefaults({
+    const worker = workerNode({
       id: 'analyze-worker',
-      type: 'rectangle',
       label: 'Analyze Worker',
       position: { x: 0, y: 0 },
-      style: { icon: 'worker' },
     })
 
-    expect(queueNode.size).toEqual({ width: 240, height: 72 })
-    expect(workerNode.size).toEqual({ width: 240, height: 72 })
+    expect(queue.size).toEqual({ width: 184, height: 64 })
+    expect(worker.size).toEqual({ width: 184, height: 64 })
+    expect(queue.type).toBe('roundedRect')
+    expect(queue.style?.color).toBe('amber')
+    expect(queue.eyebrow).toBe('QUEUE')
+    expect(worker.style?.color).toBe('ocean')
+    expect(worker.eyebrow).toBe('WORKER')
   })
 
-  it('applies the process and detail tiers without clobbering explicit widths', () => {
-    const processNode = withNodeVisualDefaults({
+  it('applies step and detail sizing', () => {
+    const step = stepNode({
       id: 'send-process',
-      type: 'rectangle',
-      semanticRole: 'process',
       label: 'Send Reply',
       position: { x: 0, y: 0 },
     })
 
-    const detailNode = withNodeVisualDefaults({
+    const detail = detailNode({
       id: 'write-metadata',
-      type: 'rectangle',
       label: 'Write Metadata',
       position: { x: 0, y: 0 },
-      parentId: 'persistence-group',
     })
 
-    const explicitWidthNode = withNodeVisualDefaults({
-      id: 'custom-process',
-      type: 'rectangle',
-      semanticRole: 'process',
-      label: 'Custom Process',
+    expect(step.size).toEqual({ width: 184, height: 64 })
+    expect(step.style?.color).toBe('sky')
+    expect(detail.size).toEqual({ width: 184, height: 44 })
+    expect(detail.style?.color).toBe('muted')
+  })
+
+  it('preserves explicit widths', () => {
+    const custom = stepNode({
+      id: 'custom',
+      label: 'Custom',
       position: { x: 0, y: 0 },
       size: { width: 260 },
     })
 
-    expect(processNode.size).toEqual({ width: 200, height: 72 })
-    expect(detailNode.size).toEqual({ width: 200, height: 44 })
-    expect(explicitWidthNode.size).toEqual({ width: 260, height: 72 })
+    expect(custom.size).toEqual({ width: 260, height: 64 })
+  })
+
+  it('passes through eyebrow text directly', () => {
+    const node = stepNode({
+      id: 'handler',
+      label: 'Handle Request',
+      eyebrow: 'HANDLER',
+      position: { x: 0, y: 0 },
+    })
+
+    expect(node.eyebrow).toBe('HANDLER')
+  })
+
+  it('preset eyebrow can be overridden by explicit eyebrow', () => {
+    const node = queueNode({
+      id: 'buffer',
+      label: 'Request Buffer',
+      eyebrow: 'BUFFER',
+      position: { x: 0, y: 0 },
+    })
+
+    expect(node.eyebrow).toBe('BUFFER')
+  })
+})
+
+describe('withNodeVisualDefaults (backward compat)', () => {
+  it('normalizes rectangle to roundedRect', () => {
+    const node = withNodeVisualDefaults({
+      id: 'test',
+      type: 'rectangle',
+      label: 'Test',
+      position: { x: 0, y: 0 },
+    })
+
+    expect(node.type).toBe('roundedRect')
   })
 })

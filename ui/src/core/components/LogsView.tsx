@@ -40,10 +40,8 @@ function resolveNodeDisplayLabel(nodeId: string, nodeLabels: Map<string, string>
   return label || nodeId
 }
 
-function resolveSemanticFamily(semanticRole: string | undefined): string | undefined {
-  if (!semanticRole) return undefined
-  if (semanticRole === 'scheduler') return 'cron'
-  return semanticRole
+function resolveNodeFamily(color: string | undefined): string | undefined {
+  return color ?? undefined
 }
 
 export function LogsView({
@@ -76,7 +74,7 @@ export function LogsView({
   const nodeFamilies = useMemo(() => {
     const map = new Map<string, string>()
     flow.nodes.forEach((node) => {
-      const family = resolveSemanticFamily(node.semanticRole)
+      const family = resolveNodeFamily(node.style?.color)
       if (family) map.set(node.id, family)
     })
     return map

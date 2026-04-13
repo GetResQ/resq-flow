@@ -6,9 +6,10 @@ import type { FlowNodeConfig, LogEntry } from '../../types'
 
 const node: FlowNodeConfig = {
   id: 'incoming-queue',
-  type: 'rectangle',
-  semanticRole: 'queue',
+  type: 'roundedRect',
+  eyebrow: 'QUEUE',
   label: 'Incoming Queue',
+  style: { color: 'amber' },
   position: { x: 0, y: 0 },
 }
 

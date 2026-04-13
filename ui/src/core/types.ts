@@ -4,11 +4,21 @@ export type NodeShape =
   | 'diamond'
   | 'circle'
   | 'cylinder'
-  | 'pill'
   | 'badge'
   | 'octagon'
   | 'group'
   | 'annotation'
+
+export type NodeColor =
+  | 'emerald'
+  | 'amber'
+  | 'ocean'
+  | 'slate'
+  | 'sky'
+  | 'violet'
+  | 'teal'
+  | 'muted'
+  | 'group'
 
 export type ThemeMode = 'dark' | 'light'
 export type FlowViewMode = 'canvas' | 'metrics' | 'logs'
@@ -16,21 +26,9 @@ export type FlowViewMode = 'canvas' | 'metrics' | 'logs'
 export type NodeStatus = 'idle' | 'active' | 'success' | 'error'
 
 export interface NodeStyle {
-  color?: string
+  color?: NodeColor
   icon?: string
 }
-
-export type NodeSemanticRole =
-  | 'trigger'
-  | 'queue'
-  | 'worker'
-  | 'scheduler'
-  | 'process'
-  | 'decision'
-  | 'resource'
-  | 'detail'
-  | 'group'
-  | 'note'
 
 export type HandlePosition = 'top' | 'right' | 'bottom' | 'left'
 
@@ -71,7 +69,7 @@ export interface FlowNodeLayoutHints {
 export interface FlowNodeConfig {
   id: string
   type: NodeShape
-  semanticRole?: NodeSemanticRole
+  eyebrow?: string
   label: string
   sublabel?: string
   description?: string

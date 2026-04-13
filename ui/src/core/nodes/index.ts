@@ -7,7 +7,6 @@ import { CylinderNode } from './CylinderNode'
 import { DiamondNode } from './DiamondNode'
 import { GroupNode } from './GroupNode'
 import { OctagonNode } from './OctagonNode'
-import { PillNode } from './PillNode'
 import { RectangleNode } from './RectangleNode'
 import { RoundedRectNode } from './RoundedRectNode'
 
@@ -17,7 +16,6 @@ export const nodeTypes: NodeTypes = {
   diamond: DiamondNode,
   circle: CircleNode,
   cylinder: CylinderNode,
-  pill: PillNode,
   badge: BadgeNode,
   octagon: OctagonNode,
   group: GroupNode,

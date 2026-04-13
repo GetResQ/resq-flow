@@ -1,4 +1,4 @@
-import type { FlowNodeConfig, NodeSemanticRole, NodeShape } from './types'
+import type { FlowNodeConfig, NodeShape } from './types'
 
 export interface NodeSize {
   width: number
@@ -6,33 +6,21 @@ export interface NodeSize {
 }
 
 const shapeSizeDefaults: Partial<Record<NodeShape, NodeSize>> = {
-  rectangle: { width: 180, height: 72 },
-  roundedRect: { width: 180, height: 72 },
-  diamond: { width: 144, height: 144 },
+  rectangle: { width: 184, height: 64 },
+  roundedRect: { width: 184, height: 64 },
+  diamond: { width: 92, height: 92 },
   circle: { width: 112, height: 112 },
-  cylinder: { width: 112, height: 128 },
-  pill: { width: 180, height: 44 },
-  badge: { width: 150, height: 52 },
-  octagon: { width: 160, height: 70 },
+  cylinder: { width: 88, height: 104 },
+  badge: { width: 184, height: 44 },
+  octagon: { width: 160, height: 56 },
 }
 
-const roleSizeDefaults: Partial<Record<NodeSemanticRole, NodeSize>> = {
-  trigger: { width: 240, height: 44 },
-  queue: { width: 240, height: 72 },
-  worker: { width: 240, height: 72 },
-  scheduler: { width: 240, height: 72 },
-  process: { width: 200, height: 72 },
-  detail: { width: 200, height: 44 },
-  decision: { width: 144, height: 144 },
-  resource: { width: 112, height: 128 },
-}
-
-export function defaultNodeSizeForRole(role: NodeSemanticRole | undefined, type: NodeShape): NodeSize | undefined {
-  return (role ? roleSizeDefaults[role] : undefined) ?? shapeSizeDefaults[type]
+export function defaultNodeSizeForShape(type: NodeShape): NodeSize | undefined {
+  return shapeSizeDefaults[type]
 }
 
 export function resolveNodeDimensions(
-  node: Pick<FlowNodeConfig, 'type' | 'semanticRole' | 'size' | 'minSize'>,
+  node: Pick<FlowNodeConfig, 'type' | 'size' | 'minSize'>,
 ): NodeSize {
   if (node.type === 'group') {
     return {
@@ -41,7 +29,7 @@ export function resolveNodeDimensions(
     }
   }
 
-  const defaults = defaultNodeSizeForRole(node.semanticRole, node.type) ?? { width: 200, height: 50 }
+  const defaults = defaultNodeSizeForShape(node.type) ?? { width: 200, height: 50 }
   return {
     width: node.size?.width ?? defaults.width,
     height: node.size?.height ?? defaults.height,

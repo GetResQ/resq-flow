@@ -14,7 +14,7 @@ export function BadgeNode({ id, data }: NodeProps<FlowNode>) {
   return (
     <div
       className={`${nodeContainerClass({
-        color: data.style?.color ?? 'detail',
+        color: data.style?.color ?? 'muted',
         status,
       })} relative rounded-md px-3 py-2`}
     >

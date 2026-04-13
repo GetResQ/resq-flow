@@ -11,53 +11,53 @@ const positionMap: Record<HandlePosition, Position> = {
 }
 
 const colorMap: Record<string, { border: string; bg: string; text: string; glow: string }> = {
-  queue: {
+  amber: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-queue-bg)]',
-    text: 'text-[var(--node-queue-text)]',
-    glow: 'node-family-queue',
+    bg: 'bg-[var(--node-amber-bg)]',
+    text: 'text-[var(--node-amber-text)]',
+    glow: 'node-family-amber',
   },
-  worker: {
+  ocean: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-worker-bg)]',
-    text: 'text-[var(--node-worker-text)]',
-    glow: 'node-family-worker',
+    bg: 'bg-[var(--node-ocean-bg)]',
+    text: 'text-[var(--node-ocean-text)]',
+    glow: 'node-family-ocean',
   },
-  cron: {
+  slate: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-cron-bg)]',
-    text: 'text-[var(--node-cron-text)]',
-    glow: 'node-family-cron',
+    bg: 'bg-[var(--node-slate-bg)]',
+    text: 'text-[var(--node-slate-text)]',
+    glow: 'node-family-slate',
   },
-  process: {
+  sky: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-process-bg)]',
-    text: 'text-[var(--node-process-text)]',
-    glow: 'node-family-process',
+    bg: 'bg-[var(--node-sky-bg)]',
+    text: 'text-[var(--node-sky-text)]',
+    glow: 'node-family-sky',
   },
-  decision: {
+  violet: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-decision-bg)]',
-    text: 'text-[var(--node-decision-text)]',
-    glow: 'node-family-decision',
+    bg: 'bg-[var(--node-violet-bg)]',
+    text: 'text-[var(--node-violet-text)]',
+    glow: 'node-family-violet',
   },
-  resource: {
+  teal: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-resource-bg)]',
-    text: 'text-[var(--node-resource-text)]',
-    glow: 'node-family-resource',
+    bg: 'bg-[var(--node-teal-bg)]',
+    text: 'text-[var(--node-teal-text)]',
+    glow: 'node-family-teal',
   },
-  trigger: {
+  emerald: {
     border: 'border-[var(--node-border-color)]',
-    bg: 'bg-[var(--node-trigger-bg)]',
-    text: 'text-[var(--node-trigger-text)]',
-    glow: 'node-family-trigger',
+    bg: 'bg-[var(--node-emerald-bg)]',
+    text: 'text-[var(--node-emerald-text)]',
+    glow: 'node-family-emerald',
   },
-  detail: {
-    border: 'border-[var(--node-detail-border)]',
-    bg: 'bg-[var(--node-detail-bg)]',
-    text: 'text-[var(--node-detail-text)]',
-    glow: 'node-family-detail',
+  muted: {
+    border: 'border-[var(--node-muted-border)]',
+    bg: 'bg-[var(--node-muted-bg)]',
+    text: 'text-[var(--node-muted-text)]',
+    glow: 'node-family-muted',
   },
   group: {
     border: 'border-[var(--node-group-border)]',
@@ -67,51 +67,32 @@ const colorMap: Record<string, { border: string; bg: string; text: string; glow:
   },
 }
 
-const iconMap: Record<string, string> = {
-  worker: 'W',
-  queue: 'Q',
-  s3: 'S3',
-  postgres: 'PG',
-  redis: 'RD',
-  cron: 'CR',
-  bot: 'BOT',
-  external: 'EXT',
-}
-
 export function resolveTone(color: string | undefined) {
   if (!color) {
-    return colorMap.detail
+    return colorMap.muted
   }
 
-  return colorMap[color] ?? colorMap.detail
+  return colorMap[color] ?? colorMap.muted
 }
 
 const svgColorMap: Record<string, { fill: string; stroke: string; accent: string }> = {
-  queue:    { fill: 'var(--node-queue-bg)',    stroke: 'var(--node-queue-text)',    accent: 'var(--node-queue-accent)' },
-  worker:   { fill: 'var(--node-worker-bg)',   stroke: 'var(--node-worker-text)',   accent: 'var(--node-worker-accent)' },
-  cron:     { fill: 'var(--node-cron-bg)',     stroke: 'var(--node-cron-text)',     accent: 'var(--node-cron-accent)' },
-  process:  { fill: 'var(--node-process-bg)',  stroke: 'var(--node-process-text)',  accent: 'var(--node-process-accent)' },
-  decision: { fill: 'var(--node-decision-bg)', stroke: 'var(--node-decision-text)', accent: 'var(--node-decision-accent)' },
-  resource: { fill: 'var(--node-resource-bg)', stroke: 'var(--node-resource-text)', accent: 'var(--node-resource-accent)' },
-  trigger:  { fill: 'var(--node-trigger-bg)',  stroke: 'var(--node-trigger-text)',  accent: 'var(--node-trigger-accent)' },
-  detail:   { fill: 'var(--node-detail-bg)',   stroke: 'var(--node-detail-text)',   accent: 'var(--node-detail-accent)' },
-  group:    { fill: 'var(--node-group-bg)',     stroke: 'var(--node-group-text)',    accent: 'var(--node-group-accent)' },
+  amber:   { fill: 'var(--node-amber-bg)',   stroke: 'var(--node-amber-text)',   accent: 'var(--node-amber-accent)' },
+  ocean:   { fill: 'var(--node-ocean-bg)',   stroke: 'var(--node-ocean-text)',   accent: 'var(--node-ocean-accent)' },
+  slate:   { fill: 'var(--node-slate-bg)',   stroke: 'var(--node-slate-text)',   accent: 'var(--node-slate-accent)' },
+  sky:     { fill: 'var(--node-sky-bg)',     stroke: 'var(--node-sky-text)',     accent: 'var(--node-sky-accent)' },
+  violet:  { fill: 'var(--node-violet-bg)',  stroke: 'var(--node-violet-text)',  accent: 'var(--node-violet-accent)' },
+  teal:    { fill: 'var(--node-teal-bg)',    stroke: 'var(--node-teal-text)',    accent: 'var(--node-teal-accent)' },
+  emerald: { fill: 'var(--node-emerald-bg)', stroke: 'var(--node-emerald-text)', accent: 'var(--node-emerald-accent)' },
+  muted:   { fill: 'var(--node-muted-bg)',   stroke: 'var(--node-muted-text)',   accent: 'var(--node-muted-accent)' },
+  group:   { fill: 'var(--node-group-bg)',   stroke: 'var(--node-group-text)',   accent: 'var(--node-group-accent)' },
 }
 
 export function resolveSvgTone(color: string | undefined) {
   if (!color) {
-    return svgColorMap.detail
+    return svgColorMap.muted
   }
 
-  return svgColorMap[color] ?? svgColorMap.detail
-}
-
-export function resolveIcon(icon: string | undefined): string | null {
-  if (!icon) {
-    return null
-  }
-
-  return iconMap[icon] ?? icon.toUpperCase().slice(0, 3)
+  return svgColorMap[color] ?? svgColorMap.muted
 }
 
 export function statusGlowClass(status: NodeStatus | undefined): string {
@@ -178,7 +159,7 @@ export function renderHandles(
   })
 }
 
-const firstClassColors = new Set(['queue', 'worker', 'cron', 'process', 'trigger', 'decision', 'resource'])
+export const firstClassColors = new Set(['amber', 'ocean', 'slate', 'sky', 'emerald', 'violet', 'teal'])
 
 export function nodeContainerClass({
   color,
