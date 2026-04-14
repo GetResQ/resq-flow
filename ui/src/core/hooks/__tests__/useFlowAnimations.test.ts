@@ -91,7 +91,7 @@ describe('useFlowAnimations', () => {
     })
   })
 
-  it('animates owning first-class nodes for demoted store touchpoints', async () => {
+  it('animates incoming persistence step nodes for store touchpoints', async () => {
     const start: FlowEvent = {
       type: 'span_start',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -144,14 +144,14 @@ describe('useFlowAnimations', () => {
       rerender({ events: [start] })
     })
 
-    expect(result.current.nodeStatuses.get('incoming-worker')?.status).toBe('active')
+    expect(result.current.nodeStatuses.get('incoming-thread-metadata-write')?.status).toBe('active')
 
     setNow('2026-03-03T12:00:00.260Z')
     act(() => {
       rerender({ events: [start, end] })
     })
 
-    const status = result.current.nodeStatuses.get('incoming-worker')
+    const status = result.current.nodeStatuses.get('incoming-thread-metadata-write')
     expect(status?.status).toBe('active')
     expect(status?.durationMs).toBe(250)
   })
@@ -195,58 +195,6 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('error')
     })
-  })
-
-  it('animates recompute steps on the shared extract-worker lane', async () => {
-    setNow('2026-03-03T12:00:00.510Z')
-
-    const start: FlowEvent = {
-      type: 'log',
-      timestamp: '2026-03-03T12:00:00.000Z',
-      trace_id: 'trace-recompute-1',
-      span_id: 'log-r1',
-      attributes: {
-        component_id: 'recompute-worker',
-        function_name: 'handle_mail_recompute_opportunities',
-        step_id: 'started',
-      },
-    }
-
-    const end: FlowEvent = {
-      type: 'log',
-      timestamp: '2026-03-03T12:00:00.500Z',
-      trace_id: 'trace-recompute-1',
-      span_id: 'log-r2',
-      duration_ms: 500,
-      attributes: {
-        component_id: 'recompute-worker',
-        function_name: 'handle_mail_recompute_opportunities',
-        step_id: 'final-result',
-        status: 'ok',
-      },
-    }
-
-    const { result } = renderHook(() =>
-      useFlowAnimations({
-        events: [start, end],
-        spanMapping: mailPipelineFlow.spanMapping,
-        producerMapping: mailPipelineFlow.producerMapping,
-        edges: mailPipelineFlow.edges,
-        timings: {
-          nodePulseResetMs: 30,
-          minVisualPulseMs: 30,
-          stalenessThresholdMs: 1_000,
-        },
-      }),
-    )
-
-    expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
-
-    await act(async () => {
-      await sleep(60)
-    })
-
-    expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('idle')
   })
 
   it('increments queue counter on enqueue and decrements on worker pickup', async () => {
@@ -377,7 +325,7 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('draft-reply')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('autosend-decision')?.status).toBe('active')
-      expect(result.current.nodeStatuses.get('actions-queue')?.status).toBeUndefined()
+      expect(result.current.nodeStatuses.get('actions-queue')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBeUndefined()
     })
 
@@ -400,8 +348,8 @@ describe('useFlowAnimations', () => {
 
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('send-queue')?.status).toBe('active')
-      expect(result.current.activeEdges.has('e-draft-autosend')).toBe(true)
-      expect(result.current.activeEdges.has('e-actions-send')).toBe(true)
+      expect(result.current.activeEdges.has('draft-autosend')).toBe(true)
+      expect(result.current.activeEdges.has('actions-send')).toBe(true)
     })
   })
 
@@ -436,7 +384,7 @@ describe('useFlowAnimations', () => {
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('trigger-oauth')?.status).toBe('active')
       expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('active')
-      expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(true)
+      expect(result.current.activeEdges.has('trigger-backfill')).toBe(true)
     })
   })
 
@@ -474,7 +422,7 @@ describe('useFlowAnimations', () => {
       expect(result.current.nodeStatuses.get('backfill-queue')?.status).toBe('idle')
       // Counter still updates so the queue depth is accurate after replay
       expect(result.current.nodeStatuses.get('backfill-queue')?.counter).toBe(1)
-      expect(result.current.activeEdges.has('e-trigger-backfill')).toBe(false)
+      expect(result.current.activeEdges.has('trigger-backfill')).toBe(false)
     })
   })
 
@@ -506,6 +454,205 @@ describe('useFlowAnimations', () => {
 
     await waitFor(() => {
       expect(result.current.nodeStatuses.get('extract-worker')?.status).toBe('active')
+    })
+  })
+
+  it('animates the cron enqueue step and incoming queue for incoming-check enqueue events', async () => {
+    setNow('2026-03-03T12:00:00.100Z')
+
+    const event: FlowEvent = {
+      type: 'log',
+      event_kind: 'queue_enqueued',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-cron-enqueue-1',
+      span_id: 'log-ce-1',
+      span_name: 'mail.queue.enqueue',
+      attributes: {
+        component_id: 'incoming-queue',
+        step_id: 'enqueue',
+        function_name: 'handle_mail_incoming_check',
+        queue_name: 'rrq:queue:mail-incoming',
+      },
+    }
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [event],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        timings: {
+          nodePulseResetMs: 500,
+          minVisualPulseMs: 500,
+          stalenessThresholdMs: 1_000,
+          edgeActiveMs: 500,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('incoming-check-enqueue')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('incoming-queue')?.status).toBe('active')
+      expect(result.current.activeEdges.has('incoming-check-enqueue-queue')).toBe(true)
+    })
+  })
+
+  it('animates scheduler cursor updates on the step node and linked Postgres resource', async () => {
+    setNow('2026-03-03T12:00:00.100Z')
+
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-schedule-cursor-1',
+      span_id: 'log-sc-1',
+      span_name: 'mail.scheduler.cursor_update',
+      attributes: {
+        component_id: 'incoming-schedule-process',
+        step_id: 'cursor-update',
+        cursor_name: 'incoming_check_scheduled_at',
+        status: 'ok',
+      },
+    }
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [event],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        resourceNodeIds: mailPipelineFlow.nodes.filter((node) => node.type === 'cylinder').map((node) => node.id),
+        timings: {
+          nodePulseResetMs: 500,
+          minVisualPulseMs: 500,
+          stalenessThresholdMs: 1_000,
+          edgeActiveMs: 500,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('incoming-scheduled-at')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('postgres-incoming')?.status).toBe('active')
+      expect(result.current.activeEdges.has('schedule-postgres')).toBe(true)
+    })
+  })
+
+  it('animates incoming cursor updates on the step node and linked Postgres resource', async () => {
+    setNow('2026-03-03T12:00:00.100Z')
+
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-incoming-cursor-1',
+      span_id: 'log-ic-1',
+      span_name: 'mail.store.write_cursor',
+      attributes: {
+        component_id: 'incoming-worker',
+        step_id: 'cursor-update',
+        cursor_name: 'incoming_history_id',
+        status: 'ok',
+      },
+    }
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [event],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        resourceNodeIds: mailPipelineFlow.nodes.filter((node) => node.type === 'cylinder').map((node) => node.id),
+        timings: {
+          nodePulseResetMs: 500,
+          minVisualPulseMs: 500,
+          stalenessThresholdMs: 1_000,
+          edgeActiveMs: 500,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('update-history')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('postgres-incoming')?.status).toBe('active')
+      expect(result.current.activeEdges.has('update-history-postgres')).toBe(true)
+    })
+  })
+
+  it('animates backfill persistence step nodes for store touchpoints', async () => {
+    setNow('2026-03-03T12:00:00.100Z')
+
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-backfill-store-1',
+      span_id: 'log-bs-1',
+      span_name: 'mail.store.write_metadata',
+      attributes: {
+        component_id: 'backfill-worker',
+        step_id: 'write-metadata',
+        status: 'ok',
+      },
+    }
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [event],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        resourceNodeIds: mailPipelineFlow.nodes.filter((node) => node.type === 'cylinder').map((node) => node.id),
+        timings: {
+          nodePulseResetMs: 500,
+          minVisualPulseMs: 500,
+          stalenessThresholdMs: 1_000,
+          edgeActiveMs: 500,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('backfill-thread-metadata-write')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('postgres-backfill')?.status).toBe('active')
+      expect(result.current.activeEdges.has('backfill-thread-metadata-postgres')).toBe(true)
+    })
+  })
+
+  it('animates backfill cursor updates on the step node and linked Postgres resource', async () => {
+    setNow('2026-03-03T12:00:00.100Z')
+
+    const event: FlowEvent = {
+      type: 'log',
+      timestamp: '2026-03-03T12:00:00.000Z',
+      trace_id: 'trace-backfill-cursor-1',
+      span_id: 'log-bc-1',
+      span_name: 'mail.store.write_cursor',
+      attributes: {
+        component_id: 'backfill-worker',
+        step_id: 'cursor-update',
+        cursor_name: 'backfill_page_token',
+        status: 'ok',
+      },
+    }
+
+    const { result } = renderHook(() =>
+      useFlowAnimations({
+        events: [event],
+        spanMapping: mailPipelineFlow.spanMapping,
+        producerMapping: mailPipelineFlow.producerMapping,
+        edges: mailPipelineFlow.edges,
+        resourceNodeIds: mailPipelineFlow.nodes.filter((node) => node.type === 'cylinder').map((node) => node.id),
+        timings: {
+          nodePulseResetMs: 500,
+          minVisualPulseMs: 500,
+          stalenessThresholdMs: 1_000,
+          edgeActiveMs: 500,
+        },
+      }),
+    )
+
+    await waitFor(() => {
+      expect(result.current.nodeStatuses.get('backfill-cursor-write')?.status).toBe('active')
+      expect(result.current.nodeStatuses.get('postgres-backfill')?.status).toBe('active')
+      expect(result.current.activeEdges.has('backfill-cursor-postgres')).toBe(true)
     })
   })
 })

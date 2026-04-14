@@ -17,12 +17,13 @@ export function CircleNode({ id, data }: NodeProps<FlowNode>) {
 
   return (
     <div className="relative h-28 w-28">
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-full bg-[var(--flow-surface-bg)]" />
       {renderHandles(id, data.handles, [...defaultHandles])}
       <div
         className={`${nodeContainerClass({
           color: data.style?.color,
           status,
-        })} flex h-full w-full flex-col items-center justify-center rounded-full p-3 text-center`}
+        })} relative flex h-full w-full flex-col items-center justify-center rounded-full p-3 text-center`}
       >
         {icon ? (
           <span className="mb-1 inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-white/15 px-1 text-[10px] font-bold">

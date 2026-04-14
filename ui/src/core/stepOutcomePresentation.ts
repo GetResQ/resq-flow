@@ -16,8 +16,7 @@ const TRANSITION_SUMMARIES: Record<string, string> = {
   'autosend-decision.send-enqueue': 'send queued',
   'draft-reply.draft-insert': 'draft created',
   'draft-reply.draft-status-write': 'draft created',
-  'extract-worker.recompute-enqueue': 'recompute queued',
-  'extract-worker.started': 'recompute started',
+  'extract-worker.started': 'extract started',
 }
 
 const PLUMBING_STEP_REFS = new Set([

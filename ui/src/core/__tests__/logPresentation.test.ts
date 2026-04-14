@@ -105,28 +105,20 @@ describe('logPresentation', () => {
     ).toBe('terminal send failure')
   })
 
-  it('summarizes extract and recompute transitions with consistent phrasing', () => {
-    expect(
-      buildFlowLogDisplayMessage({
-        stepId: 'recompute-enqueue',
-        nodeId: 'extract-worker',
-        message: 'extract enqueued mailbox opportunity recompute',
-      }),
-    ).toBe('recompute queued')
-
+  it('summarizes extract transitions with consistent phrasing', () => {
     expect(
       buildFlowLogDisplayMessage({
         stepId: 'started',
         nodeId: 'extract-worker',
-        message: 'recompute worker started mailbox opportunity recompute',
+        message: 'extract worker started thread extract pass',
       }),
-    ).toBe('recompute started')
+    ).toBe('extract started')
 
     expect(
       buildFlowLogDisplayMessage({
         stepId: 'final-result',
         nodeId: 'extract-worker',
-        message: 'recompute finalized mailbox opportunity sync',
+        message: 'extract finalized thread extract pass',
       }),
     ).toBe('extract completed')
   })

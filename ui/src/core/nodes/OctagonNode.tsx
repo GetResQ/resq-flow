@@ -15,12 +15,17 @@ export function OctagonNode({ id, data }: NodeProps<FlowNode>) {
 
   return (
     <div className="relative h-28 w-44">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[var(--flow-surface-bg)]"
+        style={{ clipPath: 'polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%)' }}
+      />
       {renderHandles(id, data.handles, [...defaultHandles])}
       <div
         className={`${nodeContainerClass({
           color: data.style?.color ?? 'muted',
           status,
-        })} flex h-full w-full items-center justify-center px-4 text-center`}
+        })} relative flex h-full w-full items-center justify-center px-4 text-center`}
         style={{ clipPath: 'polygon(18% 0%, 82% 0%, 100% 18%, 100% 82%, 82% 100%, 18% 100%, 0% 82%, 0% 18%)' }}
       >
         <div className="space-y-1">

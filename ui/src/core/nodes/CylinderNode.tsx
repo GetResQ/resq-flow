@@ -36,6 +36,14 @@ export function CylinderNode({ id, data }: NodeProps<FlowNode>) {
       >
         <path
           d="M 0 20 Q 0 0, 48 0 Q 96 0, 96 20 L 96 92 Q 96 112, 48 112 Q 0 112, 0 92 Z"
+          fill="var(--flow-surface-bg)"
+        />
+        <ellipse
+          cx="48" cy="20" rx="48" ry="20"
+          fill="var(--flow-surface-bg)"
+        />
+        <path
+          d="M 0 20 Q 0 0, 48 0 Q 96 0, 96 20 L 96 92 Q 96 112, 48 112 Q 0 112, 0 92 Z"
           style={{ fill: svgTone.fill, stroke: svgTone.stroke }}
           strokeWidth="1.5"
           strokeOpacity="0.5"

@@ -292,6 +292,7 @@ function mapFlowEdges(flow: FlowConfig, activeEdges: Set<string>, focusEdgeIds: 
       label: edge.label,
       type: edge.type ?? 'default',
       animated: edge.animated,
+      className: active ? 'edge-active' : undefined,
       markerEnd: {
         type: MarkerType.ArrowClosed,
         color: markerColor,

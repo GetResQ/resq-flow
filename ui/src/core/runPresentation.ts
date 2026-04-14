@@ -1,10 +1,5 @@
-import type { TraceJourney, TraceStep } from './types'
-import {
-  getStepPresentationTier,
-  isGenericOperationalStep,
-  isLifecycleTerminalStep,
-  summarizeStepOutcome,
-} from './stepOutcomePresentation'
+import type { FlowEdgeConfig, FlowNodeConfig, TraceJourney, TraceStep, TraceStatus } from './types'
+import { isLifecycleTerminalStep, summarizeStepOutcome } from './stepOutcomePresentation'
 import { combinedStepRef, stepLeaf } from './stepRefs'
 import { normalizeTraceIdentifierValue } from './traceIdentifiers'
 
@@ -16,7 +11,7 @@ function compactIdentifier(value: string, maxLength = 10): string {
   return `${value.slice(0, maxLength)}…`
 }
 
-function humanizeMachineLabel(value: string): string {
+function humanizeMachineLabel(value: string) {
   const normalized = value
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/[_:.\\-]+/g, ' ')
@@ -86,15 +81,47 @@ export function canonicalStepId(stage: Pick<TraceStep, 'nodeId' | 'stepId'>): st
   return combinedStepRef(stage.nodeId, stage.stepId)
 }
 
-export function formatStepLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId'>): string {
-  const componentId = normalizeTraceIdentifierValue(stage.nodeId)
+function readAttrString(attributes: Record<string, unknown> | undefined, key: string): string | undefined {
+  const value = attributes?.[key]
+  if (typeof value === 'string') {
+    return value
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value)
+  }
+  return undefined
+}
+
+function resolveNodeLabel(nodeId: string | undefined, nodeMap: Map<string, FlowNodeConfig>): string | undefined {
+  const normalized = normalizeTraceIdentifierValue(nodeId)
+  if (!normalized) {
+    return undefined
+  }
+
+  return nodeMap.get(normalized)?.label ?? humanizeMachineLabel(normalized)
+}
+
+function resolveStepLeafLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId'>): string | undefined {
   const explicitLabel = normalizeTraceIdentifierValue(stage.label)
   const stepId = normalizeTraceIdentifierValue(stage.stepId)
+  const nodeId = normalizeTraceIdentifierValue(stage.nodeId)
 
+  if (explicitLabel && explicitLabel !== stepId && explicitLabel !== nodeId) {
+    return humanizeMachineLabel(explicitLabel)
+  }
+
+  const leaf = stepLeaf(stage.stepId)
+  if (leaf && leaf !== nodeId?.split('.').at(-1)) {
+    return humanizeMachineLabel(leaf)
+  }
+
+  return undefined
+}
+
+export function formatStepLabel(stage: Pick<TraceStep, 'label' | 'nodeId' | 'stepId'>): string {
+  const componentId = normalizeTraceIdentifierValue(stage.nodeId)
   const componentLabel = componentId ? humanizeMachineLabel(componentId) : undefined
-  const detailSource =
-    explicitLabel && explicitLabel !== stepId ? explicitLabel : stepLeaf(stepId)
-  const detailLabel = detailSource ? humanizeMachineLabel(detailSource) : undefined
+  const detailLabel = resolveStepLeafLabel(stage)
 
   if (componentLabel && detailLabel && componentLabel !== detailLabel) {
     return `${componentLabel} · ${detailLabel}`
@@ -119,32 +146,316 @@ export function formatStepDisplayLabel(
   return formatStepLabel(stage)
 }
 
-export function getOverviewSteps(steps: TraceStep[]): TraceStep[] {
-  const lifecycleSteps = steps.filter((stage) => {
-    const tier = getStepPresentationTier({
-      stepId: stage.stepId,
-      nodeId: stage.nodeId,
-      attributes: stage.attrs,
-    })
-
-    return tier === 'outcome' || tier === 'transition' || isLifecycleTerminalStep(stage.stepId)
-  })
-
-  if (lifecycleSteps.length > 0) {
-    return lifecycleSteps
-  }
-
-  const filtered = steps.filter(
-    (stage) =>
-      !isGenericOperationalStep({
-        stepId: stage.stepId,
-        nodeId: stage.nodeId,
-      }),
-  )
-
-  return filtered.length > 0 ? filtered : steps
+export interface JourneyOverviewDetailRow {
+  key: string
+  label: string
+  status: TraceStatus
+  durationMs?: number
+  step: TraceStep
 }
 
-export function getJourneySummaryStep(journey: TraceJourney): TraceStep | undefined {
-  return getOverviewSteps(journey.steps).at(-1) ?? journey.steps.at(-1)
+export interface JourneyOverviewCard {
+  key: string
+  nodeId?: string
+  nodeLabel: string
+  summary: string
+  status: TraceStatus
+  durationMs?: number
+  startedAt: string
+  representativeStep: TraceStep
+  detailRows: JourneyOverviewDetailRow[]
+}
+
+export interface JourneyOverviewModel {
+  cards: JourneyOverviewCard[]
+  primaryNodePath: string[]
+  focusNodeIds: string[]
+  focusEdgeIds: string[]
+}
+
+interface OverviewGroup {
+  key: string
+  nodeId?: string
+  nodeLabel: string
+  firstOrder: number
+  firstReachedAt: string
+  steps: TraceStep[]
+}
+
+interface SummaryCandidate {
+  step: TraceStep
+  summary: string
+  score: number
+  order: number
+}
+
+function stepErrorSummary(stage: Pick<TraceStep, 'attrs' | 'errorSummary'>): string | undefined {
+  const attrs = stage.attrs
+  const errorMessage = typeof attrs?.error_message === 'string' ? attrs.error_message : undefined
+  const errorClass = typeof attrs?.error_class === 'string' ? attrs.error_class : undefined
+  const errorCode = typeof attrs?.error_code === 'string' ? attrs.error_code : undefined
+
+  if (errorMessage) {
+    return errorMessage
+  }
+
+  if (errorClass && errorCode) {
+    return `${errorClass}:${errorCode}`
+  }
+
+  if (errorClass || errorCode) {
+    return [errorClass, errorCode].filter(Boolean).join(':')
+  }
+
+  return stage.errorSummary
+}
+
+function compareSteps(left: TraceStep, right: TraceStep) {
+  const leftSeq = typeof left.startSeq === 'number' ? left.startSeq : Number.MAX_SAFE_INTEGER
+  const rightSeq = typeof right.startSeq === 'number' ? right.startSeq : Number.MAX_SAFE_INTEGER
+  if (leftSeq !== rightSeq) {
+    return leftSeq - rightSeq
+  }
+
+  const byTs = Date.parse(left.startTs) - Date.parse(right.startTs)
+  if (byTs !== 0) {
+    return byTs
+  }
+
+  return left.stepId.localeCompare(right.stepId)
+}
+
+function resolveGroupIdentity(
+  step: TraceStep,
+  nodeMap: Map<string, FlowNodeConfig>,
+): { key: string; nodeId?: string; nodeLabel: string } {
+  const resolvedNodeId = normalizeTraceIdentifierValue(step.nodeId)
+  if (resolvedNodeId) {
+    return {
+      key: `node:${resolvedNodeId}`,
+      nodeId: resolvedNodeId,
+      nodeLabel: resolveNodeLabel(resolvedNodeId, nodeMap) ?? humanizeMachineLabel(resolvedNodeId),
+    }
+  }
+
+  const componentId = normalizeTraceIdentifierValue(readAttrString(step.attrs, 'component_id'))
+  if (componentId) {
+    return {
+      key: `component:${componentId}`,
+      nodeId: nodeMap.has(componentId) ? componentId : undefined,
+      nodeLabel: resolveNodeLabel(componentId, nodeMap) ?? humanizeMachineLabel(componentId),
+    }
+  }
+
+  return {
+    key: 'unmapped',
+    nodeLabel: 'Other Activity',
+  }
+}
+
+function formatGroupedStepLabel(step: TraceStep): string {
+  const error = step.status === 'error' ? stepErrorSummary(step) : undefined
+  if (error) {
+    return error
+  }
+
+  const outcome = summarizeStepOutcome({
+    stepId: step.stepId,
+    nodeId: step.nodeId,
+    attributes: step.attrs,
+    message: step.errorSummary,
+  })
+  if (outcome) {
+    return outcome
+  }
+
+  if (isLifecycleTerminalStep(step.stepId) || stepLeaf(step.stepId) === 'result') {
+    if (step.status === 'running' || step.status === 'partial') {
+      return 'In progress'
+    }
+    if (step.status === 'error') {
+      return 'Failed'
+    }
+    return 'Completed'
+  }
+
+  const explicit = resolveStepLeafLabel(step)
+  if (explicit) {
+    return explicit
+  }
+
+  return humanizeMachineLabel(step.stepId)
+}
+
+function summaryScore(step: TraceStep): number {
+  if (
+    summarizeStepOutcome({
+      stepId: step.stepId,
+      nodeId: step.nodeId,
+      attributes: step.attrs,
+      message: step.errorSummary,
+    })
+  ) {
+    return 600
+  }
+
+  const hasError = Boolean(step.status === 'error' && stepErrorSummary(step))
+  if (hasError) {
+    return 500
+  }
+
+  if (step.status === 'running' || step.status === 'partial') {
+    return 300
+  }
+
+  if (isLifecycleTerminalStep(step.stepId)) {
+    return 250
+  }
+
+  if (resolveStepLeafLabel(step)) {
+    return 200
+  }
+
+  return 100
+}
+
+function chooseRepresentativeStep(steps: TraceStep[]): SummaryCandidate {
+  return steps.reduce<SummaryCandidate>((best, step, index) => {
+    const candidate: SummaryCandidate = {
+      step,
+      summary: formatGroupedStepLabel(step),
+      score: summaryScore(step),
+      order: typeof step.startSeq === 'number' ? step.startSeq : index,
+    }
+
+    if (candidate.score !== best.score) {
+      return candidate.score > best.score ? candidate : best
+    }
+
+    if (candidate.order !== best.order) {
+      return candidate.order > best.order ? candidate : best
+    }
+
+    return Date.parse(candidate.step.startTs) >= Date.parse(best.step.startTs) ? candidate : best
+  }, {
+    step: steps[0]!,
+    summary: formatGroupedStepLabel(steps[0]!),
+    score: summaryScore(steps[0]!),
+    order: typeof steps[0]!.startSeq === 'number' ? steps[0]!.startSeq : 0,
+  })
+}
+
+function isMeaningfulDetailDuration(durationMs?: number): boolean {
+  return typeof durationMs === 'number' && durationMs >= 1000
+}
+
+function buildOverviewGroups(
+  journey: Pick<TraceJourney, 'steps'>,
+  nodes?: FlowNodeConfig[],
+): OverviewGroup[] {
+  const nodeMap = new Map((nodes ?? []).map((node) => [node.id, node]))
+  const groups = new Map<string, OverviewGroup>()
+  const orderedSteps = [...journey.steps].sort(compareSteps)
+
+  orderedSteps.forEach((step, index) => {
+    const identity = resolveGroupIdentity(step, nodeMap)
+    const order = typeof step.startSeq === 'number' ? step.startSeq : index
+    const existing = groups.get(identity.key)
+
+    if (existing) {
+      existing.steps.push(step)
+      if (order < existing.firstOrder) {
+        existing.firstOrder = order
+        existing.firstReachedAt = step.startTs
+      }
+      return
+    }
+
+    groups.set(identity.key, {
+      key: identity.key,
+      nodeId: identity.nodeId,
+      nodeLabel: identity.nodeLabel,
+      firstOrder: order,
+      firstReachedAt: step.startTs,
+      steps: [step],
+    })
+  })
+
+  return [...groups.values()].sort((left, right) => {
+    if (left.firstOrder !== right.firstOrder) {
+      return left.firstOrder - right.firstOrder
+    }
+    return Date.parse(left.firstReachedAt) - Date.parse(right.firstReachedAt)
+  })
+}
+
+function buildFocusEdgeIds(
+  nodeIds: string[],
+  edges: FlowEdgeConfig[] | undefined,
+): string[] {
+  if (!edges?.length) {
+    return []
+  }
+
+  const focusNodeSet = new Set(nodeIds)
+  return edges
+    .filter((edge) => focusNodeSet.has(edge.source) && focusNodeSet.has(edge.target))
+    .map((edge) => edge.id)
+}
+
+export function getJourneyOverviewModel(
+  journey: Pick<TraceJourney, 'steps'>,
+  nodes?: FlowNodeConfig[],
+  edges?: FlowEdgeConfig[],
+): JourneyOverviewModel {
+  const groups = buildOverviewGroups(journey, nodes)
+
+  const cards = groups.map((group): JourneyOverviewCard => {
+    const representative = chooseRepresentativeStep(group.steps)
+    return {
+      key: group.key,
+      nodeId: group.nodeId,
+      nodeLabel: group.nodeLabel,
+      summary: representative.summary,
+      status: representative.step.status,
+      durationMs:
+        representative.step.durationMs ??
+        group.steps
+          .map((step) => step.durationMs)
+          .filter((duration): duration is number => typeof duration === 'number')
+          .sort((left, right) => right - left)[0],
+      startedAt: group.firstReachedAt,
+      representativeStep: representative.step,
+      detailRows: group.steps.map((step, index) => ({
+        key: step.instanceId ?? `${group.key}:${index}`,
+        label: formatGroupedStepLabel(step),
+        status: step.status,
+        durationMs: isMeaningfulDetailDuration(step.durationMs) ? step.durationMs : undefined,
+        step,
+      })),
+    }
+  })
+
+  const focusNodeIds = cards
+    .map((card) => card.nodeId)
+    .filter((nodeId): nodeId is string => Boolean(nodeId))
+
+  return {
+    cards,
+    primaryNodePath: focusNodeIds,
+    focusNodeIds,
+    focusEdgeIds: buildFocusEdgeIds(focusNodeIds, edges),
+  }
+}
+
+export function getOverviewSteps(steps: TraceStep[]): TraceStep[] {
+  return buildOverviewGroups({ steps }).map((group) => chooseRepresentativeStep(group.steps).step)
+}
+
+export function getJourneySummaryStep(
+  journey: TraceJourney,
+  nodes?: FlowNodeConfig[],
+  edges?: FlowEdgeConfig[],
+): TraceStep | undefined {
+  return getJourneyOverviewModel(journey, nodes, edges).cards.at(-1)?.representativeStep ?? journey.steps.at(-1)
 }

@@ -3,8 +3,8 @@ import type { ReactNode } from 'react'
 import { Badge } from '@/components/ui'
 
 import { formatEasternTime } from '../time'
-import type { TraceJourney, TraceStatus } from '../types'
-import { getOverviewSteps } from '../runPresentation'
+import type { FlowEdgeConfig, FlowNodeConfig, TraceJourney, TraceStatus } from '../types'
+import { getJourneyOverviewModel } from '../runPresentation'
 import { DurationBadge } from './DurationBadge'
 
 function journeyStatusVariant(status: TraceStatus): 'default' | 'destructive' | 'success' | 'warning' {
@@ -20,19 +20,23 @@ function journeyStatusVariant(status: TraceStatus): 'default' | 'destructive' | 
   return 'default'
 }
 
-export function getTraceInspectorPresentation(journey: TraceJourney): {
+export function getTraceInspectorPresentation(
+  journey: TraceJourney,
+  flowNodes?: FlowNodeConfig[],
+  flowEdges?: FlowEdgeConfig[],
+): {
   title: string
   description: ReactNode
   headerContent: ReactNode
 } {
-  const overviewSteps = getOverviewSteps(journey.steps)
-  const lifecycleStepCount = overviewSteps.length
+  const overview = getJourneyOverviewModel(journey, flowNodes, flowEdges)
+  const storyStageCount = overview.cards.length
 
   return {
     title: 'Run',
     description: (
       <>
-        {lifecycleStepCount} {lifecycleStepCount === 1 ? 'lifecycle step' : 'lifecycle steps'} · updated{' '}
+        {storyStageCount} {storyStageCount === 1 ? 'story stage' : 'story stages'} · updated{' '}
         <span className="font-mono">{formatEasternTime(journey.lastUpdatedAt)}</span>
       </>
     ),

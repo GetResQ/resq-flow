@@ -12,7 +12,6 @@ const MEANINGFUL_TOKENS = [
   'approval',
   'draft',
   'send',
-  'recompute',
   'upsert-contacts',
   'cursor-update',
   'record_extract_state',

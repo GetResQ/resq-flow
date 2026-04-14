@@ -13,14 +13,17 @@ export function RectangleNode({ id, data }: NodeProps<FlowNode>) {
   const status = data.status?.status
 
   return (
-    <div
-      className={`${nodeContainerClass({
-        color: data.style?.color,
-        status,
-      })} h-full rounded-xl`}
-    >
-      {renderHandles(id, data.handles, [...defaultHandles])}
-      <StandardNodeContent data={data} />
+    <div className="relative h-full rounded-xl">
+      <div aria-hidden className="pointer-events-none absolute inset-0 rounded-xl bg-[var(--flow-surface-bg)]" />
+      <div
+        className={`${nodeContainerClass({
+          color: data.style?.color,
+          status,
+        })} relative h-full rounded-xl`}
+      >
+        {renderHandles(id, data.handles, [...defaultHandles])}
+        <StandardNodeContent data={data} />
+      </div>
     </div>
   )
 }

@@ -110,13 +110,13 @@
   --node-muted-border: rgba(148, 163, 184, 0.38);
   --node-muted-bg: rgba(148, 163, 184, 0.09);
   --node-muted-text: #94a3b8;
-  --node-muted-accent: #94a3b8;
+  --node-muted-accent: #CBD5E1;
 
-  /* Group — Transparent container */
-  --node-group-border: rgba(255, 255, 255, 0.12);
+  /* Group — Invisible layout container */
+  --node-group-border: transparent;
   --node-group-bg: transparent;
-  --node-group-text: #64748b;
-  --node-group-accent: #64748b;
+  --node-group-text: transparent;
+  --node-group-accent: transparent;
 
   /* ── Per-family glow tokens (rest / hover / selected) ── */
   --glow-amber-rest:     0 0 14px rgba(255, 168, 0, 0.15);
@@ -174,7 +174,7 @@
 
   /* Compatibility aliases for the current canvas implementation */
   --color-active: var(--status-active);
-  --color-edge: #3f3f46;
+  --color-edge: #52525b;
   --color-edge-dimmed: #27272a;
   --color-marker: #3f3f46;
   --color-canvas-dot: var(--canvas-dot);
@@ -277,13 +277,13 @@
   --node-muted-border: rgba(100, 116, 139, 0.40);
   --node-muted-bg: rgba(100, 116, 139, 0.06);
   --node-muted-text: #64748b;
-  --node-muted-accent: #94A3B8;
+  --node-muted-accent: #475569;
 
-  /* Group — Subtle container */
-  --node-group-border: rgba(0, 0, 0, 0.10);
-  --node-group-bg: rgba(0, 0, 0, 0.018);
-  --node-group-text: #64748b;
-  --node-group-accent: #94a3b8;
+  /* Group — Invisible layout container */
+  --node-group-border: transparent;
+  --node-group-bg: transparent;
+  --node-group-text: transparent;
+  --node-group-accent: transparent;
 
   /* ── Per-family glow tokens (light) ── */
   --glow-amber-rest:     0 0 12px rgba(200, 120, 0, 0.14);
@@ -701,8 +701,8 @@ body[data-theme='light'] {
     0 4px 12px rgba(0, 0, 0, 0.40),
     0 1px 4px rgba(0, 0, 0, 0.24);
   --node-glow-selected:
-    0 0 0 2px rgba(148, 163, 184, 0.22),
-    0 0 18px rgba(148, 163, 184, 0.22),
+    0 0 0 2px rgba(203, 213, 225, 0.45),
+    0 0 20px rgba(203, 213, 225, 0.32),
     0 4px 12px rgba(0, 0, 0, 0.44),
     0 1px 4px rgba(0, 0, 0, 0.28);
 }
@@ -883,9 +883,9 @@ body[data-theme='light'] {
     0 6px 16px rgba(0, 0, 0, 0.05),
     0 0 0 1px rgba(100, 116, 139, 0.14);
   --node-glow-selected:
-    0 0 0 2px rgba(100, 116, 139, 0.20),
-    0 6px 16px rgba(100, 116, 139, 0.12),
-    0 2px 6px rgba(0, 0, 0, 0.06);
+    0 0 0 2.5px rgba(71, 85, 105, 0.42),
+    0 4px 16px rgba(71, 85, 105, 0.26),
+    0 10px 32px rgba(71, 85, 105, 0.14);
 }
 :root[data-theme='light'] .react-flow__node:hover .node-family-muted   { --node-border-color: rgba(100, 116, 139, 0.55); }
 :root[data-theme='light'] .react-flow__node.selected .node-family-muted { --node-border-color: rgba(100, 116, 139, 0.75); }
@@ -968,6 +968,18 @@ body[data-theme='light'] {
     drop-shadow(0 0 3px var(--node-accent, #38B6FF))
     drop-shadow(0 0 10px var(--node-accent, #38B6FF)) !important;
   transition: filter 0ms !important;
+}
+
+/* ── Edge active halo: same rhythm as node glow (120ms snap-on, 1.4s fade-out) ── */
+.react-flow__edge {
+  transition: filter 1.4s ease-out;
+}
+.react-flow__edge.edge-active {
+  filter:
+    drop-shadow(0 0 2px var(--color-active))
+    drop-shadow(0 0 6px var(--color-active))
+    drop-shadow(0 0 12px color-mix(in srgb, var(--color-active), transparent 55%));
+  transition: filter 120ms ease-in;
 }
 
 /* ── Node handles: hidden by default, visible on hover ── */

@@ -1,8 +1,20 @@
 import { fireEvent, render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { TraceDetailContent } from '../TraceDetailPanel'
-import type { TraceJourney } from '../../types'
+import type { FlowEdgeConfig, FlowNodeConfig, TraceJourney } from '../../types'
+
+const flowNodes: FlowNodeConfig[] = [
+  {
+    id: 'incoming-worker',
+    type: 'roundedRect',
+    label: 'Incoming Worker',
+    position: { x: 0, y: 0 },
+    layout: { order: 10 },
+  },
+]
+
+const flowEdges: FlowEdgeConfig[] = []
 
 const journey: TraceJourney = {
   traceId: 'trace-1',
@@ -47,5 +59,85 @@ describe('TraceDetailPanel', () => {
 
     expect(screen.getByText('run_id')).toBeInTheDocument()
     expect(screen.getByText('mail-pipeline_abc123')).toBeInTheDocument()
+  })
+
+  it('renders one card per grouped node with expandable lightweight child rows and node navigation', () => {
+    const onSelectNode = vi.fn()
+
+    render(
+      <TraceDetailContent
+        journey={{
+          ...journey,
+          steps: [
+            {
+              instanceId: 'incoming-worker::write-metadata',
+              stepId: 'write-metadata',
+              label: 'write-metadata',
+              nodeId: 'incoming-worker',
+              startSeq: 1,
+              endSeq: 1,
+              startTs: '2026-04-11T10:46:50.000Z',
+              endTs: '2026-04-11T10:46:50.000Z',
+              durationMs: 1600,
+              status: 'success',
+            },
+            {
+              instanceId: 'incoming-worker::final-result',
+              stepId: 'final-result',
+              label: 'final-result',
+              nodeId: 'incoming-worker',
+              startSeq: 2,
+              endSeq: 2,
+              startTs: '2026-04-11T10:46:51.000Z',
+              endTs: '2026-04-11T10:46:51.000Z',
+              durationMs: 0,
+              status: 'success',
+            },
+          ],
+          nodePath: ['incoming-worker'],
+        }}
+        flowNodes={flowNodes}
+        flowEdges={flowEdges}
+        onSelectNode={onSelectNode}
+      />,
+    )
+
+    expect(screen.getByText('Incoming Worker')).toBeInTheDocument()
+    expect(screen.getByText('+2 steps')).toBeInTheDocument()
+    expect(screen.queryByText(/step 1/i)).not.toBeInTheDocument()
+
+    fireEvent.click(screen.getByText('Incoming Worker'))
+    expect(screen.getByText('Write metadata')).toBeInTheDocument()
+    expect(screen.getAllByText('Completed')).toHaveLength(2)
+
+    fireEvent.click(screen.getByRole('button', { name: /open incoming worker node/i }))
+    expect(onSelectNode).toHaveBeenCalledWith('incoming-worker')
+  })
+
+  it('omits node navigation for the shared unmapped bucket', () => {
+    render(
+      <TraceDetailContent
+        journey={{
+          ...journey,
+          steps: [
+            {
+              instanceId: 'unmapped::mystery-step',
+              stepId: 'mystery-step',
+              label: 'mystery-step',
+              startSeq: 1,
+              endSeq: 1,
+              startTs: '2026-04-11T10:46:50.000Z',
+              endTs: '2026-04-11T10:46:50.000Z',
+              durationMs: 0,
+              status: 'success',
+            },
+          ],
+          nodePath: [],
+        }}
+      />,
+    )
+
+    expect(screen.getByText('Other Activity')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /open other activity node/i })).not.toBeInTheDocument()
   })
 })

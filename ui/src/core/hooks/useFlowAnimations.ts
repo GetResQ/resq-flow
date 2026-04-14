@@ -127,6 +127,7 @@ interface UseFlowAnimationsInput {
   spanMapping: SpanMapping
   producerMapping?: SpanMapping
   edges?: FlowEdgeConfig[]
+  resourceNodeIds?: string[]
   timings?: Partial<FlowAnimationTimings>
   sessionKey?: number | string
 }
@@ -136,6 +137,7 @@ export function useFlowAnimations({
   spanMapping,
   producerMapping,
   edges = [],
+  resourceNodeIds = [],
   timings,
   sessionKey,
 }: UseFlowAnimationsInput): FlowAnimationState {
@@ -265,6 +267,45 @@ export function useFlowAnimations({
 
     edgeResetTimersRef.current.set(edgeId, timer)
   }, [])
+
+  const pulseResourceTargets = useCallback(
+    (
+      sourceNodeId: string,
+      edgeLookup: Map<string, string>,
+      activeForMs: number,
+      updatedAt: number,
+      message: string | undefined,
+      currentTime: number,
+    ) => {
+      if (activeForMs <= 0) {
+        return
+      }
+
+      for (const resourceNodeId of resourceNodeIds) {
+        const edgeId = edgeLookup.get(`${sourceNodeId}->${resourceNodeId}`)
+        if (!edgeId) {
+          continue
+        }
+
+        updateNodeStatus(resourceNodeId, (previous) => ({
+          status: 'active',
+          counter: previous?.counter,
+          updatedAt,
+          lastMessage: message,
+          durationMs: previous?.durationMs,
+          durationVisibleUntil: previous?.durationVisibleUntil,
+        }))
+        scheduleNodeIdle(resourceNodeId, activeForMs, updatedAt, {
+          lastMessage: message,
+        })
+        activateEdge(
+          edgeId,
+          remainingWindowMs(updatedAt, resolvedTimings.edgeActiveMs, currentTime),
+        )
+      }
+    },
+    [activateEdge, resolvedTimings.edgeActiveMs, resourceNodeIds, scheduleNodeIdle, updateNodeStatus],
+  )
 
   useEffect(() => {
     if (sessionKeyRef.current === sessionKey) {
@@ -396,6 +437,14 @@ export function useFlowAnimations({
               durationVisibleUntil,
               lastMessage: event.message ?? event.span_name,
             })
+            pulseResourceTargets(
+              mappedNodeId,
+              edgeLookup,
+              pulseMs,
+              eventTimestamp,
+              event.message ?? event.span_name,
+              currentTime,
+            )
           } else {
             setNodeIdle(mappedNodeId, eventTimestamp, {
               durationMs,
@@ -410,6 +459,16 @@ export function useFlowAnimations({
 
       if (eventKind === 'queue_enqueued') {
         const targetQueueNodeId = queueNodeId ?? mappedNodeId
+        const enqueueStepNodeId =
+          mappedNodeId &&
+          mappedNodeId !== targetQueueNodeId &&
+          targetQueueNodeId &&
+          (
+            edgeLookup.has(`${mappedNodeId}->${targetQueueNodeId}`) ||
+            (producerNodeId ? edgeLookup.has(`${producerNodeId}->${mappedNodeId}`) : false)
+          )
+            ? mappedNodeId
+            : null
         if (targetQueueNodeId) {
           const delta = typeof event.queue_delta === 'number' ? event.queue_delta : 1
           const pulseMs = visualPulseMs(
@@ -435,7 +494,32 @@ export function useFlowAnimations({
             })
           }
 
-          if (producerNodeId && producerNodeId !== targetQueueNodeId) {
+          if (enqueueStepNodeId) {
+            updateNodeStatus(enqueueStepNodeId, (previous) => ({
+              status: isFresh ? 'active' : 'idle',
+              counter: previous?.counter,
+              updatedAt: eventTimestamp,
+              lastMessage: event.message ?? event.span_name ?? functionName,
+              durationMs: previous?.durationMs,
+              durationVisibleUntil: previous?.durationVisibleUntil,
+            }))
+            if (isFresh) {
+              scheduleNodeIdle(enqueueStepNodeId, pulseMs, eventTimestamp, {
+                lastMessage: event.message ?? event.span_name ?? functionName,
+              })
+            }
+
+            const enqueueEdgeId = edgeLookup.get(`${enqueueStepNodeId}->${targetQueueNodeId}`)
+            if (enqueueEdgeId) {
+              activateEdge(
+                enqueueEdgeId,
+                remainingWindowMs(eventTimestamp, resolvedTimings.edgeActiveMs, currentTime),
+              )
+            }
+          }
+
+          const producerTargetNodeId = enqueueStepNodeId ?? targetQueueNodeId
+          if (producerNodeId && producerNodeId !== producerTargetNodeId) {
             updateNodeStatus(producerNodeId, (previous) => ({
               status: isFresh ? 'active' : 'idle',
               counter: previous?.counter,
@@ -450,7 +534,7 @@ export function useFlowAnimations({
               })
             }
 
-            const edgeId = edgeLookup.get(`${producerNodeId}->${targetQueueNodeId}`)
+            const edgeId = edgeLookup.get(`${producerNodeId}->${producerTargetNodeId}`)
             if (edgeId) {
               activateEdge(
                 edgeId,
@@ -542,6 +626,14 @@ export function useFlowAnimations({
           scheduleNodeIdle(mappedNodeId, pulseMs, eventTimestamp, {
             lastMessage: event.message ?? event.span_name,
           })
+          pulseResourceTargets(
+            mappedNodeId,
+            edgeLookup,
+            pulseMs,
+            eventTimestamp,
+            event.message ?? event.span_name,
+            currentTime,
+          )
         }
       }
     }
@@ -558,6 +650,8 @@ export function useFlowAnimations({
     setNodeIdle,
     scheduleNodeIdle,
     producerMapping,
+    pulseResourceTargets,
+    resourceNodeIds,
     spanMapping,
     updateNodeStatus,
   ])

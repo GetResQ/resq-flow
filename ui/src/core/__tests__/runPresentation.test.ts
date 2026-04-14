@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import type { TraceJourney } from '../types'
+import type { FlowEdgeConfig, FlowNodeConfig, TraceJourney } from '../types'
 import {
   formatRunLabel,
   formatStepDisplayLabel,
   formatStepLabel,
   getJourneySummaryStep,
+  getJourneyOverviewModel,
   getOverviewSteps,
   isRunBackedJourney,
 } from '../runPresentation'
@@ -24,6 +25,55 @@ function makeJourney(overrides: Partial<TraceJourney> = {}): TraceJourney {
     ...overrides,
   }
 }
+
+const flowNodes: FlowNodeConfig[] = [
+  {
+    id: 'incoming-worker',
+    type: 'roundedRect',
+    label: 'Incoming Worker',
+    position: { x: 0, y: 0 },
+    layout: { order: 10 },
+  },
+  {
+    id: 'incoming-schedule-process',
+    type: 'roundedRect',
+    label: 'Schedule Incoming Checks',
+    position: { x: 0, y: 0 },
+    style: { color: 'muted' },
+  },
+  {
+    id: 'send-process',
+    type: 'roundedRect',
+    label: 'Send Reply',
+    position: { x: 0, y: 0 },
+    layout: { order: 20 },
+  },
+]
+
+const flowEdges: FlowEdgeConfig[] = [
+  { id: 'incoming-worker->send-process', source: 'incoming-worker', target: 'send-process' },
+]
+
+const autosendFlowNodes: FlowNodeConfig[] = [
+  {
+    id: 'autosend-decision',
+    type: 'diamond',
+    label: 'Auto Send?',
+    position: { x: 0, y: 0 },
+    layout: { order: 10 },
+  },
+  {
+    id: 'actions-queue',
+    type: 'roundedRect',
+    label: 'Actions Queue',
+    position: { x: 0, y: 0 },
+    layout: { order: 20 },
+  },
+]
+
+const autosendFlowEdges: FlowEdgeConfig[] = [
+  { id: 'autosend-decision->actions-queue', source: 'autosend-decision', target: 'actions-queue' },
+]
 
 describe('runPresentation', () => {
   it('prefers meaningful mailbox and thread identifiers over placeholder root labels', () => {
@@ -94,39 +144,33 @@ describe('runPresentation', () => {
     expect(isRunBackedJourney(ambientJourney)).toBe(false)
   })
 
-  it('prefers the last lifecycle stage over generic worker wrappers for run summaries', () => {
+  it('groups steps by node id and orders cards by first reach', () => {
     const journey = makeJourney({
       steps: [
         {
-          stepId: 'pickup',
-          label: 'pickup',
-          nodeId: 'analyze-worker',
+          stepId: 'write-metadata',
+          label: 'write-metadata',
+          nodeId: 'incoming-worker',
           startSeq: 1,
           endSeq: 1,
           startTs: '2026-03-24T12:00:00.000Z',
+          durationMs: 1100,
+          status: 'success',
+        },
+        {
+          stepId: 'cursor-update',
+          label: 'cursor-update',
+          nodeId: 'incoming-schedule-process',
+          startSeq: 2,
+          endSeq: 2,
+          startTs: '2026-03-24T12:00:01.000Z',
           durationMs: 0,
           status: 'success',
         },
         {
           stepId: 'final-result',
           label: 'final-result',
-          nodeId: 'analyze-decision',
-          startSeq: 2,
-          endSeq: 2,
-          startTs: '2026-03-24T12:00:01.000Z',
-          durationMs: 0,
-          status: 'success',
-          attrs: {
-            reply_status: 'needs_review',
-            draft_status: 'needs_review',
-            result_action: 'draft_reply',
-            auto_approved: false,
-          },
-        },
-        {
-          stepId: 'result',
-          label: 'result',
-          nodeId: 'analyze-worker',
+          nodeId: 'incoming-worker',
           startSeq: 3,
           endSeq: 3,
           startTs: '2026-03-24T12:00:02.000Z',
@@ -136,16 +180,142 @@ describe('runPresentation', () => {
       ],
     })
 
-    expect(getJourneySummaryStep(journey)?.stepId).toBe('final-result')
-    expect(getOverviewSteps(journey.steps).map((stage) => stage.stepId)).toEqual(['final-result'])
+    const overview = getJourneyOverviewModel(journey, flowNodes, flowEdges)
+
+    expect(overview.cards.map((card) => card.nodeLabel)).toEqual([
+      'Incoming Worker',
+      'Schedule Incoming Checks',
+    ])
+    expect(overview.cards[0]?.detailRows.map((row) => row.label)).toEqual([
+      'Write metadata',
+      'Completed',
+    ])
+    expect(overview.focusNodeIds).toEqual(['incoming-worker', 'incoming-schedule-process'])
   })
 
-  it('keeps lifecycle transitions and hides bookkeeping steps in overview', () => {
+  it('uses resolved node ownership instead of raw component_id when they disagree', () => {
+    const journey = makeJourney({
+      steps: [
+        {
+          stepId: 'final-result',
+          label: 'final-result',
+          nodeId: 'autosend-decision',
+          startSeq: 1,
+          endSeq: 1,
+          startTs: '2026-03-24T12:00:00.000Z',
+          durationMs: 0,
+          status: 'success',
+          attrs: {
+            reply_status: 'executing_actions',
+            result_action: 'draft_reply',
+            auto_approved: true,
+          },
+        },
+        {
+          stepId: 'execute-enqueue',
+          label: 'execute-enqueue',
+          nodeId: 'actions-queue',
+          startSeq: 2,
+          endSeq: 2,
+          startTs: '2026-03-24T12:00:01.000Z',
+          durationMs: 0,
+          status: 'success',
+          attrs: {
+            component_id: 'autosend-decision',
+          },
+        },
+      ],
+    })
+
+    const overview = getJourneyOverviewModel(journey, autosendFlowNodes, autosendFlowEdges)
+
+    expect(overview.cards.map((card) => card.nodeLabel)).toEqual(['Auto Send?', 'Actions Queue'])
+    expect(overview.cards[1]?.detailRows.map((row) => row.label)).toEqual(['Execute enqueue'])
+  })
+
+  it('falls back to a shared Other Activity bucket when no node ownership exists', () => {
+    const journey = makeJourney({
+      steps: [
+        {
+          stepId: 'mystery-step',
+          label: 'mystery-step',
+          startSeq: 1,
+          endSeq: 1,
+          startTs: '2026-03-24T12:00:00.000Z',
+          durationMs: 0,
+          status: 'success',
+        },
+        {
+          stepId: 'another-mystery-step',
+          label: 'another-mystery-step',
+          startSeq: 2,
+          endSeq: 2,
+          startTs: '2026-03-24T12:00:01.000Z',
+          durationMs: 0,
+          status: 'success',
+        },
+      ],
+    })
+
+    const overview = getJourneyOverviewModel(journey)
+
+    expect(overview.cards).toHaveLength(1)
+    expect(overview.cards[0]?.nodeLabel).toBe('Other Activity')
+    expect(overview.cards[0]?.nodeId).toBeUndefined()
+    expect(overview.cards[0]?.detailRows.map((row) => row.label)).toEqual([
+      'Mystery step',
+      'Another mystery step',
+    ])
+  })
+
+  it('prefers the final meaningful outcome over transient errors in the same node summary', () => {
+    const journey = makeJourney({
+      steps: [
+        {
+          stepId: 'provider-call',
+          label: 'provider-call',
+          nodeId: 'send-process',
+          startSeq: 1,
+          endSeq: 1,
+          startTs: '2026-03-24T12:00:00.000Z',
+          durationMs: 500,
+          status: 'error',
+          attrs: {
+            error_message: 'temporary provider error',
+          },
+          errorSummary: 'temporary provider error',
+        },
+        {
+          stepId: 'final-result',
+          label: 'final-result',
+          nodeId: 'send-process',
+          startSeq: 2,
+          endSeq: 2,
+          startTs: '2026-03-24T12:00:01.000Z',
+          durationMs: 1000,
+          status: 'success',
+          attrs: {
+            reply_status: 'sent',
+            draft_status: 'sent',
+            result_action: 'sent',
+          },
+        },
+      ],
+    })
+
+    const overview = getJourneyOverviewModel(journey, flowNodes, flowEdges)
+
+    expect(overview.cards).toHaveLength(1)
+    expect(overview.cards[0]?.summary).toBe('sent')
+    expect(getJourneySummaryStep(journey, flowNodes, flowEdges)?.stepId).toBe('final-result')
+  })
+
+  it('returns one representative overview step per grouped node', () => {
     const steps = [
       {
-        stepId: 'reply-status-write',
-        label: 'reply-status-write',
-        nodeId: 'analyze-decision',
+        stepId: 'write-metadata',
+        label: 'write-metadata',
+        nodeId: 'incoming-worker',
         startSeq: 1,
         endSeq: 1,
         startTs: '2026-03-24T12:00:00.000Z',
@@ -153,9 +323,9 @@ describe('runPresentation', () => {
         status: 'success' as const,
       },
       {
-        stepId: 'recompute-enqueue',
-        label: 'recompute-enqueue',
-        nodeId: 'extract-worker',
+        stepId: 'final-result',
+        label: 'final-result',
+        nodeId: 'incoming-worker',
         startSeq: 2,
         endSeq: 2,
         startTs: '2026-03-24T12:00:01.000Z',
@@ -163,30 +333,20 @@ describe('runPresentation', () => {
         status: 'success' as const,
       },
       {
-        stepId: 'final-result',
-        label: 'final-result',
-        nodeId: 'extract-worker',
+        stepId: 'cursor-update',
+        label: 'cursor-update',
+        nodeId: 'incoming-schedule-process',
         startSeq: 3,
         endSeq: 3,
         startTs: '2026-03-24T12:00:02.000Z',
         durationMs: 0,
         status: 'success' as const,
       },
-      {
-        stepId: 'result',
-        label: 'result',
-        nodeId: 'extract-worker',
-        startSeq: 4,
-        endSeq: 4,
-        startTs: '2026-03-24T12:00:03.000Z',
-        durationMs: 0,
-        status: 'success' as const,
-      },
     ]
 
-    expect(getOverviewSteps(steps).map((stage) => stage.stepId)).toEqual([
-      'recompute-enqueue',
-      'final-result',
+    expect(getOverviewSteps(steps).map((stage) => `${stage.nodeId}:${stage.stepId}`)).toEqual([
+      'incoming-worker:final-result',
+      'incoming-schedule-process:cursor-update',
     ])
   })
 })

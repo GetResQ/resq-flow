@@ -15,12 +15,17 @@ export function DiamondNode({ id, data }: NodeProps<FlowNode>) {
 
   return (
     <div className="relative h-full w-full">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 rotate-45 rounded-[14px] bg-[var(--flow-surface-bg)]"
+        style={{ borderWidth: 2 }}
+      />
       {renderHandles(id, data.handles, [...defaultHandles])}
       <div
         className={`${nodeContainerClass({
           color: data.style?.color ?? 'violet',
           status,
-        })} flex h-full w-full rotate-45 items-center justify-center rounded-[14px]`}
+        })} relative flex h-full w-full rotate-45 items-center justify-center rounded-[14px]`}
         style={{ borderWidth: 2 }}
       >
         <div className="-rotate-45 px-2 text-center">

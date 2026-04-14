@@ -18,7 +18,7 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('keeps explicit component_id when step_id points at a different fallback node', () => {
+  it('maps explicit scheduler cursor detail onto the visible cursor step node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -28,7 +28,7 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-schedule-process')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-scheduled-at')
   })
 
   it('maps function_name to extract-worker', () => {
@@ -91,7 +91,7 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('analyze-queue')
   })
 
-  it('keeps explicit owning component ids for demoted store steps', () => {
+  it('maps explicit incoming store detail onto the visible persistence step node', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
@@ -101,7 +101,7 @@ describe('span mapping resolution', () => {
       },
     }
 
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-worker')
+    expect(resolveMappedNodeId(event, spanMapping)).toBe('incoming-thread-metadata-write')
   })
 
   it('maps rrq.function attributes for queue hops', () => {
@@ -141,38 +141,13 @@ describe('span mapping resolution', () => {
     expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
   })
 
-  it('keeps explicit extract-worker ownership on recompute detail steps', () => {
+  it('keeps explicit extract-worker ownership on lifecycle detail steps', () => {
     const event: FlowEvent = {
       type: 'log',
       timestamp: '2026-03-03T12:00:00.000Z',
       attributes: {
         component_id: 'extract-worker',
         step_id: 'started',
-      },
-    }
-
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
-  })
-
-  it('maps explicit recompute-worker component_id onto extract-worker', () => {
-    const event: FlowEvent = {
-      type: 'log',
-      timestamp: '2026-03-03T12:00:00.000Z',
-      attributes: {
-        component_id: 'recompute-worker',
-        function_name: 'handle_mail_recompute_opportunities',
-      },
-    }
-
-    expect(resolveMappedNodeId(event, spanMapping)).toBe('extract-worker')
-  })
-
-  it('maps handle_mail_recompute_opportunities function_name onto extract-worker', () => {
-    const event: FlowEvent = {
-      type: 'span_start',
-      timestamp: '2026-03-03T12:00:00.000Z',
-      attributes: {
-        function_name: 'handle_mail_recompute_opportunities',
       },
     }
 

@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Info, XCircle } from 'lucide-react'
+import { AlertTriangle, ArrowUpRight, CheckCircle2, Info, XCircle } from 'lucide-react'
 
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   ScrollArea,
@@ -11,8 +12,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui'
-import type { SpanEntry, TraceJourney, TraceStep, TraceStatus } from '../types'
-import { formatStepDisplayLabel, getJourneySummaryStep, getOverviewSteps } from '../runPresentation'
+import type { FlowEdgeConfig, FlowNodeConfig, SpanEntry, TraceJourney, TraceStatus } from '../types'
+import { getJourneyOverviewModel, getJourneySummaryStep } from '../runPresentation'
 import { DurationBadge, formatDurationLabel } from './DurationBadge'
 import { PanelSkeleton } from './PanelSkeleton'
 import { WaterfallChart } from './WaterfallChart'
@@ -22,6 +23,8 @@ type InsightTone = 'neutral' | 'success' | 'warning' | 'error'
 
 interface TraceDetailContentProps {
   journey: TraceJourney
+  flowNodes?: FlowNodeConfig[]
+  flowEdges?: FlowEdgeConfig[]
   spans?: SpanEntry[]
   initialTab?: TabKey
   onTabChange?: (tab: TabKey) => void
@@ -66,39 +69,28 @@ function insightIcon(tone: InsightTone) {
   return <Info className="mt-0.5 size-4 shrink-0 text-[var(--text-muted)]" />
 }
 
-function stepDisplayLabel(step: TraceStep): string {
-  return formatStepDisplayLabel(step)
-}
-
-function stepErrorSummary(stage: TraceStep): string | undefined {
-  const attrs = stage.attrs
-  const errorMessage = typeof attrs?.error_message === 'string' ? attrs.error_message : undefined
-  const errorClass = typeof attrs?.error_class === 'string' ? attrs.error_class : undefined
-  const errorCode = typeof attrs?.error_code === 'string' ? attrs.error_code : undefined
-  const retryable = typeof attrs?.retryable === 'boolean' ? attrs.retryable : undefined
-
-  if (errorMessage) {
-    return errorMessage
-  }
-
-  if (errorClass && errorCode) {
-    return retryable === undefined ? `${errorClass}:${errorCode}` : `${errorClass}:${errorCode} retryable=${retryable}`
-  }
-
-  if (errorClass || errorCode) {
-    return [errorClass, errorCode].filter(Boolean).join(':')
-  }
-
-  return stage.errorSummary
-}
-
-export function TraceDetailContent({ journey, spans = [], initialTab, onTabChange, onSelectNode }: TraceDetailContentProps) {
+export function TraceDetailContent({
+  journey,
+  flowNodes = [],
+  flowEdges = [],
+  spans = [],
+  initialTab,
+  onTabChange,
+  onSelectNode,
+}: TraceDetailContentProps) {
   const [tab, setTab] = useState<TabKey>(initialTab ?? 'overview')
-  const [expandedStepId, setExpandedStepId] = useState<string | undefined>()
+  const [expandedCardKeys, setExpandedCardKeys] = useState<string[]>([])
 
-  const overviewSteps = useMemo(() => getOverviewSteps(journey.steps), [journey.steps])
+  const overview = useMemo(
+    () => getJourneyOverviewModel(journey, flowNodes, flowEdges),
+    [flowEdges, flowNodes, journey],
+  )
+  const overviewCards = overview.cards
 
-  const failedStep = useMemo(() => overviewSteps.find((stage) => stage.status === 'error') ?? journey.steps.find((stage) => stage.status === 'error'), [journey.steps, overviewSteps])
+  const failedCard = useMemo(
+    () => overviewCards.find((card) => card.status === 'error'),
+    [overviewCards],
+  )
 
   const errorNodeIds = useMemo(() => {
     const ids = new Set<string>()
@@ -110,47 +102,53 @@ export function TraceDetailContent({ journey, spans = [], initialTab, onTabChang
 
   const slowestStep = useMemo(
     () =>
-      [...overviewSteps]
-        .filter((stage) => typeof stage.durationMs === 'number')
+      [...overviewCards]
+        .filter((card) => typeof card.durationMs === 'number')
         .sort((left, right) => (right.durationMs ?? 0) - (left.durationMs ?? 0))[0],
-    [overviewSteps],
+    [overviewCards],
   )
 
   const insights = useMemo(() => {
     const items: InsightItem[] = []
 
-    if (journey.status === 'error' && failedStep) {
+    if (journey.status === 'error' && failedCard) {
       items.push({
         tone: 'error',
-        text: `This run failed in ${stepDisplayLabel(failedStep)}.`,
+        text: `This run failed in ${failedCard.nodeLabel}.`,
       })
     } else if (journey.status === 'running' || journey.status === 'partial') {
-      const currentStep = getJourneySummaryStep(journey) ?? journey.steps.at(-1)
+      const currentStep = getJourneySummaryStep(journey, flowNodes, flowEdges) ?? journey.steps.at(-1)
+      const currentCard = overviewCards.at(-1)
       items.push({
         tone: 'warning',
-        text: currentStep ? `This run is still active in ${stepDisplayLabel(currentStep)}.` : 'This run is still active.',
+        text:
+          currentCard?.summary
+            ? `This run is still active in ${currentCard.nodeLabel.toLowerCase()} — ${currentCard.summary}.`
+            : currentStep
+              ? 'This run is still active.'
+              : 'This run is still active.',
       })
     }
 
-    if (slowestStep && slowestStep.durationMs && journey.steps.length > 1) {
+    if (slowestStep?.durationMs && overviewCards.length > 1) {
       const slowestDuration = formatDurationLabel(slowestStep.durationMs)
       if (slowestDuration) {
-          items.push({
-            tone: journey.status === 'error' ? 'neutral' : 'warning',
-            text: `Most time was spent in ${stepDisplayLabel(slowestStep)} (${slowestDuration}).`,
-          })
-        }
+        items.push({
+          tone: journey.status === 'error' ? 'neutral' : 'warning',
+          text: `Most time was spent in ${slowestStep.nodeLabel} (${slowestDuration}).`,
+        })
       }
+    }
 
-    if (overviewSteps.length > 0) {
+    if (overviewCards.length > 0) {
       items.push({
         tone: 'neutral',
-        text: `This run reached ${overviewSteps.length} ${overviewSteps.length === 1 ? 'lifecycle step' : 'lifecycle steps'}.`,
+        text: `This run reached ${overviewCards.length} ${overviewCards.length === 1 ? 'story stage' : 'story stages'}.`,
       })
     }
 
     return items.slice(0, 3)
-  }, [failedStep, journey, overviewSteps, slowestStep])
+  }, [failedCard, flowEdges, flowNodes, journey, overviewCards, slowestStep])
 
   const identifierEntries = useMemo(() => [
     ['mailbox_owner', journey.identifiers.mailboxOwner],
@@ -193,34 +191,33 @@ export function TraceDetailContent({ journey, spans = [], initialTab, onTabChang
 
             <section className="space-y-2">
               <h3 className="text-xs uppercase tracking-wide text-[var(--text-muted)]">Path Through Flow</h3>
-              {overviewSteps.length === 0 ? (
+              {overviewCards.length === 0 ? (
                 <PanelSkeleton lines={2} />
               ) : (
                 <div className="relative ml-3">
-                    {/* Vertical connecting line */}
+                  {/* Vertical connecting line */}
                   <div
                     className="absolute left-[7px] top-3 w-px bg-[var(--border-default)]"
                     style={{ height: `calc(100% - 24px)` }}
                   />
 
-                  {overviewSteps.map((stage, index) => {
-                    const errorSummary = stepErrorSummary(stage)
-                    const isError = stage.status === 'error'
-                    const isActive = stage.status === 'running' || stage.status === 'partial'
-                    const stepId = stage.instanceId ?? stage.stepId
-                    const isExpanded = expandedStepId === stepId
-                    const hasAttrs = stage.attrs && Object.keys(stage.attrs).length > 0
+                  {overviewCards.map((card) => {
+                    const isError = card.status === 'error'
+                    const isActive = card.status === 'running' || card.status === 'partial'
+                    const isExpanded = expandedCardKeys.includes(card.key)
+                    const hasDetails = card.detailRows.length > 0
+                    const targetNodeId = card.nodeId
                     const dotColor = isError
                       ? 'var(--status-error)'
                       : isActive
                         ? 'var(--status-active)'
-                        : stage.status === 'success'
+                        : card.status === 'success'
                           ? 'var(--status-success)'
                           : 'var(--text-muted)'
 
                     return (
-                      <div key={stepId ?? `${stage.stepId}-${index}`} className="relative flex gap-3 pb-3">
-                          {/* Timeline dot */}
+                      <div key={card.key} className="relative flex gap-3 pb-3">
+                        {/* Timeline dot */}
                         <div className="relative z-10 mt-3 flex shrink-0 items-start">
                           <div
                             className="size-[15px] rounded-full border-2 border-[var(--surface-raised)]"
@@ -234,28 +231,76 @@ export function TraceDetailContent({ journey, spans = [], initialTab, onTabChang
 
                         {/* Step card */}
                         <Card
-                          className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''} ${hasAttrs ? 'cursor-pointer transition-colors hover:bg-[var(--surface-overlay)]/50' : ''}`}
-                          onClick={hasAttrs ? () => setExpandedStepId(isExpanded ? undefined : stepId) : undefined}
+                          className={`flex-1 ${isError ? 'border-l-[3px] border-l-[var(--status-error)]' : ''}`}
                         >
                           <CardContent className="p-3">
-                            <div className="mb-2 flex items-center gap-2">
-                              <span className="text-sm font-medium text-[var(--text-primary)]">{stepDisplayLabel(stage)}</span>
-                              <Badge variant={journeyStatusVariant(stage.status)}>{stage.status}</Badge>
-                              <DurationBadge durationMs={stage.durationMs} />
-                            </div>
-                            <div className="flex flex-wrap items-center gap-2 text-xs text-[var(--text-secondary)]">
-                              <span>step {index + 1}</span>
-                              {typeof stage.attempt === 'number' && stage.attempt > 0 ? <span>retry {stage.attempt}</span> : null}
-                            </div>
-                            {errorSummary ? (
-                              <div className="mt-2 rounded-lg border-l-2 border-[var(--status-error)] px-3 py-2 [background-color:color-mix(in_srgb,var(--status-error)_14%,transparent)]">
-                                <p className="whitespace-pre-wrap break-all font-mono text-xs leading-5 text-[var(--text-primary)]">{errorSummary}</p>
+                            <div className="flex items-start gap-3">
+                              <button
+                                type="button"
+                                className={`min-w-0 flex-1 text-left ${hasDetails ? 'cursor-pointer' : 'cursor-default'}`}
+                                onClick={
+                                  hasDetails
+                                    ? () =>
+                                        setExpandedCardKeys((current) =>
+                                          current.includes(card.key)
+                                            ? current.filter((key) => key !== card.key)
+                                            : [...current, card.key],
+                                        )
+                                    : undefined
+                                }
+                              >
+                                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                                  <span className="truncate text-sm font-medium text-[var(--text-primary)]">
+                                    {card.nodeLabel}
+                                  </span>
+                                  <Badge variant={journeyStatusVariant(card.status)}>{card.status}</Badge>
+                                  <DurationBadge durationMs={card.durationMs} />
+                                </div>
+                                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">{card.summary}</p>
+                              </button>
+
+                              <div className="flex shrink-0 items-center gap-1">
+                                {!isExpanded && hasDetails ? (
+                                  <span className="text-xs font-medium text-[var(--text-muted)]">
+                                    +{card.detailRows.length} {card.detailRows.length === 1 ? 'step' : 'steps'}
+                                  </span>
+                                ) : null}
+                                {onSelectNode && targetNodeId ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    className="size-7 shrink-0"
+                                    aria-label={`Open ${card.nodeLabel} node`}
+                                    onClick={(event) => {
+                                      event.stopPropagation()
+                                      onSelectNode(targetNodeId)
+                                    }}
+                                  >
+                                    <ArrowUpRight className="size-4" />
+                                  </Button>
+                                ) : null}
                               </div>
-                            ) : null}
-                            {isExpanded && hasAttrs ? (
-                              <pre className="mt-3 max-w-full overflow-hidden whitespace-pre-wrap break-all rounded-lg border border-[var(--border-default)] bg-[var(--surface-primary)] p-3 text-xs text-[var(--text-primary)]">
-                                {JSON.stringify(stage.attrs, null, 2)}
-                              </pre>
+                            </div>
+
+                            {isExpanded && hasDetails ? (
+                              <div className="mt-3 border-t border-[var(--border-default)] pt-3">
+                                <div className="ml-2 border-l border-[color-mix(in_srgb,var(--border-default)_72%,transparent)] pl-4">
+                                  {card.detailRows.map((detailRow) => (
+                                    <div key={detailRow.key} className="relative flex items-start gap-3 py-1.5">
+                                      <div className="absolute -left-[20px] top-[11px] size-2 rounded-full border border-[var(--border-default)] bg-[var(--surface-primary)]" />
+                                      <span className="min-w-0 flex-1 text-[13px] leading-5 text-[var(--text-secondary)]">
+                                        {detailRow.label}
+                                      </span>
+                                      {detailRow.durationMs ? (
+                                        <span className="shrink-0 font-mono text-[11px] text-[var(--text-muted)]">
+                                          {formatDurationLabel(detailRow.durationMs)}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
                             ) : null}
                           </CardContent>
                         </Card>

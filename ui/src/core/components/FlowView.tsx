@@ -18,7 +18,7 @@ import { useFlowAnimations } from '../hooks/useFlowAnimations'
 import { useFlowActivity } from '../hooks/useFlowActivity'
 import { useLogStream } from '../hooks/useLogStream'
 import { DEFAULT_RELAY_WS_URL, useRelayConnection } from '../hooks/useRelayConnection'
-import { formatRunLabel } from '../runPresentation'
+import { formatRunLabel, getJourneyOverviewModel } from '../runPresentation'
 import { useTraceJourney } from '../hooks/useTraceJourney'
 import { useTraceTimeline } from '../hooks/useTraceTimeline'
 import { useUrlState } from '../hooks/useUrlState'
@@ -26,7 +26,6 @@ import type { LogEntry } from '../types'
 import { flows } from '../../flows'
 import { useCommandPaletteStore } from '../../stores/commandPalette'
 import { useLayoutStore } from '../../stores/layout'
-
 
 export function FlowView() {
   const navigate = useNavigate()
@@ -136,6 +135,7 @@ export function FlowView() {
     spanMapping: currentFlow.spanMapping,
     producerMapping: currentFlow.producerMapping,
     edges: currentFlow.edges,
+    resourceNodeIds: currentFlow.nodes.filter((node) => node.type === 'cylinder').map((node) => node.id),
     sessionKey: runtimeSessionKey,
   })
   const logStream = useLogStream(displayedEvents, currentFlow.spanMapping, runtimeSessionKey)
@@ -148,6 +148,13 @@ export function FlowView() {
     () => (selectedTraceId ? traceJourney.journeyByTraceId.get(selectedTraceId) : undefined),
     [selectedTraceId, traceJourney.journeyByTraceId],
   )
+  const selectedJourneyOverview = useMemo(
+    () =>
+      selectedJourney
+        ? getJourneyOverviewModel(selectedJourney, currentFlow.nodes, currentFlow.edges)
+        : undefined,
+    [currentFlow.edges, currentFlow.nodes, selectedJourney],
+  )
   const selectedLogEntry = useMemo(
     () =>
       logStream.globalLogs.find(
@@ -157,30 +164,25 @@ export function FlowView() {
   )
 
   const traceFocus = useMemo(() => {
-    if (!selectedJourney || selectedJourney.nodePath.length === 0) {
+    if (!selectedJourney || !selectedJourneyOverview) {
       return {
         nodeIds: undefined as Set<string> | undefined,
         edgeIds: undefined as Set<string> | undefined,
       }
     }
 
-    const nodeIds = new Set(selectedJourney.nodePath)
-    const edgeIds = new Set<string>()
-    const edgeLookup = new Map(currentFlow.edges.map((edge) => [`${edge.source}->${edge.target}`, edge.id]))
-    for (let index = 1; index < selectedJourney.nodePath.length; index += 1) {
-      const source = selectedJourney.nodePath[index - 1]
-      const target = selectedJourney.nodePath[index]
-      const edgeId = edgeLookup.get(`${source}->${target}`)
-      if (edgeId) {
-        edgeIds.add(edgeId)
+    if (selectedJourneyOverview.focusNodeIds.length === 0) {
+      return {
+        nodeIds: undefined as Set<string> | undefined,
+        edgeIds: undefined as Set<string> | undefined,
       }
     }
 
     return {
-      nodeIds,
-      edgeIds,
+      nodeIds: new Set(selectedJourneyOverview.focusNodeIds),
+      edgeIds: new Set(selectedJourneyOverview.focusEdgeIds),
     }
-  }, [currentFlow.edges, selectedJourney])
+  }, [selectedJourney, selectedJourneyOverview])
 
   useEffect(() => {
     if (previousSessionKeyRef.current === runtimeSessionKey) {
@@ -417,7 +419,7 @@ export function FlowView() {
           // otherwise  → user clicked a node from within a run → show node, back returns to run
           if (selectedNode && selectedJourney) {
             if (panel === 'run') {
-              const presentation = getTraceInspectorPresentation(selectedJourney)
+              const presentation = getTraceInspectorPresentation(selectedJourney, currentFlow.nodes, currentFlow.edges)
 
               return (
                 <InspectorPanel
@@ -431,6 +433,8 @@ export function FlowView() {
                   <TraceDetailContent
                     key={selectedJourney.traceId}
                     journey={selectedJourney}
+                    flowNodes={currentFlow.nodes}
+                    flowEdges={currentFlow.edges}
                     spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
                     initialTab={runTab === 'timing' ? 'timing' : 'overview'}
                     onTabChange={(tab) => updateUrlState({ runTab: tab === 'overview' ? null : tab }, { replace: true })}
@@ -464,7 +468,7 @@ export function FlowView() {
           }
 
           if (selectedJourney) {
-            const presentation = getTraceInspectorPresentation(selectedJourney)
+            const presentation = getTraceInspectorPresentation(selectedJourney, currentFlow.nodes, currentFlow.edges)
             const canGoBack = Boolean(selectedLogSeq)
 
             return (
@@ -479,6 +483,8 @@ export function FlowView() {
                 <TraceDetailContent
                   key={selectedJourney.traceId}
                   journey={selectedJourney}
+                  flowNodes={currentFlow.nodes}
+                  flowEdges={currentFlow.edges}
                   spans={selectedTraceId ? traceTimeline.traceTree.get(selectedTraceId) ?? [] : []}
                   initialTab={runTab === 'timing' ? 'timing' : 'overview'}
                   onTabChange={(tab) => updateUrlState({ runTab: tab === 'overview' ? null : tab }, { replace: true })}

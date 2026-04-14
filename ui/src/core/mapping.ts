@@ -30,43 +30,72 @@ function lookupPattern(mapping: SpanMapping, candidate: string | null | undefine
   return null
 }
 
+function lookupExact(mapping: SpanMapping, candidate: string | null | undefined): string | null {
+  if (!candidate) {
+    return null
+  }
+
+  return mapping[candidate] ?? null
+}
+
 export function resolveMappedNodeId(event: FlowEvent, spanMapping: SpanMapping): string | null {
   const componentId = readAttr(event, 'component_id')
+  const stepId = readAttr(event, 'step_id')
+  const functionName = readAttr(event, 'function_name')
+  const workerName = readAttr(event, 'worker_name')
+  const rrqQueue = readAttr(event, 'rrq.queue')
+  const rrqFunction = readAttr(event, 'rrq.function')
+  const queueName = readAttr(event, 'queue_name')
+  const messagingDestination = readAttr(event, 'messaging.destination.name')
+  const messagingOperation = readAttr(event, 'messaging.operation')
+
+  const exactCandidates = [
+    componentId && stepId ? `${componentId}.${stepId}` : null,
+    functionName && stepId ? `${functionName}.${stepId}` : null,
+    rrqFunction && stepId ? `${rrqFunction}.${stepId}` : null,
+    workerName && stepId ? `${workerName}.${stepId}` : null,
+    queueName && stepId ? `${queueName}.${stepId}` : null,
+    rrqQueue && stepId ? `${rrqQueue}.${stepId}` : null,
+  ]
+
+  for (const candidate of exactCandidates) {
+    const mapped = lookupExact(spanMapping, candidate)
+    if (mapped) {
+      return mapped
+    }
+  }
+
   if (componentId) {
     return spanMapping[componentId] ?? null
   }
 
   const queueFirst = event.event_kind === 'queue_enqueued' || event.event_kind === 'queue_picked'
-  const rrqQueue = readAttr(event, 'rrq.queue')
-  const rrqFunction = readAttr(event, 'rrq.function')
-  const messagingDestination = readAttr(event, 'messaging.destination.name')
-  const messagingOperation = readAttr(event, 'messaging.operation')
 
   const candidates = queueFirst
     ? [
         event.node_key,
-        readAttr(event, 'step_id'),
+        stepId,
         rrqQueue,
         messagingDestination,
-        readAttr(event, 'queue_name'),
+        queueName,
         rrqFunction,
         messagingOperation,
-        readAttr(event, 'function_name'),
-        readAttr(event, 'worker_name'),
+        functionName,
+        workerName,
         event.span_name,
         readAttr(event, 'action'),
       ]
     : [
         event.node_key,
-        readAttr(event, 'step_id'),
+        stepId,
         rrqFunction,
         messagingOperation,
         event.span_name,
-        readAttr(event, 'function_name'),
-        readAttr(event, 'worker_name'),
+        functionName,
+        workerName,
         rrqQueue,
         messagingDestination,
-        readAttr(event, 'queue_name'),
+        queueName,
         readAttr(event, 'action'),
       ]
 
