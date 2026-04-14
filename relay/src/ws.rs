@@ -13,6 +13,7 @@ use crate::AppState;
 use crate::models::{FlowEvent, WsEnvelope, annotate_flow_event};
 
 const BROADCAST_BUFFER_SIZE: usize = 2_048;
+const CONTROL_BROADCAST_BUFFER_SIZE: usize = 32;
 const RECENT_EVENT_LIMIT: usize = 1_024;
 const WS_BATCH_INTERVAL_MS: u64 = 40;
 const WS_BATCH_MAX_EVENTS: usize = 256;
@@ -20,6 +21,7 @@ const WS_BATCH_MAX_EVENTS: usize = 256;
 #[derive(Debug, Clone)]
 pub struct LiveHub {
     tx: broadcast::Sender<FlowEvent>,
+    control_tx: broadcast::Sender<WsEnvelope>,
     next_seq: Arc<AtomicU64>,
     recent_events: Arc<tokio::sync::Mutex<VecDeque<FlowEvent>>>,
     lagged_events_total: Arc<AtomicU64>,
@@ -34,8 +36,10 @@ impl Default for LiveHub {
 impl LiveHub {
     pub fn new() -> Self {
         let (tx, _) = broadcast::channel(BROADCAST_BUFFER_SIZE);
+        let (control_tx, _) = broadcast::channel(CONTROL_BROADCAST_BUFFER_SIZE);
         Self {
             tx,
+            control_tx,
             next_seq: Arc::new(AtomicU64::new(1)),
             recent_events: Arc::new(tokio::sync::Mutex::new(VecDeque::with_capacity(
                 RECENT_EVENT_LIMIT,
@@ -65,12 +69,21 @@ impl LiveHub {
         self.tx.subscribe()
     }
 
+    pub fn subscribe_control(&self) -> broadcast::Receiver<WsEnvelope> {
+        self.control_tx.subscribe()
+    }
+
     pub async fn snapshot(&self) -> Vec<FlowEvent> {
         self.recent_events.lock().await.iter().cloned().collect()
     }
 
     pub async fn recent_buffer_size(&self) -> usize {
         self.recent_events.lock().await.len()
+    }
+
+    pub async fn reset(&self, reason: Option<String>) {
+        self.recent_events.lock().await.clear();
+        let _ = self.control_tx.send(WsEnvelope::Reset { reason });
     }
 
     pub fn record_lagged(&self, skipped: u64) {
@@ -99,6 +112,7 @@ async fn handle_ws(mut socket: WebSocket, hub: LiveHub) {
     }
 
     let mut rx = hub.subscribe();
+    let mut control_rx = hub.subscribe_control();
     let mut heartbeat = time::interval(Duration::from_secs(20));
     let mut flush_tick = time::interval(Duration::from_millis(WS_BATCH_INTERVAL_MS));
     heartbeat.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -118,6 +132,10 @@ async fn handle_ws(mut socket: WebSocket, hub: LiveHub) {
                     Some(Ok(Message::Text(text))) => {
                         if let Ok(event) = serde_json::from_str::<FlowEvent>(&text) {
                             let _ = hub.publish(vec![event]).await;
+                        } else if let Ok(WsEnvelope::Reset { reason }) =
+                            serde_json::from_str::<WsEnvelope>(&text)
+                        {
+                            hub.reset(reason).await;
                         }
                     }
                     Some(Err(error)) => {
@@ -140,6 +158,22 @@ async fn handle_ws(mut socket: WebSocket, hub: LiveHub) {
                     Err(broadcast::error::RecvError::Lagged(skipped)) => {
                         hub.record_lagged(skipped);
                         tracing::debug!(skipped, "ws client lagged, dropping stale events");
+                    }
+                    Err(broadcast::error::RecvError::Closed) => break,
+                }
+            }
+            maybe_control = control_rx.recv() => {
+                match maybe_control {
+                    Ok(WsEnvelope::Reset { reason }) => {
+                        pending.clear();
+                        if send_envelope(&mut socket, WsEnvelope::Reset { reason }).await.is_err() {
+                            break;
+                        }
+                    }
+                    Ok(_) => {}
+                    Err(broadcast::error::RecvError::Lagged(skipped)) => {
+                        hub.record_lagged(skipped);
+                        tracing::debug!(skipped, "ws client lagged on control channel");
                     }
                     Err(broadcast::error::RecvError::Closed) => break,
                 }

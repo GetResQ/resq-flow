@@ -7,6 +7,15 @@ export const DEFAULT_RELAY_WS_URL = 'ws://localhost:4200/ws'
 const MAX_RECONNECT_DELAY_MS = 10_000
 const MAX_BUFFERED_EVENTS = 4_000
 
+function isResetEnvelope(payload: unknown): boolean {
+  return Boolean(
+    payload &&
+      typeof payload === 'object' &&
+      'type' in payload &&
+      (payload as { type?: unknown }).type === 'reset',
+  )
+}
+
 function dedupeIncomingEvents(incoming: FlowEvent[], maxSeenSeq: number): FlowEvent[] {
   const seenSeqs = new Set<number>()
   const accepted: FlowEvent[] = []
@@ -92,6 +101,18 @@ export function useRelayConnection(wsUrl = DEFAULT_RELAY_WS_URL): RelayConnectio
       }
 
       socket.onmessage = (message) => {
+        let parsedPayload: unknown
+        try {
+          parsedPayload = JSON.parse(String(message.data))
+        } catch {
+          parsedPayload = undefined
+        }
+
+        if (isResetEnvelope(parsedPayload)) {
+          clearEvents()
+          return
+        }
+
         const parsed = parseRelayEvents(String(message.data), maxSeqRef.current)
         const accepted = dedupeIncomingEvents(parsed, maxSeqRef.current)
         if (accepted.length === 0) {
@@ -131,7 +152,7 @@ export function useRelayConnection(wsUrl = DEFAULT_RELAY_WS_URL): RelayConnectio
       socketRef.current?.close()
       socketRef.current = null
     }
-  }, [wsUrl])
+  }, [clearEvents, wsUrl])
 
   return { events, connected, reconnecting, resetKey, totalEventCount, wasTruncated, clearEvents }
 }

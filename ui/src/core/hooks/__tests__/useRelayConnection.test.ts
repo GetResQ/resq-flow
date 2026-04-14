@@ -119,4 +119,34 @@ describe('useRelayConnection', () => {
     expect(result.current.wasTruncated).toBe(true)
     expect(result.current.resetKey).toBe(0)
   })
+
+  it('clears the live session when the relay broadcasts a reset envelope', async () => {
+    const { result } = renderHook(() => useRelayConnection('ws://example.test/ws'))
+
+    const socket = MockWebSocket.instances[0]
+
+    await act(async () => {
+      socket.emitOpen()
+    })
+
+    await act(async () => {
+      socket.emitMessage({
+        type: 'batch',
+        events: [
+          { type: 'log', seq: 1, timestamp: '2026-03-05T12:00:00.000Z', message: 'first' },
+        ],
+      })
+    })
+
+    expect(result.current.events).toHaveLength(1)
+    expect(result.current.resetKey).toBe(0)
+
+    await act(async () => {
+      socket.emitMessage({ type: 'reset', reason: 'replay' })
+    })
+
+    expect(result.current.events).toEqual([])
+    expect(result.current.totalEventCount).toBe(0)
+    expect(result.current.resetKey).toBe(1)
+  })
 })

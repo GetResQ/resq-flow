@@ -80,9 +80,29 @@ pub async fn recv_flow_events(socket: &mut WsClient) -> Vec<resq_flow_relay::Flo
                 return match envelope {
                     resq_flow_relay::WsEnvelope::Snapshot { events }
                     | resq_flow_relay::WsEnvelope::Batch { events } => events,
+                    resq_flow_relay::WsEnvelope::Reset { .. } => continue,
                 };
             }
             return vec![serde_json::from_str(&text).expect("deserialize FlowEvent")];
+        }
+    }
+}
+
+#[allow(dead_code)]
+pub async fn recv_reset(socket: &mut WsClient) -> Option<String> {
+    loop {
+        let message = timeout(Duration::from_secs(2), socket.next())
+            .await
+            .expect("timed out waiting for websocket message")
+            .expect("socket closed")
+            .expect("websocket error");
+
+        if let Message::Text(text) = message {
+            if let Ok(resq_flow_relay::WsEnvelope::Reset { reason }) =
+                serde_json::from_str::<resq_flow_relay::WsEnvelope>(&text)
+            {
+                return reason;
+            }
         }
     }
 }

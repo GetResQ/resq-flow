@@ -96,3 +96,35 @@ async fn sends_recent_snapshot_to_new_clients() {
 
     server.shutdown();
 }
+
+#[tokio::test]
+async fn reset_endpoint_clears_snapshot_and_notifies_connected_clients() {
+    let server = common::spawn_server().await;
+
+    let response = reqwest::Client::new()
+        .post(format!("{}/v1/traces", server.http_base))
+        .json(&trace_payload("4444444444444444", "1710000005000000000"))
+        .send()
+        .await
+        .expect("post traces");
+    assert!(response.status().is_success());
+
+    let mut client = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
+    let snapshot = common::recv_flow_events(&mut client).await;
+    assert_eq!(snapshot.len(), 2);
+
+    let reset_response = reqwest::Client::new()
+        .post(format!("{}/v1/dev/reset", server.http_base))
+        .send()
+        .await
+        .expect("reset live session");
+    assert!(reset_response.status().is_success());
+
+    let reason = common::recv_reset(&mut client).await;
+    assert_eq!(reason.as_deref(), Some("replay"));
+
+    let mut fresh_client = common::connect_ws(&format!("{}/ws", server.ws_base)).await;
+    common::expect_no_message(&mut fresh_client).await;
+
+    server.shutdown();
+}

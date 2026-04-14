@@ -75,6 +75,10 @@ impl FlowEvent {
 pub enum WsEnvelope {
     Snapshot { events: Vec<FlowEvent> },
     Batch { events: Vec<FlowEvent> },
+    Reset {
+        #[serde(skip_serializing_if = "Option::is_none")]
+        reason: Option<String>,
+    },
 }
 
 #[derive(Debug, Serialize)]

@@ -8,6 +8,7 @@ use tokio::net::TcpListener;
 use tower_http::cors::{Any, CorsLayer};
 
 mod contracts;
+mod devtools;
 mod error;
 mod health;
 mod history;
@@ -76,6 +77,7 @@ fn build_app_with_registry(bind: String, registry: FlowRegistry) -> Result<Route
 
 fn build_router(state: AppState) -> Router {
     Router::new()
+        .route("/v1/dev/reset", post(devtools::reset_live_session))
         .route("/v1/traces", post(ingest::post_traces))
         .route("/v1/logs", post(ingest::post_logs))
         .route("/v1/history", get(history::get_history))
