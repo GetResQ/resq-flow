@@ -34,6 +34,10 @@ type CanvasInteractionMode = 'pointer' | 'pan'
 type Position = { x: number; y: number }
 type AnnotationAnchor = { anchorId: string; dx: number; dy: number }
 
+function seededPositionsForFlow(flow: FlowConfig): Map<string, Position> {
+  return new Map(Object.entries(flow.seedPositions ?? {}))
+}
+
 function isEditableTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) {
     return false
@@ -335,14 +339,21 @@ export function FlowCanvas({
   resetLayoutKey,
   onSelectNode,
 }: FlowCanvasProps) {
+  const initialPersistedLayout = useMemo(() => loadPersistedLayout(flow), [flow])
   const [elkLayout, setElkLayout] = useState<Map<string, LayoutGeometry> | null>(null)
   const [layoutReady, setLayoutReady] = useState(false)
   const [interactionMode, setInteractionMode] = useState<CanvasInteractionMode>('pan')
   const [runtimePositions, setRuntimePositions] = useState<Map<string, { x: number; y: number }>>(
-    () => loadPersistedLayout(flow).positions,
+    () => {
+      const merged = seededPositionsForFlow(flow)
+      for (const [nodeId, position] of initialPersistedLayout.positions.entries()) {
+        merged.set(nodeId, position)
+      }
+      return merged
+    },
   )
   const [savedViewport, setSavedViewport] = useState<Viewport | null>(
-    () => loadPersistedLayout(flow).viewport,
+    () => initialPersistedLayout.viewport,
   )
   const [entering, setEntering] = useState(true)
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
@@ -380,9 +391,13 @@ export function FlowCanvas({
 
   useEffect(() => {
     const persisted = loadPersistedLayout(flow)
+    const mergedPositions = seededPositionsForFlow(flow)
+    for (const [nodeId, position] of persisted.positions.entries()) {
+      mergedPositions.set(nodeId, position)
+    }
     setElkLayout(null)
     setLayoutReady(false)
-    setRuntimePositions(persisted.positions)
+    setRuntimePositions(mergedPositions)
     setSavedViewport(persisted.viewport)
     setEntering(true)
     setSelectedNodeIds(new Set())

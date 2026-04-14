@@ -137,6 +137,7 @@ export interface FlowConfig {
   edges: FlowEdgeConfig[]
   spanMapping: SpanMapping
   producerMapping?: SpanMapping
+  seedPositions?: Record<string, { x: number; y: number }>
 }
 
 export interface FlowEvent {
