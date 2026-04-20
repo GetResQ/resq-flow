@@ -296,7 +296,7 @@ fn filter_events(
     }
 
     let mut filtered = Vec::new();
-    for (mut event, direct_flow_ids) in events.into_iter().zip(direct_matches.into_iter()) {
+    for (mut event, direct_flow_ids) in events.into_iter().zip(direct_matches) {
         let has_explicit_flow_id = explicit_flow_id(&event).is_some();
         let mut matched_flow_ids = BTreeSet::new();
         for flow_id in direct_flow_ids {
