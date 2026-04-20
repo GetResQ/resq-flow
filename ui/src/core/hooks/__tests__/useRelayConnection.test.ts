@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { useRelayConnection } from '../useRelayConnection'
+import { resolveDefaultRelayWsUrl, useRelayConnection } from '../useRelayConnection'
 
 class MockWebSocket {
   static instances: MockWebSocket[] = []
@@ -39,6 +39,39 @@ describe('useRelayConnection', () => {
     MockWebSocket.instances = []
     // @ts-expect-error test websocket shim
     globalThis.WebSocket = MockWebSocket
+  })
+
+  it('resolves the default relay URL from same-origin outside Vite dev', () => {
+    expect(
+      resolveDefaultRelayWsUrl({
+        protocol: 'https:',
+        host: 'flow.nora.getresq.com',
+        hostname: 'flow.nora.getresq.com',
+        port: '',
+      } as Location),
+    ).toBe('wss://flow.nora.getresq.com/ws')
+  })
+
+  it('keeps local Vite dev pointed at the local relay port', () => {
+    expect(
+      resolveDefaultRelayWsUrl({
+        protocol: 'http:',
+        host: 'localhost:5173',
+        hostname: 'localhost',
+        port: '5173',
+      } as Location),
+    ).toBe('ws://localhost:4200/ws')
+  })
+
+  it('uses same-origin for localhost production-style HTTPS', () => {
+    expect(
+      resolveDefaultRelayWsUrl({
+        protocol: 'https:',
+        host: 'localhost',
+        hostname: 'localhost',
+        port: '',
+      } as Location),
+    ).toBe('wss://localhost/ws')
   })
 
   afterEach(() => {

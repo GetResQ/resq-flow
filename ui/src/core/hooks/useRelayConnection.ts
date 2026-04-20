@@ -3,7 +3,28 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { parseRelayEvents } from '../events'
 import type { FlowEvent, RelayConnectionState } from '../types'
 
-export const DEFAULT_RELAY_WS_URL = 'ws://localhost:4200/ws'
+function sameOriginRelayWsUrl(location: Location): string {
+  const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:'
+  return `${protocol}//${location.host}/ws`
+}
+
+export function resolveDefaultRelayWsUrl(location = window.location): string {
+  const configuredUrl = import.meta.env.VITE_RESQ_FLOW_RELAY_WS_URL
+  if (configuredUrl) {
+    return configuredUrl
+  }
+
+  if (
+    (location.hostname === 'localhost' || location.hostname === '127.0.0.1') &&
+    location.port === '5173'
+  ) {
+    return 'ws://localhost:4200/ws'
+  }
+
+  return sameOriginRelayWsUrl(location)
+}
+
+export const DEFAULT_RELAY_WS_URL = resolveDefaultRelayWsUrl()
 const MAX_RECONNECT_DELAY_MS = 10_000
 const MAX_BUFFERED_EVENTS = 4_000
 

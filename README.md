@@ -56,6 +56,8 @@ After this file:
 3. `docs/cli.md` for CLI behavior
 4. `docs/flow-event-contract.md` only when you need contract semantics
 5. `ARCHITECTURE.md` only when you need deeper topology and ownership detail
+6. `docs/production-deployment.md` when you need production deployment guidance
+7. `docs/release-artifacts.md` when you need to publish or consume pinned releases
 
 ### One-line guidance to reuse
 
