@@ -32,11 +32,18 @@ repos:
         stages: [pre-push]
 
       - id: ui-lint
-        name: UI Lint And Typecheck
-        entry: bash -c 'cd ui && bun run lint:errors && bun run typecheck'
+        name: UI Lint
+        entry: bash -c 'cd ui && bun run lint:errors'
         language: system
         pass_filenames: false
         stages: [pre-push]
+
+      - id: ui-typecheck
+        name: UI Typecheck
+        entry: bash -c 'cd ui && bun run typecheck'
+        language: system
+        pass_filenames: false
+        stages: [pre-commit, pre-push]
 
       - id: ui-test
         name: UI Tests With Coverage

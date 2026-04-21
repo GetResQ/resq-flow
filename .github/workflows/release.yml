@@ -49,7 +49,7 @@ jobs:
         run: bun run lint:errors
         working-directory: ui
 
-      - name: Typecheck UI
+      - name: Typecheck UI with tsgo
         run: bun run typecheck
         working-directory: ui
 

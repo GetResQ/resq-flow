@@ -18,8 +18,9 @@ async fn serves_flow_definitions_from_config_dir() {
     )
     .expect("write flow definition");
 
-    let contract_dir =
-        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/contracts/default");
+    let contract_dir = std::env::current_dir()
+        .expect("current dir")
+        .join("tests/contracts/default");
     let app = resq_flow_relay::build_app_with_contract_dir_and_flow_definition_dir(
         addr.to_string(),
         contract_dir,

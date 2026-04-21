@@ -25,8 +25,9 @@ async fn serves_static_ui_with_spa_fallback() {
     .expect("write index");
     fs::write(ui_dir.join("assets/app.js"), "console.log('resq-flow')").expect("write asset");
 
-    let contract_dir =
-        std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/contracts/default");
+    let contract_dir = std::env::current_dir()
+        .expect("current dir")
+        .join("tests/contracts/default");
     let ui_dir_env = ui_dir.to_string_lossy().to_string();
     let app = temp_env::with_var("RESQ_FLOW_UI_DIR", Some(ui_dir_env), || {
         resq_flow_relay::build_app_with_contract_dir(addr.to_string(), contract_dir)
