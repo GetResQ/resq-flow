@@ -1,6 +1,9 @@
 # macOS
 .DS_Store
+node_modules
 
+MISSION.md
+NEXT.md
 # Logs
 *.log
 npm-debug.log*

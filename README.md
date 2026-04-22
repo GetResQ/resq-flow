@@ -56,6 +56,8 @@ After this file:
 3. `docs/cli.md` for CLI behavior
 4. `docs/flow-event-contract.md` only when you need contract semantics
 5. `ARCHITECTURE.md` only when you need deeper topology and ownership detail
+6. `docs/production-deployment.md` when you need production deployment guidance
+7. `docs/release-artifacts.md` when you need to publish or consume pinned releases
 
 ### One-line guidance to reuse
 
@@ -346,6 +348,23 @@ Standard checks:
 cd relay && cargo fmt
 cd relay && cargo clippy -- -D warnings
 cd relay && cargo test
+cd ui && bun install --frozen-lockfile
+cd ui && bun run fmt:check
+cd ui && bun run lint:errors
+cd ui && bun run typecheck
 cd ui && bun test
+cd ui && bun run test:coverage
+cd cli && bun install --frozen-lockfile
+cd cli && bun run test:coverage
 cd ui && bun run build
 ```
+
+## Git Hooks
+
+Install repo-local hooks once from the repo root:
+
+```bash
+make pre-commit
+```
+
+This installs both `pre-commit` and `pre-push` via `uvx pre-commit`.

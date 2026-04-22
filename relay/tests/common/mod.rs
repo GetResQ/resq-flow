@@ -1,4 +1,3 @@
-use std::path::PathBuf;
 use std::time::Duration;
 
 use futures_util::StreamExt;
@@ -34,7 +33,8 @@ pub async fn spawn_server_with_contract_dir(contract_dir_name: &str) -> TestServ
         .expect("bind listener");
     let addr = listener.local_addr().expect("listener addr");
 
-    let contract_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+    let contract_dir = std::env::current_dir()
+        .expect("current dir")
         .join("tests/contracts")
         .join(contract_dir_name);
     let app = resq_flow_relay::build_app_with_contract_dir(addr.to_string(), contract_dir)
@@ -97,12 +97,11 @@ pub async fn recv_reset(socket: &mut WsClient) -> Option<String> {
             .expect("socket closed")
             .expect("websocket error");
 
-        if let Message::Text(text) = message {
-            if let Ok(resq_flow_relay::WsEnvelope::Reset { reason }) =
+        if let Message::Text(text) = message
+            && let Ok(resq_flow_relay::WsEnvelope::Reset { reason }) =
                 serde_json::from_str::<resq_flow_relay::WsEnvelope>(&text)
-            {
-                return reason;
-            }
+        {
+            return reason;
         }
     }
 }

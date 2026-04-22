@@ -1,6 +1,12 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest';
 
-import { eventExecutionKey, eventMatchesFlow, parseRelayEvents } from '../events'
+import {
+  eventExecutionKey,
+  eventMatchesFlow,
+  getEventMergeKey,
+  getEventSelectionKey,
+  parseRelayEvents,
+} from '../events';
 
 describe('events helpers', () => {
   it('parses snapshot envelopes and normalizes missing fields', () => {
@@ -19,16 +25,16 @@ describe('events helpers', () => {
         ],
       }),
       10,
-    )
+    );
 
-    expect(events).toHaveLength(1)
+    expect(events).toHaveLength(1);
     expect(events[0]).toMatchObject({
       seq: 11,
       event_kind: 'queue_enqueued',
       queue_delta: 1,
       node_key: 'rrq:queue:mail-analyze',
-    })
-  })
+    });
+  });
 
   it('prefers explicit component_id for node_key normalization', () => {
     const events = parseRelayEvents(
@@ -46,10 +52,10 @@ describe('events helpers', () => {
         ],
       }),
       0,
-    )
+    );
 
-    expect(events[0]?.node_key).toBe('extract-worker')
-  })
+    expect(events[0]?.node_key).toBe('extract-worker');
+  });
 
   it('parses bare events and preserves explicit sequence numbers', () => {
     const events = parseRelayEvents(
@@ -60,7 +66,7 @@ describe('events helpers', () => {
         span_name: 'handle_mail_extract',
       }),
       10,
-    )
+    );
 
     expect(events).toEqual([
       expect.objectContaining({
@@ -69,8 +75,8 @@ describe('events helpers', () => {
         event_kind: 'node_finished',
         node_key: 'handle_mail_extract',
       }),
-    ])
-  })
+    ]);
+  });
 
   it('parses legacy array payloads and drops invalid entries', () => {
     const events = parseRelayEvents(
@@ -79,11 +85,11 @@ describe('events helpers', () => {
         { nope: true },
       ]),
       0,
-    )
+    );
 
-    expect(events).toHaveLength(1)
-    expect(events[0].message).toBe('kept')
-  })
+    expect(events).toHaveLength(1);
+    expect(events[0].message).toBe('kept');
+  });
 
   it('prefers explicit flow_id over matched_flow_ids fallback', () => {
     expect(
@@ -98,7 +104,7 @@ describe('events helpers', () => {
         },
         'mail-pipeline',
       ),
-    ).toBe(false)
+    ).toBe(false);
 
     expect(
       eventMatchesFlow(
@@ -111,8 +117,8 @@ describe('events helpers', () => {
         },
         'mail-pipeline',
       ),
-    ).toBe(true)
-  })
+    ).toBe(true);
+  });
 
   it('matches flows by matched_flow_ids when explicit flow_id is absent', () => {
     expect(
@@ -124,7 +130,7 @@ describe('events helpers', () => {
         },
         'mail-pipeline',
       ),
-    ).toBe(true)
+    ).toBe(true);
 
     expect(
       eventMatchesFlow(
@@ -135,7 +141,7 @@ describe('events helpers', () => {
         },
         'other-flow',
       ),
-    ).toBe(false)
+    ).toBe(false);
 
     expect(
       eventMatchesFlow(
@@ -145,8 +151,8 @@ describe('events helpers', () => {
         },
         'any-flow',
       ),
-    ).toBe(false)
-  })
+    ).toBe(false);
+  });
 
   it('uses run_id as the canonical execution key when present', () => {
     expect(
@@ -158,8 +164,8 @@ describe('events helpers', () => {
           run_id: 'run-1',
         },
       }),
-    ).toBe('run-1')
-  })
+    ).toBe('run-1');
+  });
 
   it('falls back to trace_id when run_id is a placeholder value', () => {
     expect(
@@ -171,6 +177,66 @@ describe('events helpers', () => {
           run_id: 0,
         },
       }),
-    ).toBe('trace-1')
-  })
-})
+    ).toBe('trace-1');
+  });
+
+  it('builds stable short selection keys without changing merge identity', () => {
+    const event = {
+      type: 'log',
+      timestamp: '2026-03-05T12:00:00.000Z',
+      trace_id: 'trace-1',
+      span_id: 'span-1',
+      message: 'history event',
+      attributes: {
+        b: 2,
+        a: {
+          nested: 'value',
+        },
+      },
+    } as const;
+    const equivalentEvent = {
+      ...event,
+      attributes: {
+        a: {
+          nested: 'value',
+        },
+        b: 2,
+      },
+    };
+
+    const mergeKey = getEventMergeKey(event);
+    const selectionKey = getEventSelectionKey(event);
+
+    expect(getEventMergeKey(equivalentEvent)).toBe(mergeKey);
+    expect(getEventSelectionKey(equivalentEvent)).toBe(selectionKey);
+    expect(selectionKey).toMatch(/^history:log:[a-z0-9]+$/);
+    expect(selectionKey.length).toBeLessThan(mergeKey.length);
+    expect(mergeKey).toContain('a:{nested:"value"},b:2');
+  });
+
+  it('produces distinct representative selection keys', () => {
+    const baseEvent = {
+      type: 'log',
+      timestamp: '2026-03-05T12:00:00.000Z',
+      trace_id: 'trace-1',
+      span_id: 'span-1',
+      message: 'history event',
+      attributes: {
+        flow_id: 'mail-pipeline',
+      },
+    } as const;
+
+    expect(getEventSelectionKey(baseEvent)).not.toBe(
+      getEventSelectionKey({
+        ...baseEvent,
+        span_id: 'span-2',
+      }),
+    );
+    expect(getEventMergeKey(baseEvent)).not.toBe(
+      getEventMergeKey({
+        ...baseEvent,
+        span_id: 'span-2',
+      }),
+    );
+  });
+});

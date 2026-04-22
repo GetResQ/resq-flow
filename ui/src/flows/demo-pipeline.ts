@@ -1,8 +1,16 @@
-import demoPipelineContractJson from '../flow-contracts/demo-pipeline.json'
-import type { FlowConfig, FlowContract, SpanMapping } from '../core/types'
-import { decisionNode, detailNode, queueNode, resourceNode, stepNode, triggerNode, workerNode } from './nodeFactory'
+import demoPipelineContractJson from '../flow-contracts/demo-pipeline.json';
+import type { FlowConfig, FlowContract, SpanMapping } from '../core/types';
+import {
+  decisionNode,
+  detailNode,
+  queueNode,
+  resourceNode,
+  stepNode,
+  triggerNode,
+  workerNode,
+} from './nodeFactory';
 
-const demoPipelineContract = demoPipelineContractJson as FlowContract
+const demoPipelineContract = demoPipelineContractJson as FlowContract;
 
 export const spanMapping: SpanMapping = {
   'external-event': 'external-event',
@@ -16,7 +24,7 @@ export const spanMapping: SpanMapping = {
   'intake-worker.persist-raw': 'persist-raw',
   'publish-worker.persist-result': 'persist-result',
   'publish-worker.archive-output': 'archive-output',
-}
+};
 
 export const demoPipelineFlow: FlowConfig = {
   id: demoPipelineContract.id,
@@ -143,4 +151,4 @@ export const demoPipelineFlow: FlowConfig = {
     { id: 'archive-output-object-store', source: 'archive-output', target: 'object-store' },
   ],
   spanMapping,
-}
+};

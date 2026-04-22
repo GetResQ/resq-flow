@@ -1,10 +1,10 @@
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { describe, expect, it } from 'vitest';
 
-import { FlowsHome } from '../FlowsHome'
-import type { FlowConfig } from '../../types'
+import { FlowsHome } from '../FlowsHome';
+import type { FlowConfig } from '../../types';
 
 const testFlow: FlowConfig = {
   id: 'test-flow',
@@ -32,7 +32,7 @@ const testFlow: FlowConfig = {
   nodes: [],
   edges: [],
   spanMapping: {},
-}
+};
 
 function renderFlowsHome(flows: FlowConfig[] = [testFlow]) {
   return render(
@@ -42,29 +42,29 @@ function renderFlowsHome(flows: FlowConfig[] = [testFlow]) {
         <Route path="/flows/:flowId" element={<div>Flow detail route</div>} />
       </Routes>
     </MemoryRouter>,
-  )
+  );
 }
 
 describe('FlowsHome', () => {
   it('renders registered flows as a list with name and description', () => {
-    renderFlowsHome()
+    renderFlowsHome();
 
-    expect(screen.getByText('Flows')).toBeInTheDocument()
-    expect(screen.getByText('Test Flow')).toBeInTheDocument()
-    expect(screen.getByText(testFlow.description!)).toBeInTheDocument()
-  })
+    expect(screen.getByText('Flows')).toBeInTheDocument();
+    expect(screen.getByText('Test Flow')).toBeInTheDocument();
+    expect(screen.getByText(testFlow.description!)).toBeInTheDocument();
+  });
 
   it('navigates to the flow view when a row is selected', async () => {
-    const user = userEvent.setup()
-    renderFlowsHome()
+    const user = userEvent.setup();
+    renderFlowsHome();
 
-    await user.click(screen.getByRole('button', { name: /test flow/i }))
-    expect(screen.getByText('Flow detail route')).toBeInTheDocument()
-  })
+    await user.click(screen.getByRole('button', { name: /test flow/i }));
+    expect(screen.getByText('Flow detail route')).toBeInTheDocument();
+  });
 
   it('shows an empty state when no flows are registered', () => {
-    renderFlowsHome([])
+    renderFlowsHome([]);
 
-    expect(screen.getByText('No flows registered')).toBeInTheDocument()
-  })
-})
+    expect(screen.getByText('No flows registered')).toBeInTheDocument();
+  });
+});
